@@ -2,9 +2,9 @@ name: Archive TMD radar data
 
 on:
   schedule:
-    # Run every 15 minutes
-    - cron: '*/15 * * * *'
-  workflow_dispatch:  # allow manual trigger
+    # เปลี่ยนจาก 15 นาที เป็นทุกๆ 7-10 นาที (เศษนาทีที่คนไม่ค่อยใช้ คิวจะว่างกว่า)
+    - cron: '*/7 * * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,7 +16,7 @@ concurrency:
 jobs:
   archive:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
@@ -42,6 +42,11 @@ jobs:
 
       - name: Fetch and process radar data
         run: |
+          # ให้ลองดึงภาพรอบแรก
+          python -m radar_archive.cli --station PHS fetch
+          
+          # รอ 60 วินาทีแล้วลองดึงซ้ำอีกครั้ง เผื่อเว็บกรมอุตุฯ เพิ่งอัปเดตเหลื่อมเวลา
+          sleep 60
           python -m radar_archive.cli --station PHS fetch
 
       - name: Commit and push new data
