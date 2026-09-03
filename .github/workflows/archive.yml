@@ -42,7 +42,7 @@ jobs:
 
       - name: Fetch and process radar data
         run: |
-          python -m radar_archive.cli fetch --window-hours 1
+          python -m radar_archive.cli --station PHS fetch
 
       - name: Commit and push new data
         run: |
