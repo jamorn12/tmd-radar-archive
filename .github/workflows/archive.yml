@@ -2,8 +2,8 @@ name: Archive TMD radar data
 
 on:
   schedule:
-    # รันที่นาทีที่ 05, 20, 35, 50 ของทุกชั่วโมง (หลบคิวระบบ + ตรงกับรอบภาพ TMD)
-    - cron: '5,20,35,50 * * * *'
+    # รันทุก 15 นาทีตามปกติ
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -16,7 +16,7 @@ concurrency:
 jobs:
   archive:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -40,23 +40,35 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Fetch and process radar data
-        run: |
-          # ให้ลองดึงภาพรอบแรก
-          python -m radar_archive.cli --station PHS fetch
-          
-          # รอ 60 วินาทีแล้วลองดึงซ้ำอีกครั้ง เผื่อเว็บกรมอุตุฯ เพิ่งอัปเดตเหลื่อมเวลา
-          sleep 60
-          python -m radar_archive.cli --station PHS fetch
-
-      - name: Commit and push new data
+      - name: Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
-          if git diff --staged --quiet; then
-            echo "No new data to commit"
-          else
-            git commit -m "archive: update radar data [skip ci]"
-            git push
-          fi
+
+      - name: Poll and fetch radar data
+        run: |
+          # วนลูปสูงสุด 25 ครั้ง ครั้งละ 30 วินาที (รวมประมาณ 12.5 นาที)
+          MAX_ATTEMPTS=25
+          SLEEP_SEC=30
+
+          for ((i=1; i<=MAX_ATTEMPTS; i++)); do
+            echo "--- Attempt $i of $MAX_ATTEMPTS ($(date -u +'%H:%M:%S UTC')) ---"
+            
+            # เรียกดึงภาพเรดาร์
+            python -m radar_archive.cli --station PHS fetch
+
+            # เช็คว่ามีภาพใหม่เพิ่มเข้ามาใน data/ หรือไม่
+            git add data/
+            if ! git diff --staged --quiet; then
+              echo ">>> Found new radar image! Committing and pushing..."
+              git commit -m "archive: update radar data [skip ci]"
+              git push
+              echo ">>> Successfully archived new data. Exiting immediately."
+              exit 0
+            fi
+
+            echo "No new image yet. Waiting $SLEEP_SEC seconds before next check..."
+            sleep $SLEEP_SEC
+          done
+
+          echo "Timeout reached: TMD did not update any new image during this window."
