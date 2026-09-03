@@ -30,22 +30,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install "numpy<2.0" "opencv-python-headless<5.0" pillow pytesseract requests pyyaml scipy pandas
-          pip install google-api-python-client google-auth
 
       - name: Fetch and Process Radar Frame
         run: |
           python -m radar_archive.cli --station PHS fetch
-
-      - name: Upload New Frames to Google Drive (5 TB)
-        env:
-          GDRIVE_SA_KEY: ${{ secrets.GDRIVE_SA_KEY }}
-          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
-        run: |
-          python upload_to_gdrive.py
-
-      - name: Prune Local Git Images Older Than 24h (Rolling Cache)
-        run: |
-          find data/raw data/processed -type f \( -name "*.jpg" -o -name "*.png" \) -mtime +1 -exec git rm -f {} + || true
 
       - name: Commit and Push Changes
         run: |
@@ -56,6 +44,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "archive: sync frames & upload to drive [skip ci]"
+            git commit -m "archive: update radar data [skip ci]"
             git push origin main
           fi
