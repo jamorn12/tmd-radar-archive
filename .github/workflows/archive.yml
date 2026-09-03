@@ -1,4 +1,4 @@
-﻿name: TMD Radar Archive Pipeline
+name: TMD Radar Archive Pipeline
 
 on:
   workflow_dispatch:
