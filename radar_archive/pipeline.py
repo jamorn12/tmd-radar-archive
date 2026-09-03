@@ -53,6 +53,26 @@ def get_palette(root: Path, st: Station, img: Image.Image) -> tuple[np.ndarray, 
     return rgb, dbz
 
 
+def seen_sha(root: Path, st: Station, sha16: str) -> "str | None":
+    """เคยเก็บภาพที่ไบต์ตรงกันเป๊ะไปแล้วหรือยัง — คืน timestamp_utc ของเฟรมนั้น
+
+    จำเป็นเพราะกันซ้ำด้วย timestamp อย่างเดียวไม่พอ: ถ้าเชื่อ OCR ไม่ได้แล้ว fallback
+    ไปใช้เวลาดาวน์โหลด ภาพสแกนเดียวกันจะได้ชื่อไฟล์ใหม่ทุกครั้งที่วนเช็ก
+    (เกิดขึ้นจริง — สแกน 03:15 ถูกเซฟซ้ำ 6 ครั้งเป็น 0315/0324/0325/0326/0328/0329)
+    """
+    p = log_path(root, st)
+    if not sha16 or not p.exists():
+        return None
+    try:
+        with p.open(newline="", encoding="utf-8") as fh:
+            for row in csv.DictReader(fh):
+                if row.get("sha256") == sha16:
+                    return row.get("timestamp_utc") or ""
+    except Exception:
+        return None
+    return None
+
+
 def append_log(root: Path, st: Station, row: dict) -> None:
     p = log_path(root, st)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -80,8 +100,14 @@ def run_once(
     root = Path(root)
     f = fetch.fetch_latest(st) if local_file is None else fetch.fetch_from_file(st, local_file)
 
-    if not force and fetch.already_have(root, st, f.timestamp):
-        return None
+    if not force:
+        if fetch.already_have(root, st, f.timestamp):
+            return None
+        dup = seen_sha(root, st, f.sha256[:16])
+        if dup is not None:
+            print("[dup]  {}: ไบต์ตรงกับเฟรม {} (sha {}) — ไม่เซฟซ้ำ"
+                  .format(st.code, dup, f.sha256[:16]))
+            return None
 
     raw_file = fetch.save_raw(root, st, f)
     pal_rgb, pal_dbz = get_palette(root, st, f.image)

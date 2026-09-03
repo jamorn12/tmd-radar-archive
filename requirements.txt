@@ -2,9 +2,9 @@ requests>=2.31
 numpy>=1.24
 Pillow>=10.0
 scipy>=1.10
-scikit-image>=0.22
 PyYAML>=6.0
 pytesseract>=0.3.10
 
-
-
+# หมายเหตุ: เคยมี scikit-image อยู่บรรทัดนี้ — เอาออกแล้วตั้งแต่ v0.3.0
+# skimage ดึง matplotlib เข้ามาตอน import ทำให้ชนกับ NumPy 2.x (_ARRAY_API not found)
+# ฟังก์ชันที่เคยใช้ถูกเขียนเองไว้ใน radar_archive/lab.py แล้ว (ตรวจแล้วต่างกัน < 0.0002 Lab unit)

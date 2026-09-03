@@ -6,6 +6,8 @@
     python -m radar_archive.cli reprocess --station PHS --since 2026-09-01
     python -m radar_archive.cli mask --station PHS --n 40
     python -m radar_archive.cli prune --keep-days 7
+    python -m radar_archive.cli --station PHS repair            # ดูก่อน
+    python -m radar_archive.cli --station PHS repair --apply    # แก้จริง
 """
 from __future__ import annotations
 
@@ -53,6 +55,171 @@ def cmd_fetch(args) -> int:
         if attempt < args.repeat - 1:
             time.sleep(args.interval)
     print(f"เฟรมใหม่ทั้งหมด: {got}")
+    return 0
+
+
+def _stamp_from_name(p: Path) -> datetime:
+    """PHS_20260903_0600Z.jpg -> datetime(2026, 9, 3, 6, 0, tzinfo=utc)"""
+    return datetime.strptime(p.stem.split("_", 1)[1], "%Y%m%d_%H%MZ").replace(tzinfo=timezone.utc)
+
+
+def _strip_frame(img, st, pal_rgb, smask):
+    """ตัด background ตามโหมดของสถานี คืน res
+
+    หมายเหตุ: **อย่า** คืน lambda ที่ปิดทับ res จากในนี้ — apply_qc สร้าง res ก้อนใหม่
+    ถ้าปิดทับไว้ก่อน จะได้ภาพก่อน QC (พลาดมาแล้ว: spike ที่ QC ตัดทิ้งโผล่กลับมาในภาพ)
+    """
+    if st.refine:
+        return refine.strip_background_refined(img, st, pal_rgb, static_mask=smask,
+                                               **st.refine_params)
+    return strip.strip_background(img, st, pal_rgb, static_mask=smask)
+
+
+def _render(res, st, pal_rgb, bg, kind: str):
+    """วาดภาพจาก res ที่ผ่าน QC แล้ว"""
+    if st.refine:
+        return (refine.render_alpha(res, pal_rgb) if kind == "alpha"
+                else refine.render_solid(res, pal_rgb, bg))
+    return strip.render_alpha(res) if kind == "alpha" else strip.render_solid(res, bg)
+
+
+def _save(im, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    im.save(path, optimize=True)
+
+
+def cmd_repair(args) -> int:
+    """ซ่อม archive ที่เก็บมาแล้ว: แก้เวลาที่ OCR อ่านผิด + ลบไฟล์ซ้ำ + สร้าง index ใหม่
+
+    ทำไมต้องมี: เวอร์ชันแรกอ่าน footer โดย upscale ด้วย LANCZOS ซึ่งทำให้เลข 6 กลายเป็น 8
+    (เกิดจริง 1 ใน 21 เฟรม) ไฟล์ที่ตั้งชื่อผิดไปแล้วต้องมาแก้ย้อนหลัง และตอนที่ OCR
+    ใช้ไม่ได้ ภาพสแกนเดียวกันถูกเซฟซ้ำหลายชื่อ
+
+    เป็น dry-run โดยปริยาย — ต้องใส่ --apply ถึงจะแตะไฟล์จริง
+    """
+    import hashlib
+
+    import numpy as np
+
+    data = Path(args.data)
+    outputs = tuple(args.outputs.split(","))
+    bg = tuple(int(x) for x in args.background.split(","))
+    tag = "" if args.apply else "   [dry-run]"
+
+    for st in _stations(args):
+        base = data / "raw" / st.code
+        files = sorted(base.rglob("*.jpg"))
+        if not files:
+            print("[skip] {}: ไม่มีไฟล์ raw".format(st.code))
+            continue
+        print("\n=== {}: ตรวจ {} เฟรม ==={}".format(st.code, len(files), tag))
+
+        # ---- รอบที่ 1: อ่านเวลาใหม่ + หาไฟล์ที่ไบต์ซ้ำกัน ----
+        plan = []          # (path, stamp_old, stamp_new, source, action)
+        by_sha = {}
+        full_stamp = {}    # stamp ระดับนาที -> stamp ที่มีวินาทีจริงจาก footer
+        for p in files:
+            try:
+                old = _stamp_from_name(p)
+            except ValueError:
+                print("[warn] {}: ชื่อไฟล์ผิดรูปแบบ ข้าม".format(p.name))
+                continue
+            img = Image.open(p)
+            img.load()
+            new, src = fetch.read_timestamp_ocr(img, st, ref=None)
+
+            # ชื่อไฟล์เก็บถึงระดับนาที จึงเทียบกันที่ระดับนาที
+            new_min = new.replace(second=0, microsecond=0) if new is not None else None
+            if new_min is None or src == "ocr-weak":
+                if new_min is not None and new_min != old:
+                    print("[warn] {}: OCR ว่า {:%H:%M} แต่คะแนนโหวตไม่พอ ({}) — ไม่แก้"
+                          .format(p.name, new, src))
+                new_min, src = old, "kept ({})".format(src)
+            else:
+                full_stamp[new_min] = new
+            new = new_min
+
+            sha = hashlib.sha256(p.read_bytes()).hexdigest()[:16]
+            first = by_sha.get(sha)
+            if first is not None:
+                plan.append((p, old, new, src, "drop-dup"))
+                print("[dup]  {}  ไบต์ซ้ำกับ {} — ลบ".format(p.name, first.name))
+                continue
+            by_sha[sha] = p
+
+            if new != old:
+                plan.append((p, old, new, src, "rename"))
+                print("[fix]  {}  {:%H:%M}Z -> {:%H:%M}Z   ({})".format(p.name, old, new, src))
+            else:
+                plan.append((p, old, new, src, "keep"))
+
+        n_fix = sum(1 for x in plan if x[4] == "rename")
+        n_dup = sum(1 for x in plan if x[4] == "drop-dup")
+        print("--- ต้องแก้ชื่อ {} เฟรม / ลบซ้ำ {} ไฟล์ ---".format(n_fix, n_dup))
+        if not args.apply:
+            print("(ยังไม่แก้อะไร — ใส่ --apply เพื่อลงมือจริง)")
+            continue
+
+        # ---- รอบที่ 2: ลบซ้ำ + เปลี่ยนชื่อ raw และ processed ทุกชนิด ----
+        kinds = (("alpha", "png"), ("solid", "png"), ("dbz", "npz"))
+        for p, old, new, _src, action in plan:
+            if action == "drop-dup":
+                p.unlink()
+                for k, ext in kinds:
+                    q = fetch.processed_path(data, st, old, k, ext)
+                    if q.exists():
+                        q.unlink()
+            elif action == "rename":
+                target = fetch.raw_path(data, st, new)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                p.replace(target)
+                for k, ext in kinds:
+                    q = fetch.processed_path(data, st, old, k, ext)
+                    if q.exists():
+                        d = fetch.processed_path(data, st, new, k, ext)
+                        d.parent.mkdir(parents=True, exist_ok=True)
+                        q.replace(d)
+
+        # ---- รอบที่ 3: สร้าง index CSV ใหม่จากไฟล์ที่เหลือจริง ----
+        # แถวซ้ำ / แถวที่หายไปจาก merge conflict จะหายไปในตัว
+        log = pipeline.log_path(data, st)
+        if log.exists():
+            log.unlink()
+        smask = strip.load_static_mask(pipeline.static_mask_path(data, st))
+        clutter = pipeline.load_clutter(data, st)
+        rows = 0
+        for p in sorted((data / "raw" / st.code).rglob("*.jpg")):
+            stamp = _stamp_from_name(p)
+            full = full_stamp.get(stamp, stamp)   # เวลาที่มีวินาทีจริงจาก footer
+            img = Image.open(p).convert("RGB")
+            pal_rgb, pal_dbz = pipeline.get_palette(data, st, img)
+            res = _strip_frame(img, st, pal_rgb, smask)
+            qc_row = {}
+            if st.qc:
+                res, rep = qcmod.apply_qc(res, st, clutter=clutter, when=full, **st.qc_params)
+                qc_row = rep.as_row()
+            if "alpha" in outputs:
+                _save(_render(res, st, pal_rgb, bg, "alpha"),
+                      fetch.processed_path(data, st, stamp, "alpha"))
+            if "solid" in outputs:
+                _save(_render(res, st, pal_rgb, bg, "solid"),
+                      fetch.processed_path(data, st, stamp, "solid"))
+            dbz = strip.to_dbz(res, pal_dbz)
+            pipeline.append_log(data, st, {
+                "station": st.code,
+                "timestamp_utc": full.strftime("%Y-%m-%d %H:%M:%S"),
+                "timestamp_th": fetch.th_time(full).strftime("%Y-%m-%d %H:%M:%S"),
+                "timestamp_source": "ocr-repaired",
+                "coverage_pct": round(res["coverage_pct"], 4),
+                "max_dbz": round(float(np.nanmax(dbz)), 1) if res["mask"].any() else "",
+                "echo_px": int(res["mask"].sum()),
+                "echo_px_ge35": int(np.nansum(dbz >= 35)),
+                "sha256": hashlib.sha256(p.read_bytes()).hexdigest()[:16],
+                "raw_file": str(p.relative_to(data)),
+                **qc_row,
+            })
+            rows += 1
+        print("[ok]   {}: เขียน index ใหม่ {} แถว -> {}".format(st.code, rows, log))
     return 0
 
 
@@ -192,6 +359,12 @@ def main(argv=None) -> int:
     pr = sub.add_parser("prune", help="ลบไฟล์เก่าออกจาก repo")
     pr.add_argument("--keep-days", type=int, default=7)
     pr.set_defaults(func=cmd_prune)
+
+    rp = sub.add_parser("repair", help="แก้เวลาที่ OCR อ่านผิด + ลบไฟล์ซ้ำ + สร้าง index ใหม่")
+    rp.add_argument("--apply", action="store_true", help="ลงมือแก้จริง (ไม่ใส่ = dry-run)")
+    rp.add_argument("--outputs", default="alpha,solid")
+    rp.add_argument("--background", default="0,0,0")
+    rp.set_defaults(func=cmd_repair)
 
     args = p.parse_args(argv)
     return args.func(args)
