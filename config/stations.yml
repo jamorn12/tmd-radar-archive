@@ -1,0 +1,79 @@
+# สถานีเรดาร์ TMD ที่ต้องการ archive
+# เพิ่มสถานีใหม่ = เพิ่ม block ใหม่ + ตั้ง enabled: true
+#
+# geometry อ้างอิงจากภาพ 800x800 ของ TMD (วัดจากภาพจริง 2026-09-02)
+#   center_px      : พิกัด pixel ของจุดตั้งสถานี (จุดตัดเส้น crosshair สีแดง)
+#   km_per_px      : สเกลจาก range ring 240 km
+#   plot_box       : กรอบพื้นที่แผนที่ (left, top, right, bottom) — ตัด colorbar และ footer ออก
+#   colorbar_box   : กรอบแถบสี ใช้สกัด palette
+#   footer_box     : กรอบข้อความล่างภาพ ใช้ OCR อ่านเวลา
+
+defaults:
+  n_colorbar_bands: 23
+  dbz_top: 66.5
+  dbz_bottom: 10.5
+  lab_tolerance: 12.0      # ระยะสีสูงสุดใน CIELAB ที่ยังนับว่าเป็น echo (ใช้เฉพาะโหมด v1)
+  min_blob_px: 6           # ลบจุดเล็กกว่านี้ (JPEG noise)
+  drop_top_band: true      # ตัดแถบขาวสุด (>66.5) ทิ้ง เพราะชนกับเส้นขอบ/ตัวอักษรสีขาว
+
+  # โหมดคุณภาพสูง (refine.py) — เปิดไว้เป็นค่า default
+  # ปิดได้ด้วย refine: false ถ้าอยากได้ผลดิบแบบ threshold ตรง ๆ
+  refine: true
+  refine_params:
+    tol_core: 8.0          # threshold เข้ม ใช้หา "แกน" ของ echo
+    tol_edge: 16.0         # threshold หลวม ใช้ได้เฉพาะบริเวณที่ติดกับแกน
+    grow_px: 2             # ขยายจากแกนออกไปได้ไม่เกินกี่ pixel (กู้ขอบที่ anti-alias)
+    min_blob_px: 6
+    close_px: 1            # ปะรอยที่ range ring / ตัวอักษร เจาะทะลุ echo
+    fill_hole_px: 256
+    drop_pale_blobs: 3     # ทิ้งก้อนที่ค่ากลางอยู่ในแถบจางสุด 3 แถบ (= ตัวหนังสือสีขาว)
+    mode_filter: true      # majority vote 3x3 ลบ salt-and-pepper จาก JPEG
+    snap_palette: true     # บังคับสีให้ตรง palette เป๊ะ -> สีเรียบเป็นแถบ
+    soft_edge: 0.6         # ขอบนุ่ม ลดรอยหยักขั้นบันได (0 = ขอบคม)
+
+  # QC สัญญาณผิดปกติ (qc.py) — ตัด radial spike (RFI / sun spike) และ ground clutter
+  # ผลของ QC ถูกบันทึกลง CSV log ทุกเฟรม และภาพ raw ยังเก็บครบ ย้อนกลับมาทำใหม่ได้เสมอ
+  qc: true
+  qc_params:
+    n_az: 720              # ความละเอียดมุมกวาดตอนแปลงเป็น polar (0.5°/bin)
+    r_min_km: 10.0         # ไม่ประเมินในรัศมีนี้ (แถวสถานีมี clutter หนาแน่นเป็นปกติ)
+    support_deg: 2.5       # หน้าต่างมุมที่ใช้ถามว่า "เพื่อนบ้านข้าง ๆ มี echo ไหม"
+    support_gap_deg: 0.5
+    support_thresh: 0.35   # เพื่อนบ้านหนุนน้อยกว่านี้ = โดดเดี่ยวในแนวมุมกวาด
+    min_spike_km: 40.0     # ต้องยาวต่อเนื่องในแนวรัศมีเกินนี้จึงนับเป็น spike
+    bridge_gap_px: 3
+    grow_deg: 1.0          # ขยายด้านข้างเก็บขอบเส้นที่เหลือ
+    grow_support: 0.60
+    min_blob_px: 6
+  clutter_thresh: 0.60     # pixel ที่เป็น echo เกินสัดส่วนนี้ของทุกเฟรม = ไม่ใช่ฝน
+
+stations:
+  PHS:
+    name_th: พิษณุโลก
+    name_en: Phitsanulok
+    enabled: true
+    url: https://weather.tmd.go.th/phs/phs240_latest.jpg
+    loop_gif: https://weather.tmd.go.th/phs/phsloop.gif
+    lat: 16.7765               # ฟิตจากตำแหน่งเมือง 14 แห่ง (residual มัธยฐาน 1.2 กม.)
+    lon: 100.2161              # ** ต่างจากค่าที่เดาไว้เดิม 6.4 กม. — ควรยืนยันกับ TMD อีกครั้ง
+    range_km: 240
+    center_px: [436.01, 391.29]   # ฟิตจากวงรัศมีทั้ง 4 วง (radar_archive.calibrate)
+    km_per_px: 0.66011            # ค่าเดิม 0.6441 ผิด 2.5% = เพี้ยน 6 กม. ที่ขอบ 240 กม.
+    plot_box: [75, 0, 800, 757]
+    colorbar_box: [54, 0, 70, 753]
+    footer_box: [150, 780, 700, 800]
+
+  CRI:
+    name_th: เชียงราย
+    name_en: Chiang Rai
+    enabled: false
+    url: https://weather.tmd.go.th/cri/cri240_latest.jpg
+    loop_gif: https://weather.tmd.go.th/cri/criloop.gif
+    lat: 19.9614
+    lon: 99.8825
+    range_km: 240
+    center_px: null            # ยังไม่ได้วัด — รัน `python -m radar_archive.calibrate CRI` ก่อนเปิดใช้
+    km_per_px: null
+    plot_box: [75, 0, 800, 757]
+    colorbar_box: [54, 0, 70, 753]
+    footer_box: [150, 780, 700, 800]
