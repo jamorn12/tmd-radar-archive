@@ -56,6 +56,11 @@ jobs:
             --outputs alpha,solid \
             --background 0,0,0
 
+      - name: Generate Nowcast Forecast
+        if: ${{ github.event.inputs.mode != 'repair' }}
+        run: |
+          python -m radar_archive.nowcast --station PHS --engine light --out data/nowcast
+
       - name: Repair Archive (manual only)
         if: ${{ github.event.inputs.mode == 'repair' }}
         run: |
@@ -70,7 +75,7 @@ jobs:
             echo "No changes to commit"
             exit 0
           fi
-          MSG="archive: update radar data [skip ci]"
+          MSG="archive: update radar data & nowcast [skip ci]"
           if [ "${{ github.event.inputs.mode }}" = "repair" ]; then
             MSG="repair: fix OCR timestamps, drop duplicate frames, rebuild index [skip ci]"
           fi
