@@ -1,0 +1,1254 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C1524">
+<meta name="description" content="เรดาร์พิษณุโลกของกรมอุตุนิยมวิทยา ตัดพื้นหลังแล้ว พร้อม nowcast แบบ extrapolation ถึง 60 นาที และตัวนับถอยหลังว่าฝนจะถึงตำแหน่งคุณในกี่นาที">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+<title>ทันฝน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* ============================ tokens ============================
+   โหมดสว่างเป็นฐาน แล้ว override ด้วย prefers-color-scheme และ [data-theme]
+   ให้ปุ่มสลับธีมชนะได้ทั้งสองทาง                                        */
+:root{
+  --bg:#E8ECF2; --void:#E0E5EC;
+  --card:rgba(255,255,255,.82); --card-solid:#FFFFFF; --card-line:rgba(16,24,40,.09);
+  --text:#0F1728; --text-2:#475568; --text-3:#8494A8;
+  --accent:#0E7C8A; --accent-ink:#0A5F6A; --accent-soft:rgba(14,124,138,.12);
+  --warn:#C2710B; --crit:#D0342C; --ok:#1E9E62;
+  --sheet:rgba(248,250,252,.9);
+  --shadow-s:0 1px 2px rgba(15,23,40,.06), 0 2px 8px rgba(15,23,40,.06);
+  --shadow-l:0 2px 6px rgba(15,23,40,.07), 0 16px 44px rgba(15,23,40,.14);
+  --blur:saturate(180%) blur(20px);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#070B12; --void:#060A11;
+  --card:rgba(19,26,40,.78); --card-solid:#131A28; --card-line:rgba(255,255,255,.09);
+  --text:#EEF3FA; --text-2:#A3B2C7; --text-3:#6F819A;
+  --accent:#3FD9E1; --accent-ink:#8AEDF2; --accent-soft:rgba(63,217,225,.14);
+  --warn:#F2A93C; --crit:#FF6A5E; --ok:#4BD48D;
+  --sheet:rgba(14,20,32,.9);
+  --shadow-s:0 1px 2px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.35);
+  --shadow-l:0 2px 6px rgba(0,0,0,.45), 0 18px 48px rgba(0,0,0,.55);
+}}
+:root[data-theme="dark"]{
+  --bg:#070B12; --void:#060A11;
+  --card:rgba(19,26,40,.78); --card-solid:#131A28; --card-line:rgba(255,255,255,.09);
+  --text:#EEF3FA; --text-2:#A3B2C7; --text-3:#6F819A;
+  --accent:#3FD9E1; --accent-ink:#8AEDF2; --accent-soft:rgba(63,217,225,.14);
+  --warn:#F2A93C; --crit:#FF6A5E; --ok:#4BD48D;
+  --sheet:rgba(14,20,32,.9);
+  --shadow-s:0 1px 2px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.35);
+  --shadow-l:0 2px 6px rgba(0,0,0,.45), 0 18px 48px rgba(0,0,0,.55);
+}
+
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{height:100%; overscroll-behavior:none}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:"IBM Plex Sans Thai","IBM Plex Sans",system-ui,sans-serif;
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  overflow:hidden; touch-action:none;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0; font-weight:600; letter-spacing:-.012em}
+button{font:inherit; color:inherit; border:0; background:none; cursor:pointer}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:8px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--text-3);opacity:.4;border-radius:3px}
+
+/* ============================ shell ============================ */
+#app{position:fixed; inset:0; background:var(--void)}
+#map{position:absolute; inset:0; width:100%; height:100%; display:block; cursor:grab}
+#map.drag{cursor:grabbing}
+#ov{position:absolute; inset:0; width:100%; height:100%; pointer-events:none}
+
+.glass{
+  background:var(--card); border:1px solid var(--card-line); border-radius:18px;
+  box-shadow:var(--shadow-l); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+}
+
+/* ---------------- top bar ---------------- */
+.top{position:absolute; top:12px; left:12px; right:12px; z-index:20;
+  display:flex; gap:10px; align-items:center; pointer-events:none}
+.top > *{pointer-events:auto}
+.brand{display:flex; align-items:center; gap:10px; padding:8px 14px 8px 10px;
+  border-radius:999px; white-space:nowrap; flex:none}
+.mark{width:30px;height:30px;border-radius:9px;flex:none;background:var(--accent-soft);
+  display:grid; place-items:center}
+.mark svg{width:22px;height:22px;display:block}
+.brand b{font-size:15px; font-weight:700; letter-spacing:-.02em}
+.brand i{font-style:normal; font-size:12px; color:var(--text-3); margin-left:2px}
+.grow{flex:1}
+.pill{display:inline-flex; align-items:center; gap:7px; padding:8px 13px; border-radius:999px;
+  font-size:12.5px; white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 20%,transparent)}
+.dot.w{background:var(--warn); box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 20%,transparent)}
+.dot.c{background:var(--crit); box-shadow:0 0 0 3px color-mix(in srgb,var(--crit) 20%,transparent)}
+.iconbtn{width:40px;height:40px;border-radius:999px;display:grid;place-items:center;flex:none}
+.iconbtn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+.iconbtn:hover{color:var(--accent)}
+.iconbtn[aria-pressed="true"]{color:var(--accent); background:var(--accent-soft)}
+
+/* ---------------- left card column ---------------- */
+.rail{position:absolute; top:66px; left:12px; width:352px; max-height:calc(100% - 168px);
+  z-index:15; display:flex; flex-direction:column; gap:10px; overflow-y:auto;
+  padding-bottom:4px; scrollbar-width:thin}
+.card{padding:16px 17px}
+
+/* ETA card */
+.etaTop{display:flex; align-items:center; gap:8px; margin-bottom:2px}
+.etaTop h2{font-size:13px; color:var(--text-2); font-weight:600; letter-spacing:.01em}
+.etaTop .where{margin-left:auto; font-size:12px; color:var(--text-3);
+  max-width:52%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.etaBig{display:flex; align-items:baseline; gap:10px; margin:4px 0 2px; min-height:52px}
+.etaN{font-size:52px; font-weight:600; line-height:1; letter-spacing:-.045em;
+  font-family:"IBM Plex Sans Thai",sans-serif; font-variant-numeric:tabular-nums}
+.etaU{font-size:15px; color:var(--text-2)}
+.etaMsg{font-size:13px; color:var(--text-2); line-height:1.5}
+.etaMsg b{color:var(--text); font-weight:600}
+
+/* 105-minute rain bar */
+.rain{margin-top:14px}
+.rainBars{display:flex; align-items:flex-end; gap:2px; height:52px; position:relative}
+.rainBars::after{content:""; position:absolute; left:0; right:0; bottom:0; height:3px;
+  border-radius:2px; background:var(--card-line)}
+.rainBars i{flex:1; border-radius:3px 3px 1px 1px; min-height:2px; display:block;
+  background:var(--text-3); opacity:.22}
+.rainBars i.has{opacity:1}
+.rainBars i.fc{opacity:.85}
+.rainNow{position:absolute; top:-3px; bottom:-3px; width:2px; border-radius:2px;
+  background:var(--text); opacity:.55}
+.rainAx{display:flex; justify-content:space-between; margin-top:6px;
+  font-size:10.5px; color:var(--text-3)}
+.rainAx b{color:var(--text-2); font-weight:500}
+.rainCap{font-size:11px; color:var(--text-3); margin-top:7px; display:flex;
+  justify-content:space-between; gap:10px; white-space:nowrap}
+.rainCap span:last-child{color:var(--text-2)}
+
+/* location row */
+.locRow{display:flex; gap:7px; margin-top:14px}
+.btn{border:1px solid var(--card-line); background:var(--accent-soft); color:var(--text);
+  border-radius:11px; padding:8px 12px; font-size:12.5px; display:inline-flex;
+  align-items:center; gap:6px; justify-content:center; white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.p{background:var(--accent); border-color:var(--accent); color:#02181C; font-weight:600}
+:root[data-theme="light"] .btn.p, :root:not([data-theme="dark"]) .btn.p{color:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.p{color:#02181C}}
+:root[data-theme="dark"] .btn.p{color:#02181C}
+.btn:disabled{opacity:.5}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+
+/* watch card */
+.cardHead{display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none}
+.cardHead h3{font-size:13px; color:var(--text-2); font-weight:600}
+.cardHead .chev{margin-left:auto; transition:transform .18s}
+.cardHead .chev svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.card.closed .chev{transform:rotate(-90deg)}
+.card.closed .body{display:none}
+.seg{display:flex; margin:11px 0 4px; padding:3px; gap:3px; border-radius:11px;
+  background:var(--accent-soft)}
+.seg button{flex:1; border-radius:8px; font-size:12px; padding:5px 0; color:var(--text-2)}
+.seg button[aria-pressed="true"]{background:var(--card-solid); color:var(--text);
+  box-shadow:var(--shadow-s); font-weight:600}
+.whead{display:grid; grid-template-columns:1fr auto auto; gap:10px;
+  font-size:10.5px; color:var(--text-3); padding:6px 2px 3px; letter-spacing:.03em}
+.whead .v{width:52px; text-align:right} .whead .t{width:38px; text-align:right}
+.wrow{display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center;
+  padding:7px 2px; border-bottom:1px solid var(--card-line); font-size:13px; cursor:pointer}
+.wrow:last-child{border-bottom:0}
+.wrow:hover{color:var(--accent)}
+.wrow .nm{display:flex; align-items:center; gap:7px; min-width:0}
+.wrow .sw{width:9px;height:9px;border-radius:3px;flex:none}
+.wrow .v{font-size:12.5px; width:52px; text-align:right}
+.wrow .t{font-size:11px; color:var(--text-3); width:38px; text-align:right}
+.wrow.off{color:var(--text-3)}
+.wempty{font-size:12.5px; color:var(--text-3); padding:10px 2px}
+
+/* ---------------- tools ---------------- */
+.tools{position:absolute; right:12px; top:66px; z-index:15; display:flex;
+  flex-direction:column; gap:8px}
+.tools .glass{border-radius:14px}
+.zoomer{display:flex; flex-direction:column}
+.zoomer button{width:40px;height:38px;display:grid;place-items:center}
+.zoomer button:first-child{border-bottom:1px solid var(--card-line)}
+.zoomer svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round}
+
+/* legend */
+.legend{position:absolute; left:12px; bottom:88px; z-index:14; padding:9px 11px 8px;
+  border-radius:13px; width:206px}
+.lgbar{height:8px; border-radius:4px}
+.lgsc{display:flex; justify-content:space-between; font-size:9.5px; color:var(--text-3);
+  margin-top:4px}
+.lgcap{font-size:10px; color:var(--text-3); margin-top:2px}
+
+/* ---------------- timeline ---------------- */
+.tl{position:absolute; left:50%; transform:translateX(-50%); bottom:12px; z-index:18;
+  width:min(620px, calc(100% - 24px)); padding:9px 12px 8px; border-radius:16px}
+.tlTop{display:flex; align-items:center; gap:10px}
+.tlTop .now{font-size:13px; font-weight:600}
+.tlTop .kind{font-size:11.5px; color:var(--text-3)}
+.tlTop .kind.fc{color:var(--warn)}
+.play{width:34px;height:34px;border-radius:999px;background:var(--accent);color:#02181C;
+  display:grid;place-items:center;flex:none}
+:root:not([data-theme="dark"]) .play{color:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .play{color:#02181C}}
+.play svg{width:15px;height:15px;fill:currentColor;stroke:none}
+.track{position:relative; height:34px; margin-top:6px; cursor:pointer; touch-action:none}
+.track svg{position:absolute; inset:0; width:100%; height:100%}
+.tlAx{display:flex; margin-top:1px}
+.tlAx span{flex:1; text-align:center; font-size:10px; color:var(--text-3)}
+.tlAx span.on{color:var(--accent); font-weight:600}
+.tlAx span.fc{color:var(--warn)}
+
+/* ---------------- slide-over settings ---------------- */
+.scrim{position:absolute; inset:0; z-index:28; background:rgba(6,10,18,.4);
+  opacity:0; pointer-events:none; transition:opacity .2s}
+.scrim.on{opacity:1; pointer-events:auto}
+.panel{position:absolute; z-index:30; top:0; right:0; bottom:0; width:min(380px,88vw);
+  background:var(--sheet); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+  border-left:1px solid var(--card-line); box-shadow:var(--shadow-l);
+  transform:translateX(101%); transition:transform .24s cubic-bezier(.3,.8,.3,1);
+  overflow-y:auto; padding:16px 18px 28px}
+.panel.on{transform:none}
+.panelHead{display:flex; align-items:center; margin-bottom:6px}
+.panelHead h2{font-size:16px}
+.grp{margin-top:18px}
+.grp > .lab{font-size:11px; font-weight:600; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--text-3); margin-bottom:9px}
+.opts{display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px}
+.opts button{border:1px solid var(--card-line); border-radius:10px; padding:8px 0;
+  font-size:12.5px; color:var(--text-2)}
+.opts button[aria-pressed="true"]{border-color:var(--accent); color:var(--accent);
+  background:var(--accent-soft); font-weight:600}
+.sw{display:flex; align-items:center; gap:10px; padding:8px 0; font-size:13.5px;
+  cursor:pointer; border-bottom:1px solid var(--card-line)}
+.sw:last-of-type{border-bottom:0}
+.sw input{position:absolute;opacity:0;width:0;height:0}
+.knob{width:38px;height:22px;border-radius:999px;background:var(--card-line);flex:none;
+  position:relative;transition:background .15s; margin-left:auto}
+.knob::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;
+  background:var(--card-solid);box-shadow:var(--shadow-s);transition:transform .15s}
+.sw input:checked + .knob{background:var(--accent)}
+.sw input:checked + .knob::after{transform:translateX(16px)}
+.sw input:focus-visible + .knob{outline:2px solid var(--accent); outline-offset:2px}
+.rng{width:100%; accent-color:var(--accent); margin:4px 0 0}
+.rngRow{display:flex; justify-content:space-between; font-size:12px; color:var(--text-2)}
+.note{font-size:12px; color:var(--text-3); line-height:1.55}
+.note b{color:var(--text-2); font-weight:600}
+.lim{font-size:12.2px; color:var(--text-2); line-height:1.55; margin:0; padding-left:16px}
+.lim li{margin-bottom:6px}
+
+/* ---------------- toast ---------------- */
+.toast{position:absolute; z-index:40; left:50%; transform:translate(-50%,-14px); top:64px;
+  padding:10px 15px; border-radius:13px; font-size:12.8px; max-width:min(520px,92vw);
+  opacity:0; pointer-events:none; transition:opacity .2s, transform .2s;
+  display:flex; align-items:center; gap:10px}
+.toast.on{opacity:1; transform:translate(-50%,0); pointer-events:auto}
+.toast.err{color:var(--crit)}
+.toast button{color:var(--text-3); flex:none}
+
+/* ============================ mobile ============================ */
+@media (max-width:860px){
+  .top{top:8px; left:8px; right:8px; gap:7px}
+  .brand i{display:none}
+  .top .pill{min-width:0; overflow:hidden; padding:7px 11px; font-size:12px}
+  .iconbtn{width:36px;height:36px}
+  .tools{right:8px; top:56px}
+  .legend{left:8px; top:auto; bottom:calc(var(--sheet-h,246px) + 118px); width:150px}
+  .legend .lgcap{display:none}
+  .tl{bottom:calc(var(--sheet-h,246px) + 8px); width:calc(100% - 16px)}
+  .rail{position:absolute; top:auto; bottom:0; left:0; right:0; width:auto; max-height:82%;
+    height:var(--sheet-h,246px); padding:0 8px 8px; gap:8px; z-index:22;
+    background:var(--sheet); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+    border-top:1px solid var(--card-line); border-radius:20px 20px 0 0;
+    box-shadow:var(--shadow-l); transition:height .22s cubic-bezier(.3,.8,.3,1);
+    overflow-y:auto}
+  .rail::before{content:""; display:block; flex:none; width:38px; height:4px; border-radius:2px;
+    background:var(--text-3); opacity:.45; margin:8px auto 6px}
+  .rail .card{background:none; border:0; box-shadow:none; backdrop-filter:none; padding:2px 10px 8px}
+  .rail.up{height:82%}
+  .toast{max-width:calc(100% - 28px)}
+  .etaN{font-size:44px}
+}
+@media (max-width:400px){ .legend{width:150px} }
+</style>
+
+<div id="app">
+  <canvas id="map"></canvas>
+  <svg id="ov" aria-hidden="true"></svg>
+
+  <!-- ---------------- top bar ---------------- -->
+  <div class="top">
+    <div class="brand glass">
+      <span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="10" r="7.2" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width="1.3"/>
+        <path d="M12 10 L18 6.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        <circle cx="12" cy="10" r="1.7" fill="currentColor"/>
+        <path d="M7 18.6l1.4 2.9M11.3 18l1.4 2.9M15.6 18.6l1.4 2.9" stroke="currentColor"
+              stroke-width="1.6" stroke-linecap="round" opacity=".8"/>
+      </svg></span>
+      <b>ทันฝน</b><i id="stName">พิษณุโลก</i>
+    </div>
+    <span class="grow"></span>
+    <span class="pill glass" id="fresh"><span class="dot" id="freshDot"></span>
+      <span id="freshTx">—</span></span>
+    <button class="iconbtn glass" id="themeBtn" title="สลับโหมดสว่าง/มืด" aria-label="สลับโหมดสว่างมืด">
+      <svg id="themeIcon" viewBox="0 0 24 24"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+    <button class="iconbtn glass" id="cfgBtn" title="ตั้งค่าและข้อมูล" aria-label="ตั้งค่า">
+      <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+  </div>
+
+  <!-- ---------------- left cards ---------------- -->
+  <div class="rail" id="rail">
+    <section class="card glass" id="etaCard">
+      <div class="etaTop">
+        <h2>ฝนถึงคุณ</h2>
+        <span class="where" id="etaWhere">—</span>
+      </div>
+      <div class="etaBig"><span class="etaN" id="etaN">—</span><span class="etaU" id="etaU"></span></div>
+      <div class="etaMsg" id="etaMsg">กำลังโหลด…</div>
+
+      <div class="rain">
+        <div class="rainBars" id="rainBars"><span class="rainNow" id="rainNow"></span></div>
+        <div class="rainAx" id="rainAx"></div>
+        <div class="rainCap"><span id="rainCap">—</span><span id="rainMax"></span></div>
+      </div>
+
+      <div class="locRow">
+        <button class="btn p" id="geoBtn">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.4"/><circle cx="12" cy="12" r="8"/>
+          <path d="M12 1.6v2.6M12 19.8v2.6M22.4 12h-2.6M4.2 12H1.6"/></svg>ตำแหน่งฉัน</button>
+        <button class="btn" id="pickBtn">แตะแผนที่เพื่อเลือกจุด</button>
+      </div>
+    </section>
+
+    <section class="card glass" id="watchCard">
+      <div class="cardHead" id="watchHead">
+        <h3>รอบตัวคุณ</h3>
+        <span class="chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+      </div>
+      <div class="body">
+        <div class="seg">
+          <button data-when="now" aria-pressed="true">ตอนนี้</button>
+          <button data-when="fc" aria-pressed="false">สูงสุดใน 1 ชม.</button>
+        </div>
+        <div id="wlist"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ---------------- tools ---------------- -->
+  <div class="tools">
+    <div class="glass zoomer">
+      <button id="zIn" aria-label="ซูมเข้า"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button id="zOut" aria-label="ซูมออก"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+    </div>
+    <button class="iconbtn glass" id="fitBtn" title="ดูทั้งโดเมน" aria-label="ดูทั้งโดเมน">
+      <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    </button>
+  </div>
+
+  <!-- ---------------- legend ---------------- -->
+  <div class="legend glass">
+    <div class="lgbar" id="lgbar"></div>
+    <div class="lgsc" id="lgsc"></div>
+    <div class="lgcap" id="lgcap"></div>
+  </div>
+
+  <!-- ---------------- timeline ---------------- -->
+  <div class="tl glass">
+    <div class="tlTop">
+      <button class="play" id="play" aria-label="เล่นภาพเคลื่อนไหว">
+        <svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+      <span class="now" id="tNow">—</span>
+      <span class="kind" id="tKind"></span>
+      <span class="grow"></span>
+      <span class="kind mono" id="tCount"></span>
+    </div>
+    <div class="track" id="track"><svg id="trackSvg" preserveAspectRatio="none" viewBox="0 0 600 34"></svg></div>
+    <div class="tlAx" id="tlAx"></div>
+  </div>
+
+  <!-- ---------------- settings panel ---------------- -->
+  <div class="scrim" id="scrim"></div>
+  <aside class="panel" id="panel" aria-label="ตั้งค่าและข้อมูล">
+    <div class="panelHead">
+      <h2>ตั้งค่าและข้อมูล</h2>
+      <span class="grow"></span>
+      <button class="iconbtn" id="panelX" aria-label="ปิด">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+
+    <div class="grp">
+      <div class="lab">ธีม</div>
+      <div class="opts" id="themeOpts">
+        <button data-t="auto" aria-pressed="true">ตามเครื่อง</button>
+        <button data-t="light" aria-pressed="false">สว่าง</button>
+        <button data-t="dark" aria-pressed="false">มืด</button>
+      </div>
+    </div>
+
+    <div class="grp">
+      <div class="lab">ชั้นข้อมูล</div>
+      <label class="sw">เฟรมพยากรณ์<input type="checkbox" id="lFc" checked><span class="knob"></span></label>
+      <label class="sw">ชื่อเมือง<input type="checkbox" id="lCity" checked><span class="knob"></span></label>
+      <label class="sw">วงรัศมี<input type="checkbox" id="lRing" checked><span class="knob"></span></label>
+      <label class="sw">เส้นทางฝนเข้า<input type="checkbox" id="lPath" checked><span class="knob"></span></label>
+      <label class="sw">แผนที่ฐาน<input type="checkbox" id="lBase" checked><span class="knob"></span></label>
+    </div>
+
+    <div class="grp">
+      <div class="lab">ความทึบของ echo</div>
+      <input class="rng" type="range" min="30" max="100" value="100" id="op">
+      <div class="rngRow"><span>จาง</span><span class="mono" id="opV">100%</span></div>
+    </div>
+
+    <div class="grp">
+      <div class="lab">แสดงตั้งแต่</div>
+      <input class="rng" type="range" min="10" max="45" step="0.5" id="th">
+      <div class="rngRow"><span>เกณฑ์ขั้นต่ำ</span><span class="mono" id="thV">—</span></div>
+      <p class="note" id="thNote" style="margin:7px 0 0"></p>
+    </div>
+
+    <div class="grp">
+      <div class="lab">การแจ้งเตือน</div>
+      <label class="sw">เตือนเมื่อฝนจะถึงใน 30 นาที<input type="checkbox" id="lAlert"><span class="knob"></span></label>
+      <p class="note" id="alertNote" style="margin:7px 0 0"></p>
+    </div>
+
+    <div class="grp">
+      <div class="lab">ข้อจำกัดที่ต้องรู้</div>
+      <ul class="lim">
+        <li><b>หยุดที่ 60 นาที</b> — extrapolation ไม่สร้างและไม่สลายก้อนฝน ในเขตร้อนที่ฝนเกิดและสลายเร็ว
+          ความแม่นตกเร็ว เราวัดเองแล้วได้ CSI 0.40 ที่ 15 นาที เหลือ 0.16 ที่ 60 นาที</li>
+        <li><b>ค่าเป็นขั้น ๆ</b> — ค่า dBZ ถอดจากสีในภาพ จึงหยาบราว 2.5 dBZ และช่วง 44–51 dBZ
+          มีสีซ้ำกัน ใช้ติดตามได้ แต่ไม่เหมาะเอาไปคิดปริมาณน้ำฝนเชิงปริมาณ</li>
+        <li><b>มุมกวาดเดียว</b> — PPI ที่ 0.50° ไม่ใช่ CAPPI ยิ่งไกลลำคลื่นยิ่งสูงจากพื้น
+          ที่ขอบ 240 กม. อยู่สูงกว่าพื้นราว 3–4 กม.</li>
+        <li><b>ไม่มีย้อนหลัง</b> — TMD เขียนทับไฟล์เดิมทุกรอบ คลังเริ่มนับจากวันที่เปิดระบบ</li>
+      </ul>
+    </div>
+
+    <div class="grp">
+      <div class="lab">ที่มา</div>
+      <p class="note" id="srcNote"></p>
+    </div>
+  </aside>
+
+  <div class="toast glass" id="toast"><span id="toastTx"></span>
+    <button id="toastX" aria-label="ปิด">✕</button></div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   ทันฝน — อ่าน latest.json ที่ nowcast.py เขียนไว้ แล้วแสดงผลทั้งหมด
+   หน้าเว็บไม่ฝังค่าคงที่ของเรดาร์ไว้เลย: palette ขอบเขต จำนวนเฟรม เกณฑ์ฝน
+   motion มาจาก manifest ทั้งหมด แก้ฝั่งเซิร์ฟเวอร์แล้วหน้าเปลี่ยนตาม
+   ===================================================================== */
+const MANIFEST = "nowcast/PHS/latest.json";
+const EMBEDDED = null;               // ชุดสำรองที่ฝังมากับหน้า (หรือ null)
+const BASE_IMG = { dark:"base_dark.png", light:"base_light.png" };
+const R_EARTH  = 6371.0088;                  // ต้องตรงกับ grid.grid_latlon() ฝั่ง Python
+
+/* เมืองในโดเมน — เก็บเป็น lat/lon แล้วให้โค้ดฉายเอง จะได้ไม่ผูกกับขนาดภาพ
+   rank 1 = จังหวัดใหญ่ที่ต้องเห็นเสมอ · 2 = จังหวัดอื่น · 3 = อำเภอสำคัญ */
+const CITIES = [
+  ["พิษณุโลก",16.8211,100.2659,1], ["นครสวรรค์",15.7047,100.1372,1],
+  ["เพชรบูรณ์",16.4190,101.1591,1], ["ตาก",16.8839,99.1258,1],
+  ["สุโขทัย",17.0069,99.8265,1],    ["อุตรดิตถ์",17.6200,100.0993,1],
+  ["ลำปาง",18.2855,99.5122,1],      ["เลย",17.4860,101.7223,1],
+  ["พิจิตร",16.4429,100.3487,2],    ["กำแพงเพชร",16.4828,99.5222,2],
+  ["แพร่",18.1459,100.1404,2],      ["น่าน",18.7756,100.7730,2],
+  ["ลำพูน",18.5744,99.0087,2],      ["อุทัยธานี",15.3795,100.0246,2],
+  ["ชัยนาท",15.1851,100.1251,2],    ["สิงห์บุรี",14.8878,100.4017,2],
+  ["ลพบุรี",14.7995,100.6534,2],    ["ชัยภูมิ",15.8068,102.0317,2],
+  ["หล่มสัก",16.7742,101.2447,3],   ["วิเชียรบุรี",15.6558,101.1086,3],
+  ["แม่สอด",16.7150,98.5731,3],     ["สวรรคโลก",17.3106,99.8228,3],
+  ["ตะพานหิน",16.2264,100.4166,3],  ["บ้านหมี่",15.0322,100.6119,3],
+];
+
+const $ = id => document.getElementById(id);
+let D=null, LIVE=false, BASEURL="", N=0, NOW_I=0, IDX=0;
+let FIELD=[], ECHO=[], LOADED=false;
+let GN=241, HALF=240, KMPX=2, STEP=15, THR=12;
+let CITY=[], ME=null, TIMER=null, ALERTED=null, RAF=0;
+const baseImg = { dark:new Image(), light:new Image() };
+let baseReady = false, theme = "auto";
+
+/* ---------------------------------------------------------------- utils */
+const pad = n => String(n).padStart(2,"0");
+const hhmm = ep => { const d=new Date(ep*1000); return pad(d.getHours())+":"+pad(d.getMinutes()); };
+const MTH = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+function thDate(ep){ const d=new Date(ep*1000);
+  return d.getDate()+" "+MTH[d.getMonth()]+" "+(d.getFullYear()+543); }
+const dbz2mm = (d,a,b) => Math.pow(Math.pow(10,d/10)/a, 1/b);
+function rainWord(mm){ return mm<1?"ฝนเล็กน้อย":mm<10?"ฝนปานกลาง":mm<35?"ฝนหนัก":"ฝนหนักมาก"; }
+function bearingTx(deg){
+  const n=["เหนือ","ตะวันออกเฉียงเหนือ","ตะวันออก","ตะวันออกเฉียงใต้","ใต้",
+           "ตะวันตกเฉียงใต้","ตะวันตก","ตะวันตกเฉียงเหนือ"];
+  return n[Math.round((((deg%360)+360)%360)/45)%8];
+}
+let toastT = 0;
+function toast(msg, err){
+  $("toastTx").textContent = msg;
+  $("toast").className = "toast glass on" + (err?" err":"");
+  clearTimeout(toastT); toastT = setTimeout(()=>$("toast").className="toast glass", 9000);
+}
+$("toastX").onclick = ()=>{ $("toast").className = "toast glass"; };
+
+/* --------------------------------------------------------------- geometry
+   azimuthal equidistant ไป-กลับ — ผกผันกันกับ grid.grid_latlon() ฝั่ง Python
+   ใช้ทรงกลมรัศมีเฉลี่ยเหมือนกัน คลาดจาก ellipsoid ไม่ถึง 1 กม. ที่ขอบ 240 กม.
+   ซึ่งเล็กกว่าครึ่งเซลล์ จึงไม่มีผลกับการอ่านค่า                              */
+function project(lat, lon){
+  const p0=D.lat0*Math.PI/180, l0=D.lon0*Math.PI/180;
+  const p=lat*Math.PI/180, dl=lon*Math.PI/180-l0;
+  const cosc = Math.sin(p0)*Math.sin(p) + Math.cos(p0)*Math.cos(p)*Math.cos(dl);
+  const c = Math.acos(Math.max(-1,Math.min(1,cosc)));
+  const k = Math.abs(c)<1e-12 ? R_EARTH : R_EARTH*c/Math.sin(c);
+  const E = k*Math.cos(p)*Math.sin(dl);
+  const Nn = k*(Math.cos(p0)*Math.sin(p) - Math.sin(p0)*Math.cos(p)*Math.cos(dl));
+  return { E, N:Nn, km:Math.hypot(E,Nn) };
+}
+function unproject(E, Nn){
+  const p0=D.lat0*Math.PI/180, l0=D.lon0*Math.PI/180;
+  const rho=Math.hypot(E,Nn);
+  if (rho < 1e-9) return { lat:D.lat0, lon:D.lon0 };
+  const c=rho/R_EARTH;
+  const lat = Math.asin(Math.cos(c)*Math.sin(p0) + Nn*Math.sin(c)*Math.cos(p0)/rho);
+  const lon = l0 + Math.atan2(E*Math.sin(c),
+                              rho*Math.cos(p0)*Math.cos(c) - Nn*Math.sin(p0)*Math.sin(c));
+  return { lat:lat*180/Math.PI, lon:lon*180/Math.PI };
+}
+const colOf = E => Math.round((E + HALF)/KMPX);
+const rowOf = Nn => Math.round((HALF - Nn)/KMPX);      // แถว 0 ของ PNG = เหนือสุด
+
+function valueAt(i, E, Nn, radiusKm){
+  const f = FIELD[i]; if (!f) return null;
+  const r = Math.max(0, Math.round(radiusKm/KMPX));
+  const c0 = colOf(E), r0 = rowOf(Nn);
+  let mx = null;
+  for (let dr=-r; dr<=r; dr++) for (let dc=-r; dc<=r; dc++){
+    if (dr*dr + dc*dc > r*r) continue;
+    const rr=r0+dr, cc=c0+dc;
+    if (rr<0||rr>=GN||cc<0||cc>=GN) continue;
+    const v=f[rr*GN+cc];
+    if (!isNaN(v) && (mx===null || v>mx)) mx=v;
+  }
+  return mx;
+}
+
+/* ============================ view / map ============================ */
+const cv = $("map"), ctx = cv.getContext("2d");
+const view = { cx:0, cy:0, scale:1, min:1, max:1 };   // cx,cy = กม. ที่จุดกึ่งกลางจอ (cy: ใต้ = บวก)
+let W=0, H=0, DPR=1;
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio||1, 2.5);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+  const fit = Math.min(W,H)/(2*(HALF+8));
+  view.min = fit*0.85; view.max = fit*14;
+  if (view.scale <= 0 || !isFinite(view.scale)) view.scale = fit;
+  view.scale = Math.min(view.max, Math.max(view.min, view.scale));
+  draw();
+}
+const toScreenX = E  => W/2 + (E - view.cx)*view.scale;
+const toScreenY = Nn => H/2 + (-Nn - view.cy)*view.scale;
+const toKmE = x => (x - W/2)/view.scale + view.cx;
+const toKmN = y => -((y - H/2)/view.scale + view.cy);
+
+function clampView(){
+  const lim = HALF + 40;
+  view.cx = Math.max(-lim, Math.min(lim, view.cx));
+  view.cy = Math.max(-lim, Math.min(lim, view.cy));
+  view.scale = Math.min(view.max, Math.max(view.min, view.scale));
+}
+function fitAll(){ view.cx=0; view.cy=0; view.scale=Math.min(W,H)/(2*(HALF+8)); draw(); }
+
+function zoomAbout(factor, px, py){
+  const e0=toKmE(px), n0=toKmN(py);
+  view.scale = Math.min(view.max, Math.max(view.min, view.scale*factor));
+  view.cx = e0 - (px - W/2)/view.scale;
+  view.cy = -n0 - (py - H/2)/view.scale;
+  clampView(); draw();
+}
+
+function draw(){
+  if (RAF) return;
+  RAF = requestAnimationFrame(()=>{ RAF=0; paint(); });
+}
+function paint(){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = getComputedStyle(document.body).getPropertyValue("--void") || "#000";
+  ctx.fillRect(0,0,W,H);
+  if (!D) return;
+
+  ctx.save();
+  ctx.translate(W/2,H/2); ctx.scale(view.scale,view.scale); ctx.translate(-view.cx,-view.cy);
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+
+  const img = baseImg[activeTheme()];
+  if (baseReady && img.complete && img.naturalWidth && $("lBase").checked)
+    ctx.drawImage(img, -HALF, -HALF, 2*HALF, 2*HALF);
+
+  const half = HALF + KMPX/2;                       // PNG ครอบคลุมถึงขอบเซลล์ ไม่ใช่จุดกึ่งกลาง
+  const f = D.frames[IDX], e = ECHO[IDX];
+  const show = e && (f.kind !== "nowcast" || $("lFc").checked);
+  if (show){
+    ctx.globalAlpha = (+$("op").value/100) * (f.kind==="nowcast" ? .88 : 1);
+    ctx.drawImage(e, -half, -half, 2*half, 2*half);
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+  overlay();
+}
+
+/* ---------------------------------------------------------------- overlay */
+function labelBoxes(){ return []; }
+function overlay(){
+  if (!D) return;
+  const ov = $("ov");
+  ov.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const css = getComputedStyle(document.body);
+  const ink = css.getPropertyValue("--text").trim();
+  const dim = css.getPropertyValue("--text-3").trim();
+  const acc = css.getPropertyValue("--accent").trim();
+  const halo = css.getPropertyValue("--bg").trim();
+  let s = "";
+
+  if ($("lRing").checked){
+    for (const km of [60,120,180,240]){
+      const r = km*view.scale;
+      if (r < 26 || r > Math.hypot(W,H)) continue;
+      const wantLabel = r > 70;
+      s += `<circle cx="${toScreenX(0).toFixed(1)}" cy="${toScreenY(0).toFixed(1)}" r="${r.toFixed(1)}"
+             fill="none" stroke="${dim}" stroke-opacity=".38" stroke-width="1" stroke-dasharray="2 5"/>`;
+      if (wantLabel)
+        s += `<text x="${toScreenX(0).toFixed(1)}" y="${(toScreenY(0)-r+13).toFixed(1)}" fill="${dim}"
+               font-size="10" text-anchor="middle" font-family="IBM Plex Mono,monospace">${km} กม.</text>`;
+    }
+  }
+  // ขอบโดเมน — นอกวงนี้คือ "ไม่มีข้อมูล" ไม่ใช่ "ไม่มีฝน"
+  s += `<circle cx="${toScreenX(0).toFixed(1)}" cy="${toScreenY(0).toFixed(1)}"
+         r="${(HALF*view.scale).toFixed(1)}" fill="none" stroke="${dim}" stroke-opacity=".5" stroke-width="1.2"/>`;
+
+  // สถานีเรดาร์
+  s += `<circle cx="${toScreenX(0).toFixed(1)}" cy="${toScreenY(0).toFixed(1)}" r="4"
+         fill="${acc}" stroke="${halo}" stroke-width="1.6"/>`;
+
+  // เส้นทางฝนเข้า
+  if (ME && ME.eta && ME.eta.from && $("lPath").checked){
+    const a = ME.eta.from, warn = css.getPropertyValue("--warn").trim();
+    s += `<line x1="${toScreenX(a.E).toFixed(1)}" y1="${toScreenY(a.N).toFixed(1)}"
+           x2="${toScreenX(ME.E).toFixed(1)}" y2="${toScreenY(ME.N).toFixed(1)}"
+           stroke="${warn}" stroke-width="2.4" stroke-dasharray="7 6" stroke-linecap="round" opacity=".95"/>`;
+    s += `<circle cx="${toScreenX(a.E).toFixed(1)}" cy="${toScreenY(a.N).toFixed(1)}" r="6"
+           fill="none" stroke="${warn}" stroke-width="2.4"/>`;
+  }
+
+  // ชื่อเมือง — จัดวางแบบไม่ให้ป้ายทับกัน เรียงตามความสำคัญก่อน
+  if ($("lCity").checked){
+    const placed = [];
+    const fits = (x,y,w,h)=>{
+      for (const b of placed)
+        if (x < b.x+b.w && x+w > b.x && y < b.y+b.h && y+h > b.y) return false;
+      return true;
+    };
+    const maxRank = view.scale > 3.2 ? 3 : view.scale > 1.6 ? 2 : 1;
+    for (const c of CITY){
+      if (c.rank > maxRank) continue;
+      const x = toScreenX(c.E), y = toScreenY(c.N);
+      if (x < -60 || x > W+60 || y < -30 || y > H+30) continue;
+      const w = c.name.length*8.4 + 14, h = 17;
+      if (!fits(x+7, y-9, w, h)) continue;
+      placed.push({x:x+7, y:y-9, w, h});
+      s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="${ink}" fill-opacity=".55"/>`;
+      s += `<text x="${(x+8).toFixed(1)}" y="${(y+4).toFixed(1)}" fill="${ink}" fill-opacity=".9"
+             font-size="12.5" paint-order="stroke" stroke="${halo}" stroke-width="3.4"
+             stroke-linejoin="round" font-family="IBM Plex Sans Thai,sans-serif">${c.name}</text>`;
+    }
+  }
+
+  // ตำแหน่งของเรา
+  if (ME){
+    const x = toScreenX(ME.E).toFixed(1), y = toScreenY(ME.N).toFixed(1);
+    s += `<circle cx="${x}" cy="${y}" r="15" fill="${acc}" fill-opacity=".2"/>`;
+    s += `<circle cx="${x}" cy="${y}" r="6.5" fill="${acc}" stroke="${halo}" stroke-width="2.6"/>`;
+  }
+  ov.innerHTML = s;
+}
+
+/* ============================ pointer ============================ */
+const pts = new Map();
+let dragged = false, pinch0 = 0, scale0 = 1;
+cv.addEventListener("pointerdown", e=>{
+  cv.setPointerCapture(e.pointerId);
+  pts.set(e.pointerId, {x:e.clientX, y:e.clientY, x0:e.clientX, y0:e.clientY});
+  if (pts.size === 2){
+    const [a,b] = [...pts.values()];
+    pinch0 = Math.hypot(a.x-b.x, a.y-b.y) || 1; scale0 = view.scale;
+  }
+  dragged = false; cv.classList.add("drag");
+});
+cv.addEventListener("pointermove", e=>{
+  const p = pts.get(e.pointerId); if (!p) return;
+  const dx = e.clientX - p.x, dy = e.clientY - p.y;
+  p.x = e.clientX; p.y = e.clientY;
+  if (Math.hypot(e.clientX-p.x0, e.clientY-p.y0) > 6) dragged = true;
+  if (pts.size === 1){
+    view.cx -= dx/view.scale; view.cy -= dy/view.scale; clampView(); draw();
+  } else if (pts.size === 2){
+    const [a,b] = [...pts.values()];
+    const d = Math.hypot(a.x-b.x, a.y-b.y) || 1;
+    const r = cv.getBoundingClientRect();
+    const mx = (a.x+b.x)/2 - r.left, my = (a.y+b.y)/2 - r.top;
+    const target = Math.min(view.max, Math.max(view.min, scale0*d/pinch0));
+    zoomAbout(target/view.scale, mx, my);
+    dragged = true;
+  }
+});
+function endPointer(e){
+  const p = pts.get(e.pointerId);
+  pts.delete(e.pointerId);
+  if (!pts.size) cv.classList.remove("drag");
+  if (p && !dragged && e.type === "pointerup"){
+    const r = cv.getBoundingClientRect();
+    pickAt(e.clientX - r.left, e.clientY - r.top);
+  }
+}
+cv.addEventListener("pointerup", endPointer);
+cv.addEventListener("pointercancel", endPointer);
+cv.addEventListener("wheel", e=>{
+  e.preventDefault();
+  const r = cv.getBoundingClientRect();
+  zoomAbout(Math.exp(-e.deltaY*0.0016), e.clientX-r.left, e.clientY-r.top);
+}, {passive:false});
+cv.addEventListener("dblclick", e=>{
+  const r = cv.getBoundingClientRect();
+  zoomAbout(1.8, e.clientX-r.left, e.clientY-r.top);
+});
+$("zIn").onclick  = ()=>zoomAbout(1.5, W/2, H/2);
+$("zOut").onclick = ()=>zoomAbout(1/1.5, W/2, H/2);
+$("fitBtn").onclick = fitAll;
+$("pickBtn").onclick = ()=>toast("แตะจุดไหนบนแผนที่ก็ได้ แล้วตัวเลขจะคิดใหม่ให้จุดนั้น");
+
+function pickAt(px, py){
+  if (!D) return;
+  const E = toKmE(px), Nn = toKmN(py);
+  if (Math.hypot(E,Nn) > HALF){ toast("จุดนั้นอยู่นอกรัศมี 240 กม. ของเรดาร์", true); return; }
+  const near = CITY.find(c => Math.hypot(c.E-E, c.N-Nn) < Math.max(6, 14/view.scale));
+  if (near) return setLocation(near);
+  const ll = unproject(E, Nn);
+  setLocation({ name:"จุดที่เลือก", lat:ll.lat, lon:ll.lon, E, N:Nn, km:Math.hypot(E,Nn), rank:0 });
+}
+
+/* ============================ theme ============================ */
+const mq = window.matchMedia("(prefers-color-scheme: dark)");
+function activeTheme(){ return theme === "auto" ? (mq.matches ? "dark":"light") : theme; }
+function applyTheme(t){
+  theme = t;
+  if (t === "auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", t);
+  document.querySelectorAll("#themeOpts button").forEach(b=>
+    b.setAttribute("aria-pressed", String(b.dataset.t === t)));
+  $("themeIcon").innerHTML = activeTheme() === "dark"
+    ? '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M4.2 12H1.6M22.4 12h-2.6M6.3 6.3L4.5 4.5M19.5 19.5l-1.8-1.8M17.7 6.3l1.8-1.8M4.5 19.5l1.8-1.8"/>'
+    : '<path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+  try{ localStorage.setItem("tanfon.theme", t); }catch(e){}
+  buildLegend(); draw();
+}
+$("themeBtn").onclick = ()=> applyTheme(activeTheme()==="dark" ? "light" : "dark");
+document.querySelectorAll("#themeOpts button").forEach(b=> b.onclick = ()=>applyTheme(b.dataset.t));
+mq.addEventListener("change", ()=>{ if (theme==="auto"){ buildLegend(); draw(); } });
+
+/* ============================ load ============================ */
+async function boot(){
+  try{ applyTheme(localStorage.getItem("tanfon.theme") || "auto"); }catch(e){ applyTheme("auto"); }
+
+  let live = false;
+  try{
+    const r = await fetch(MANIFEST + "?t=" + Date.now(), {cache:"no-store"});
+    if (!r.ok) throw new Error(r.status);
+    D = await r.json(); live = LIVE = true;
+    BASEURL = MANIFEST.replace(/[^/]*$/, "");
+  }catch(e){
+    if (!EMBEDDED){ toast("โหลด latest.json ไม่ได้ และไม่มีข้อมูลสำรองในหน้า", true); return; }
+    D = EMBEDDED.manifest; BASEURL = "";
+  }
+  const m = /lat_0=([-\d.]+).*?lon_0=([-\d.]+)/.exec(D.projection) || [];
+  D.lat0 = parseFloat(m[1]); D.lon0 = parseFloat(m[2]);
+  GN = D.grid[0]; KMPX = D.kmperpixel; HALF = (GN-1)*KMPX/2; STEP = D.timestep_min;
+  N = D.frames.length;
+  NOW_I = Math.max(0, D.frames.findIndex(f => f.offset_min === 0));
+  IDX = NOW_I; THR = D.wet_threshold_dbz;
+
+  $("stName").textContent = D.station === "PHS" ? "พิษณุโลก" : D.station;
+  $("th").value = THR; $("thV").textContent = (+THR).toFixed(1)+" dBZ";
+  $("thNote").textContent = "เกณฑ์ที่ระบบใช้ตัดสินว่า “มีฝน” คือ " + D.wet_threshold_dbz +
+    " dBZ (" + dbz2mm(D.wet_threshold_dbz, D.zr[0], D.zr[1]).toFixed(1) + " มม./ชม.)";
+  $("srcNote").innerHTML =
+    (D.source || "กรมอุตุนิยมวิทยา (TMD)") + " · สถานี " + D.station +
+    "<br>aeqd รัศมี " + HALF + " กม. · กริด " + GN + "×" + GN + " @ " + KMPX + " กม." +
+    "<br>Z = " + D.zr[0] + "·R^" + D.zr[1] +
+    "<br>motion: " + D.motion.method + " · " + (D.motion.extrapolation||"extrapolation") +
+    "<br>QC ตัด speckle " + D.qc.despeckled_cells + " เซลล์" +
+    (live ? "" : "<br><b>ข้อมูลตัวอย่างที่ฝังมากับหน้า ไม่อัปเดตตามเวลาจริง</b>");
+
+  buildLegend(); buildCities(); buildTrack();
+  baseImg.dark.onload = baseImg.light.onload = ()=>{ baseReady = true; draw(); };
+  baseImg.dark.src = BASE_IMG.dark; baseImg.light.src = BASE_IMG.light;
+
+  resize();
+  await loadFrames();
+  setLocation(CITY.find(c=>c.name==="พิษณุโลก") || CITY[0]);
+  render(IDX); freshness(); setInterval(freshness, 30000);
+  if (!live)
+    toast("ข้อมูลตัวอย่างที่ฝังมากับหน้า · เฟรมจริง " + thDate(D.frames[NOW_I].t) + " ไม่อัปเดตตามเวลาจริง");
+}
+
+async function loadFrames(){
+  const tmp = document.createElement("canvas");
+  tmp.width = GN; tmp.height = GN;
+  const tc = tmp.getContext("2d", {willReadFrequently:true});
+  /* สีจาก manifest -> dBZ : ตรงเป๊ะเพราะ colorize() ใช้ตารางเดียวกัน
+     สีซ้ำ (มี 4 คู่ในตาราง TMD) ให้ค่าต่ำกว่าไว้ก่อน — เดาแบบปลอดภัย */
+  const LUT = new Map();
+  D.levels_rgb.forEach((c,i)=>{
+    const k=(c[0]<<16)|(c[1]<<8)|c[2];
+    if (!LUT.has(k)) LUT.set(k, D.levels_dbz[i]);
+  });
+  FIELD = new Array(N);
+  await Promise.all(D.frames.map((f,i)=> new Promise(res=>{
+    const im = new Image(); im.crossOrigin = "anonymous";
+    im.onload = ()=>{
+      tc.clearRect(0,0,GN,GN); tc.drawImage(im,0,0,GN,GN);
+      const px = tc.getImageData(0,0,GN,GN).data;
+      const out = new Float32Array(GN*GN);
+      for (let p=0,q=0; p<px.length; p+=4,q++){
+        if (px[p+3] < 128){ out[q]=NaN; continue; }
+        const k=(px[p]<<16)|(px[p+1]<<8)|px[p+2];
+        const v = LUT.get(k);
+        out[q] = (v===undefined) ? nearestDbz(px[p],px[p+1],px[p+2]) : v;
+      }
+      FIELD[i] = out; res();
+    };
+    im.onerror = ()=>{ FIELD[i]=null; res(); };
+    im.src = (EMBEDDED && !LIVE) ? EMBEDDED.img[f.url]
+                                 : BASEURL + f.url + (LIVE ? "?t="+D.generated : "");
+  })));
+  LOADED = true;
+  rasterise();
+}
+function nearestDbz(r,g,b){
+  let best=1e9, out=NaN;
+  D.levels_rgb.forEach((c,i)=>{
+    const d=(c[0]-r)**2+(c[1]-g)**2+(c[2]-b)**2;
+    if (d<best){ best=d; out=D.levels_dbz[i]; }
+  });
+  return out;
+}
+/* วาดทุกเฟรมเป็น canvas ไว้ล่วงหน้า ทำใหม่เฉพาะตอนเปลี่ยนเกณฑ์ dBZ
+   แพนกับซูมจึงเป็นแค่ drawImage — ลื่นแม้บนมือถือ */
+function rasterise(){
+  const thr = +$("th").value;
+  ECHO = FIELD.map(fld=>{
+    if (!fld) return null;
+    const c = document.createElement("canvas"); c.width=GN; c.height=GN;
+    const g = c.getContext("2d");
+    const im = g.createImageData(GN,GN);
+    const lv = D.levels_dbz, rgb = D.levels_rgb;
+    for (let q=0,p=0; q<fld.length; q++,p+=4){
+      const v = fld[q];
+      if (isNaN(v) || v < thr) continue;
+      let k=0; while (k < lv.length-1 && lv[k+1] <= v) k++;
+      im.data[p]=rgb[k][0]; im.data[p+1]=rgb[k][1]; im.data[p+2]=rgb[k][2]; im.data[p+3]=255;
+    }
+    g.putImageData(im,0,0);
+    return c;
+  });
+}
+
+/* ============================ chrome ============================ */
+function buildLegend(){
+  if (!D) return;
+  const lv=D.levels_dbz, rgb=D.levels_rgb, n=lv.length, lo=lv[0], hi=lv[n-1];
+  $("lgbar").style.background = "linear-gradient(90deg," + rgb.map((c,i)=>
+    `rgb(${c[0]},${c[1]},${c[2]}) ${((lv[i]-lo)/(hi-lo)*100).toFixed(1)}%`).join(",") + ")";
+  $("lgsc").innerHTML = [0,1,2,3,4].map(k=>{
+    const v = lo + (hi-lo)*k/4;
+    return `<span>${v.toFixed(0)}</span>`;
+  }).join("");
+  /* ค่า มม./ชม. ที่ปลายบน (64 dBZ) สูงจนไม่มีความหมายในทางปฏิบัติ
+     บอกเป็นชื่อชั้นความแรงแทน อ่านแล้วใช้ตัดสินใจได้จริงกว่า */
+  $("lgcap").innerHTML = '<span style="display:flex;justify-content:space-between">' +
+    ["เบา","ปานกลาง","หนัก","หนักมาก"].map(w=>`<span>${w}</span>`).join("") + "</span>";
+  $("lgbar").title = "dBZ " + lo.toFixed(1) + " ถึง " + hi.toFixed(1);
+}
+function buildCities(){
+  CITY = CITIES.map(([name,lat,lon,rank])=>({name, lat, lon, rank, ...project(lat,lon)}))
+               .filter(c => c.km <= HALF - 4)
+               .sort((a,b)=> a.rank-b.rank || a.km-b.km);
+}
+function freshness(){
+  if (!D) return;
+  const base = D.frames[NOW_I].t;
+  const age = LIVE ? (Date.now()/1000 - base)/60 : D.age_min;
+  const cls = age > D.stale_after_min ? " c" : age > 20 ? " w" : "";
+  $("freshDot").className = "dot"+cls;
+  const tight = window.innerWidth < 560;      // จอแคบ ตัดคำให้พอดีแถบบน
+  $("freshTx").textContent = hhmm(base) + (tight ? " · " : " น. · ") +
+    (age < 1 ? "เมื่อครู่" : Math.round(age) + (tight ? " นาที" : " นาทีที่แล้ว"));
+  $("fresh").title = age > D.stale_after_min ? "ข้อมูลเก่ากว่าเกณฑ์ อาจไม่ทันการณ์" : "";
+}
+
+function render(i){
+  IDX = i;
+  const f = D.frames[i], fc = f.kind === "nowcast";
+  $("tNow").textContent = hhmm(f.t) + " น.";
+  $("tKind").textContent = fc ? "พยากรณ์ +"+f.offset_min+" นาที"
+                              : (i===NOW_I ? "ภาพล่าสุด" : f.offset_min+" นาที");
+  $("tKind").className = "kind" + (fc ? " fc" : "");
+  $("tCount").textContent = (i+1)+"/"+N;
+  document.querySelectorAll("#tlAx span").forEach((s,k)=>{
+    s.className = k===i ? "on" : (D.frames[k].kind==="nowcast" ? "fc" : "");
+  });
+  drawTrack(); draw();
+}
+
+/* ---------------------------------------------------------------- timeline */
+function buildTrack(){
+  $("tlAx").innerHTML = D.frames.map((f,i)=>{
+    const lab = i===NOW_I ? "ตอนนี้" : hhmm(f.t);
+    return `<span class="${f.kind==='nowcast'?'fc':''}">${lab}</span>`;
+  }).join("");
+}
+function drawTrack(){
+  const Wd=600, Hd=34, pad=5;
+  const vals = D.frames.map(f=> f.max_dbz==null ? 0 : f.max_dbz);
+  const nz = vals.filter(v=>v>0);
+  const lo=(nz.length?Math.min(...nz):0)-4, hi=(nz.length?Math.max(...nz):1)+3;
+  const X = i => i/(N-1)*(Wd-2*pad)+pad;
+  const Y = v => Hd-6 - (v-lo)/Math.max(hi-lo,1e-6)*(Hd-14);
+  const css = getComputedStyle(document.body);
+  const acc = css.getPropertyValue("--accent").trim();
+  const warn = css.getPropertyValue("--warn").trim();
+  const dim = css.getPropertyValue("--text-3").trim();
+  const obs=[], fcp=[];
+  for (let i=0;i<=NOW_I;i++) obs.push(X(i).toFixed(1)+","+Y(vals[i]).toFixed(1));
+  for (let i=NOW_I;i<N;i++) fcp.push(X(i).toFixed(1)+","+Y(vals[i]).toFixed(1));
+  const nowX = X(NOW_I);
+  $("trackSvg").innerHTML =
+    `<rect x="${nowX.toFixed(1)}" y="0" width="${(Wd-nowX).toFixed(1)}" height="${Hd}"
+       fill="${warn}" opacity=".07"/>`+
+    `<polyline points="${obs.join(" ")}" fill="none" stroke="${acc}" stroke-width="2"
+       stroke-linejoin="round"/>`+
+    `<polyline points="${fcp.join(" ")}" fill="none" stroke="${warn}" stroke-width="2"
+       stroke-dasharray="4 3" stroke-linejoin="round"/>`+
+    `<line x1="${nowX.toFixed(1)}" y1="1" x2="${nowX.toFixed(1)}" y2="${Hd-1}"
+       stroke="${dim}" stroke-opacity=".55" stroke-dasharray="2 3"/>`+
+    D.frames.map((f,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(vals[i]).toFixed(1)}"
+       r="${i===IDX?4.2:2}" fill="${i>NOW_I?warn:acc}" opacity="${i===IDX?1:.5}"/>`).join("")+
+    `<text x="${Math.min(X(IDX)+7,Wd-56).toFixed(1)}" y="11" fill="${dim}" font-size="10"
+       font-family="IBM Plex Mono,monospace">${vals[IDX].toFixed(1)} dBZ</text>`;
+}
+function trackSeek(clientX){
+  const r = $("track").getBoundingClientRect();
+  const t = Math.min(1, Math.max(0, (clientX - r.left)/r.width));
+  render(Math.round(t*(N-1)));
+}
+let seeking = false;
+$("track").addEventListener("pointerdown", e=>{
+  seeking = true; $("track").setPointerCapture(e.pointerId); trackSeek(e.clientX);
+});
+$("track").addEventListener("pointermove", e=>{ if (seeking) trackSeek(e.clientX); });
+$("track").addEventListener("pointerup", ()=>{ seeking=false; });
+$("play").onclick = ()=>{
+  if (TIMER){ clearInterval(TIMER); TIMER=null;
+    $("playIcon").innerHTML = '<path d="M7 4.5v15l13-7.5z"/>'; return; }
+  $("playIcon").innerHTML = '<path d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z"/>';
+  TIMER = setInterval(()=>render((IDX+1)%N), 620);
+};
+
+/* ============================ ETA ============================
+   สองวิธี ตรวจกันเอง
+     A) สแกนเฟรมพยากรณ์ที่ตำแหน่งเรา -> เฟรมแรกที่ฝนถึง (ละเอียด 15 นาที)
+        นี่คือคำตอบของ nowcast ตรง ๆ จึงใช้ตัดสินว่า "จะมีฝนไหม"
+     B) ยิงรังสีทวนทิศลมบนภาพล่าสุด -> ระยะถึงก้อนฝนที่ใกล้ที่สุด หารด้วยความเร็ว
+        ได้นาทีละเอียด ใช้เติมตัวเลขให้ A
+   ถ้า A บอกว่าไม่มีฝนใน 60 นาที เราตอบว่าไม่มี แม้ B จะเจอก้อนอยู่ต้นลม
+   เพราะ B ไม่รู้เรื่องการเบี่ยงออกนอกทาง แต่ A รู้ (มันคือสนามที่ advect จริง)  */
+function computeETA(){
+  if (!ME || !LOADED) return null;
+  const thr = +$("th").value, spd = D.motion.kmh, brg = D.motion.bearing, rad = 4;
+  const nowV = valueAt(NOW_I, ME.E, ME.N, rad);
+  if (nowV !== null && nowV >= thr) return { now:true, dbz:nowV };
+
+  let hit = -1;
+  for (let i=NOW_I+1; i<N; i++){
+    const v = valueAt(i, ME.E, ME.N, rad);
+    if (v !== null && v >= thr){ hit = i; break; }
+  }
+  if (hit < 0) return { none:true, horizon:D.frames[N-1].offset_min };
+
+  let mins = D.frames[hit].offset_min, from = null;
+  let dbz = valueAt(hit, ME.E, ME.N, rad);
+  if (spd > 0.5){
+    const th = brg*Math.PI/180, ux = -Math.sin(th), uy = -Math.cos(th);
+    const maxKm = spd*(D.frames[N-1].offset_min/60)*1.15;
+    for (let d=0; d<=maxKm; d+=1){
+      const E = ME.E + ux*d, Nn = ME.N + uy*d;
+      if (Math.hypot(E,Nn) > HALF) break;
+      const v = valueAt(NOW_I, E, Nn, 2);
+      if (v !== null && v >= thr){ mins = Math.max(1, Math.round(d/spd*60)); from={E,N:Nn,dbz:v}; break; }
+    }
+  }
+  const lo = D.frames[hit].offset_min - STEP, hi = D.frames[hit].offset_min;
+  mins = Math.max(Math.max(1,lo), Math.min(hi, mins));
+  return { mins, dbz: from ? Math.max(dbz, from.dbz) : dbz, from, lead:D.frames[hit].offset_min };
+}
+
+/* แถบฝน 105 นาทีที่ตำแหน่งเรา (ทุก 5 นาที)
+   อดีต: interpolate ระหว่างเฟรมจริง
+   อนาคต: อ่านย้อนจากภาพล่าสุดที่ตำแหน่ง (เรา - motion x t)
+           ซึ่งเป็นนิยามเดียวกับ semi-Lagrangian ที่ nowcast.py ใช้
+           จึงได้ความละเอียด 5 นาทีโดยไม่ต้องมีเฟรมพยากรณ์ทุก 5 นาที */
+function rainSeries(){
+  if (!ME || !LOADED) return [];
+  const t0 = D.frames[0].offset_min, t1 = D.frames[N-1].offset_min;
+  const spd = D.motion.kmh, th = D.motion.bearing*Math.PI/180;
+  const ux = -Math.sin(th), uy = -Math.cos(th);
+  const out = [];
+  for (let t=t0; t<=t1; t+=5){
+    let v;
+    if (t <= 0){
+      const k = (t - t0)/STEP, i0 = Math.floor(k), i1 = Math.min(i0+1, NOW_I), w = k-i0;
+      const a = valueAt(i0, ME.E, ME.N, 4), b = valueAt(i1, ME.E, ME.N, 4);
+      v = (a===null||b===null) ? (a===null?b:a) : a*(1-w)+b*w;
+      out.push({ t, v, inside: true });
+      continue;
+    } else {
+      const d = spd*t/60, E = ME.E + ux*d, Nn = ME.N + uy*d;
+      v = valueAt(NOW_I, E, Nn, 3);
+      out.push({ t, v, inside: Math.hypot(E,Nn) <= HALF });
+      continue;
+    }
+  }
+  return out;
+}
+
+function colorFor(dbz){
+  const lv=D.levels_dbz, rgb=D.levels_rgb;
+  let k=0; while (k<lv.length-1 && lv[k+1] <= dbz) k++;
+  return `rgb(${rgb[k][0]},${rgb[k][1]},${rgb[k][2]})`;
+}
+
+function renderETA(){
+  const e = ME ? computeETA() : null;
+  if (ME) ME.eta = e;
+  $("etaWhere").textContent = ME ? ME.name + " · " + ME.km.toFixed(0) + " กม.จากสถานี" : "—";
+
+  if (!e){ $("etaN").textContent="—"; $("etaU").textContent="";
+    $("etaMsg").textContent="แตะแผนที่เพื่อเลือกตำแหน่ง"; }
+  else if (e.now){
+    $("etaN").textContent = "ตอนนี้"; $("etaU").textContent = "";
+    const mm = dbz2mm(e.dbz,D.zr[0],D.zr[1]);
+    $("etaMsg").innerHTML = "<b>กำลังมีฝนที่ตำแหน่งนี้</b> " + e.dbz.toFixed(1) + " dBZ ≈ " +
+      mm.toFixed(1) + " มม./ชม. (" + rainWord(mm) + ")";
+  } else if (e.none){
+    $("etaN").textContent = "ไม่มี"; $("etaU").textContent = "ใน "+e.horizon+" นาที";
+    $("etaMsg").innerHTML = "ไม่มีฝนเข้าตำแหน่งนี้ใน " + e.horizon +
+      " นาทีข้างหน้า ตามภาพล่าสุดที่ยกไปตาม motion";
+  } else {
+    $("etaN").textContent = e.mins; $("etaU").textContent = "นาที";
+    const mm = dbz2mm(e.dbz,D.zr[0],D.zr[1]);
+    $("etaMsg").innerHTML = "ฝนจากทาง<b>" + bearingTx(D.motion.bearing+180) +
+      "</b>กำลังเข้ามา ความแรงที่คาด <b>" + e.dbz.toFixed(1) + " dBZ</b> ≈ " +
+      mm.toFixed(1) + " มม./ชม. (" + rainWord(mm) + ")";
+  }
+  renderRain();
+  maybeAlert(e);
+  overlay();
+}
+
+function renderRain(){
+  const ser = rainSeries(), thr = +$("th").value;
+  const bars = $("rainBars");
+  bars.querySelectorAll("i").forEach(n=>n.remove());
+  if (!ser.length){ $("rainCap").textContent = "—"; $("rainMax").textContent=""; return; }
+  const top = Math.max(thr+16, ...ser.map(s=> s.v==null?0:s.v));
+  const frag = document.createDocumentFragment();
+  let anyRain = false, peak = null;
+  for (const s of ser){
+    const i = document.createElement("i");
+    const wet = s.v !== null && s.v >= thr;
+    if (wet){
+      anyRain = true;
+      i.className = "has" + (s.t>0 ? " fc" : "");
+      i.style.height = (10 + (s.v-thr)/Math.max(top-thr,1)*40).toFixed(0)+"px";
+      i.style.background = colorFor(s.v);
+      if (!peak || s.v > peak.v) peak = s;
+    } else {
+      i.style.height = "3px";
+    }
+    i.title = (s.t===0?"ตอนนี้":(s.t>0?"+":"")+s.t+" นาที") +
+              (s.v!=null ? " · "+s.v.toFixed(1)+" dBZ"
+                         : s.inside ? " · ไม่มีฝน" : " · นอกรัศมีเรดาร์");
+    frag.appendChild(i);
+  }
+  bars.appendChild(frag);
+  const t0 = ser[0].t, t1 = ser[ser.length-1].t;
+  $("rainNow").style.left = ((0-t0)/(t1-t0)*100).toFixed(2)+"%";
+  $("rainAx").innerHTML = `<span>${-t0} นาทีก่อน</span><b>ตอนนี้</b><span>+${t1} นาที</span>`;
+  $("rainCap").textContent = anyRain ? "ความแรงที่จุดนี้ ทุก 5 นาที"
+                                     : "ไม่มีฝนที่จุดนี้ตลอด 105 นาที";
+  $("rainMax").textContent = peak
+    ? "แรงสุด " + dbz2mm(peak.v,D.zr[0],D.zr[1]).toFixed(1) + " มม./ชม. " +
+      (peak.t === 0 ? "ตอนนี้" : peak.t > 0 ? "ใน " + peak.t + " นาที"
+                                            : Math.abs(peak.t) + " นาทีก่อน")
+    : "";
+}
+
+function maybeAlert(e){
+  if (!$("lAlert").checked || !e || e.none || e.now || e.mins > 30) return;
+  const key = ME.name + "|" + D.generated + "|" + Math.round(ME.E) + "," + Math.round(ME.N);
+  if (ALERTED === key) return;
+  ALERTED = key;
+  const msg = "ฝนจะถึง " + ME.name + " ในอีกประมาณ " + e.mins + " นาที";
+  toast("⚑ " + msg);
+  if (window.Notification && Notification.permission === "granted"){
+    try{ new Notification("ทันฝน", {body: msg}); }catch(err){}
+  }
+}
+
+/* ============================ watch list ============================ */
+function renderWatch(){
+  if (!LOADED) return;
+  const when = document.querySelector('.seg button[aria-pressed="true"]').dataset.when;
+  const thr = +$("th").value;
+  const rows = CITY.map(c=>{
+    if (when === "now") return {c, v:valueAt(NOW_I, c.E, c.N, 15), at:D.frames[NOW_I].t};
+    let best=null, at=null;
+    for (let i=NOW_I; i<N; i++){
+      const v = valueAt(i, c.E, c.N, 15);
+      if (v!==null && (best===null || v>best)){ best=v; at=D.frames[i].t; }
+    }
+    return {c, v:best, at};
+  }).filter(r=> r.v !== null && r.v >= thr)
+    .sort((a,b)=> b.v-a.v).slice(0, 8);
+
+  if (!rows.length){
+    $("wlist").innerHTML = `<div class="wempty">ไม่มีเมืองไหนในรัศมี 240 กม. ที่มีฝนถึงเกณฑ์
+      ${thr.toFixed(1)} dBZ ${when==="now"?"ตอนนี้":"ใน 1 ชั่วโมงข้างหน้า"}</div>`;
+    return;
+  }
+  const head = `<div class="whead"><span>เมือง</span><span class="v">มม./ชม.</span>
+      <span class="t">เวลา</span></div>`;
+  $("wlist").innerHTML = head + rows.map((r,i)=>{
+    const mm = dbz2mm(r.v, D.zr[0], D.zr[1]);
+    return `<div class="wrow" data-n="${r.c.name}">
+      <span class="nm"><i class="sw" style="background:${colorFor(r.v)}"></i>${r.c.name}</span>
+      <span class="v mono">${mm.toFixed(1)}</span>
+      <span class="t">${hhmm(r.at)}</span></div>`;
+  }).join("");
+  $("wlist").querySelectorAll(".wrow").forEach(el=>{
+    el.onclick = ()=>{
+      const c = CITY.find(x=>x.name===el.dataset.n);
+      if (c){ setLocation(c); view.cx=c.E; view.cy=-c.N; clampView(); draw(); }
+    };
+  });
+}
+
+/* ============================ location ============================ */
+function setLocation(c){
+  if (!c) return;
+  ME = {...c};
+  renderETA(); renderWatch();
+}
+$("geoBtn").onclick = ()=>{
+  if (!navigator.geolocation){ toast("เบราว์เซอร์นี้ไม่รองรับการหาตำแหน่ง", true); return; }
+  const b = $("geoBtn"); b.disabled = true;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    b.disabled = false;
+    const p = project(pos.coords.latitude, pos.coords.longitude);
+    if (p.km > HALF){ toast("ตำแหน่งของคุณอยู่นอกรัศมี 240 กม. ของเรดาร์พิษณุโลก", true); return; }
+    setLocation({name:"ตำแหน่งของฉัน", lat:pos.coords.latitude, lon:pos.coords.longitude,
+                 rank:0, ...p});
+    view.cx = p.E; view.cy = -p.N;
+    view.scale = Math.max(view.scale, Math.min(W,H)/220);
+    clampView(); draw();
+  }, err=>{
+    b.disabled = false;
+    toast("ขอตำแหน่งไม่สำเร็จ (" + err.message + ") — แตะบนแผนที่เลือกจุดเองได้", true);
+  }, {enableHighAccuracy:true, timeout:10000, maximumAge:60000});
+};
+
+/* ============================ wiring ============================ */
+$("op").addEventListener("input", e=>{ $("opV").textContent = e.target.value+"%"; draw(); });
+$("th").addEventListener("input", e=>{
+  $("thV").textContent = (+e.target.value).toFixed(1)+" dBZ";
+  rasterise(); draw(); renderETA(); renderWatch();
+});
+["lFc","lCity","lRing","lPath","lBase"].forEach(id=> $(id).addEventListener("change", draw));
+document.querySelectorAll(".seg button").forEach(b=> b.onclick = ()=>{
+  document.querySelectorAll(".seg button").forEach(o=>o.setAttribute("aria-pressed", String(o===b)));
+  renderWatch();
+});
+$("watchHead").onclick = ()=> $("watchCard").classList.toggle("closed");
+function openPanel(on){
+  $("panel").classList.toggle("on", on); $("scrim").classList.toggle("on", on);
+  $("cfgBtn").setAttribute("aria-pressed", String(on));
+}
+$("cfgBtn").onclick = ()=> openPanel(!$("panel").classList.contains("on"));
+$("panelX").onclick = ()=> openPanel(false);
+$("scrim").onclick = ()=> openPanel(false);
+document.addEventListener("keydown", e=>{
+  if (e.key === "Escape") openPanel(false);
+  if (e.key === "ArrowLeft")  render(Math.max(0, IDX-1));
+  if (e.key === "ArrowRight") render(Math.min(N-1, IDX+1));
+});
+$("lAlert").addEventListener("change", e=>{
+  if (!e.target.checked){ $("alertNote").textContent=""; return; }
+  if (!window.Notification){
+    $("alertNote").textContent = "เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือนของระบบ จะเตือนเป็นแถบบนหน้าจอแทน";
+    return;
+  }
+  Notification.requestPermission().then(p=>{
+    $("alertNote").textContent = p==="granted"
+      ? "เปิดแล้ว จะเตือนเมื่อฝนจะถึงตำแหน่งที่เลือกภายใน 30 นาที"
+      : "ไม่ได้รับอนุญาต จะเตือนเป็นแถบบนหน้าจอแทน";
+  }).catch(()=>{ $("alertNote").textContent = "จะเตือนเป็นแถบบนหน้าจอแทน"; });
+});
+/* bottom sheet บนมือถือ: แตะที่หัวการ์ดบนสุดเพื่อขยาย/ย่อ */
+$("rail").addEventListener("click", e=>{
+  if (window.innerWidth > 860) return;
+  if (e.target.closest(".wrow, .btn, .seg, .cardHead")) return;
+  if (e.offsetY < 24 || e.target === $("rail")) $("rail").classList.toggle("up");
+});
+window.addEventListener("resize", resize);
+boot();
+</script>
+
+</body>
+</html>

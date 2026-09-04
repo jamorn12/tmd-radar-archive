@@ -324,8 +324,52 @@ def cmd_prune(args) -> int:
     return 0
 
 
+def cmd_basemap(args) -> int:
+    """สร้างแผนที่ฐานสองแบบสำหรับหน้าเว็บ จากภาพ raw ที่เก็บไว้
+
+    ทำไม่บ่อย — รันใหม่เมื่อ TMD เปลี่ยนแผนที่ในภาพ หรือเมื่อคลังโตพอจนภาพ
+    มัธยฐานสะอาดขึ้น (ยิ่งเฟรมกระจายหลายวัน ก้อนฝนที่ค้างอยู่ที่เดิมยิ่งหลุดออกหมด)
+    """
+    from . import basemap as bm
+
+    docs = Path(args.docs)
+    docs.mkdir(parents=True, exist_ok=True)
+    for st in _stations(args):
+        paths = sorted((Path(args.data) / "raw" / st.code).rglob("*.jpg"))
+        if not paths:
+            print(f"[!] {st.code}: ไม่มีภาพ raw")
+            continue
+        if len(paths) < 20:
+            print(f"[!] {st.code}: มีแค่ {len(paths)} เฟรม — น้อยไปที่จะแยกแผนที่ออกจากฝนได้สะอาด "
+                  f"(ควรมี >= 20 เฟรมกระจายหลายชั่วโมง) จะสร้างให้แต่ควรทำใหม่ทีหลัง")
+        bm.build(paths, st, docs, size=args.size, max_frames=args.n)
+        print(f"[ok] {st.code}: แผนที่ฐาน (สว่าง+มืด) จาก {min(len(paths), args.n)} เฟรม -> {docs}")
+    return 0
+
+
+def cmd_site(args) -> int:
+    """ประกอบ docs/index.html — เปิด GitHub Pages ที่ main /docs แล้วใช้ได้เลย"""
+    from . import webapp
+
+    docs = Path(args.docs)
+    dark, terr = docs / "base_dark.png", docs / "base_light.png"
+    if not (dark.exists() and terr.exists()):
+        print("[!] ยังไม่มีแผนที่ฐาน — รัน `basemap` ก่อน")
+        return 1
+    print(f"[ok] {webapp.build_pages(docs, dark, terr, args.manifest)}")
+    if args.demo:
+        mf = docs / args.manifest
+        if not mf.exists():
+            print(f"[!] ไม่มี {mf} — ข้ามไฟล์สาธิตแบบฝังข้อมูล")
+        else:
+            print(f"[ok] {webapp.build_artifact(Path(args.demo), mf, dark, terr)}")
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="radar_archive")
+    p.add_argument("--docs", default=str(Path(__file__).resolve().parent.parent / "docs"),
+                   help="โฟลเดอร์ที่ GitHub Pages เสิร์ฟ")
     p.add_argument("--config", default=str(CONFIG_PATH))
     p.add_argument("--data", default=str(DATA))
     p.add_argument("--station", default=None, help="รหัสสถานี เช่น PHS (ไม่ใส่ = ทุกสถานีที่ enabled)")
@@ -365,6 +409,18 @@ def main(argv=None) -> int:
     rp.add_argument("--outputs", default="alpha,solid")
     rp.add_argument("--background", default="0,0,0")
     rp.set_defaults(func=cmd_repair)
+
+    bmp = sub.add_parser("basemap", help="สร้างแผนที่ฐานของหน้าเว็บ จากภาพ raw")
+    bmp.add_argument("--n", type=int, default=60, help="ใช้กี่เฟรม (กระจายทั่วช่วงเวลา)")
+    bmp.add_argument("--size", type=int, default=1446, help="ความละเอียดด้านละกี่พิกเซล")
+    bmp.set_defaults(func=cmd_basemap)
+
+    si = sub.add_parser("site", help="ประกอบ docs/index.html")
+    si.add_argument("--manifest", default="nowcast/PHS/latest.json",
+                    help="ที่อยู่ latest.json เทียบกับ docs/")
+    si.add_argument("--demo", default=None,
+                    help="เขียนไฟล์สาธิตแบบฝังข้อมูลไว้ที่นี่ด้วย (เปิดจากไฟล์ตรง ๆ ได้)")
+    si.set_defaults(func=cmd_site)
 
     args = p.parse_args(argv)
     return args.func(args)

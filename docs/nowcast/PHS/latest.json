@@ -1,0 +1,250 @@
+{
+ "station": "PHS",
+ "generated": 1788487065,
+ "base_time_utc": "2026-09-04T01:45:00Z",
+ "base_time_local": "2026-09-04T08:45:00+07:00",
+ "age_min": 12.8,
+ "stale_after_min": 40,
+ "projection": "+proj=aeqd +lat_0=16.7765 +lon_0=100.2161 +units=m +ellps=WGS84",
+ "extent_m": [
+  -240000.0,
+  -240000.0,
+  240000.0,
+  240000.0
+ ],
+ "grid": [
+  241,
+  241
+ ],
+ "kmperpixel": 2.0,
+ "timestep_min": 15.0,
+ "yorigin": "lower",
+ "levels_dbz": [
+  10.4,
+  11.3,
+  16.5,
+  19.0,
+  21.5,
+  24.0,
+  26.5,
+  29.0,
+  31.5,
+  34.0,
+  36.5,
+  39.0,
+  41.5,
+  44.0,
+  46.5,
+  49.0,
+  51.5,
+  54.0,
+  56.5,
+  59.0,
+  61.5,
+  64.0
+ ],
+ "levels_rgb": [
+  [
+   2,
+   171,
+   2
+  ],
+  [
+   4,
+   188,
+   0
+  ],
+  [
+   2,
+   202,
+   0
+  ],
+  [
+   2,
+   202,
+   0
+  ],
+  [
+   3,
+   208,
+   69
+  ],
+  [
+   4,
+   230,
+   3
+  ],
+  [
+   4,
+   244,
+   3
+  ],
+  [
+   248,
+   246,
+   5
+  ],
+  [
+   224,
+   224,
+   9
+  ],
+  [
+   218,
+   215,
+   5
+  ],
+  [
+   253,
+   199,
+   10
+  ],
+  [
+   240,
+   160,
+   4
+  ],
+  [
+   225,
+   150,
+   4
+  ],
+  [
+   251,
+   84,
+   5
+  ],
+  [
+   238,
+   3,
+   2
+  ],
+  [
+   226,
+   2,
+   92
+  ],
+  [
+   211,
+   3,
+   83
+  ],
+  [
+   210,
+   0,
+   85
+  ],
+  [
+   247,
+   2,
+   248
+  ],
+  [
+   253,
+   127,
+   253
+  ],
+  [
+   253,
+   199,
+   253
+  ],
+  [
+   254,
+   225,
+   253
+  ]
+ ],
+ "zr": [
+  250.0,
+  1.2
+ ],
+ "motion": {
+  "method": "block-matching",
+  "engine": "light",
+  "confidence": "high",
+  "kmh": 13.1,
+  "bearing": 128,
+  "speed_spread_kmh": 0.8,
+  "speed_spread_rel": 0.061,
+  "dir_consistency": 1.0,
+  "n_samples": 3,
+  "extrapolation": "semilagrangian (light)"
+ },
+ "wet_threshold_dbz": 11.98,
+ "qc": {
+  "despeckled_cells": 0
+ },
+ "frames": [
+  {
+   "t": 1788483600,
+   "kind": "past",
+   "offset_min": -45,
+   "url": "f/1788483600.png",
+   "max_dbz": 32.6,
+   "wet_pct": 1.27
+  },
+  {
+   "t": 1788484500,
+   "kind": "past",
+   "offset_min": -30,
+   "url": "f/1788484500.png",
+   "max_dbz": 32.0,
+   "wet_pct": 1.274
+  },
+  {
+   "t": 1788485400,
+   "kind": "past",
+   "offset_min": -15,
+   "url": "f/1788485400.png",
+   "max_dbz": 26.5,
+   "wet_pct": 0.995
+  },
+  {
+   "t": 1788486300,
+   "kind": "present",
+   "offset_min": 0,
+   "url": "f/1788486300.png",
+   "max_dbz": 24.0,
+   "wet_pct": 0.721
+  },
+  {
+   "t": 1788487200,
+   "kind": "nowcast",
+   "offset_min": 15,
+   "url": "f/1788487200.png",
+   "max_dbz": 24.0,
+   "wet_pct": 0.738,
+   "method": "extrapolation"
+  },
+  {
+   "t": 1788488100,
+   "kind": "nowcast",
+   "offset_min": 30,
+   "url": "f/1788488100.png",
+   "max_dbz": 24.0,
+   "wet_pct": 0.726,
+   "method": "extrapolation"
+  },
+  {
+   "t": 1788489000,
+   "kind": "nowcast",
+   "offset_min": 45,
+   "url": "f/1788489000.png",
+   "max_dbz": 24.0,
+   "wet_pct": 0.707,
+   "method": "extrapolation"
+  },
+  {
+   "t": 1788489900,
+   "kind": "nowcast",
+   "offset_min": 60,
+   "url": "f/1788489900.png",
+   "max_dbz": 24.0,
+   "wet_pct": 0.739,
+   "method": "extrapolation"
+  }
+ ],
+ "source": "Thai Meteorological Department (TMD)",
+ "stale": false
+}
