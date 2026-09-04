@@ -85,16 +85,15 @@ def calculate_next_run():
     minutes, seconds = divmod(int(diff.total_seconds()), 60)
     return f"{minutes:02d}:{seconds:02d} นาที"
 
-def fetch_image(relative_path):
-    """ดึงภาพผ่าน GitHub Content URL เพื่อแก้ปัญหา Broken image และ CORS"""
-    if not relative_path or pd.isna(relative_path):
+def fetch_image_bytes(clean_relative_path):
+    """ดึงภาพ Content โดยตรงจาก GitHub Repository"""
+    if not clean_relative_path:
         return None
+    p = str(clean_relative_path).strip().replace("\\", "/").lstrip("/")
+    if not p.startswith("data/"):
+        p = f"data/{p}"
     
-    clean_path = str(relative_path).strip().replace("\\", "/").lstrip("/")
-    if not clean_path.startswith("data/"):
-        clean_path = f"data/{clean_path}"
-        
-    url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{clean_path}"
+    url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{p}"
     try:
         res = requests.get(url, headers=HEADERS, timeout=10)
         if res.status_code == 200:
@@ -102,6 +101,45 @@ def fetch_image(relative_path):
     except Exception:
         pass
     return None
+
+def fetch_solid_image(row):
+    """คำนวณและดึงภาพ solid จากโฟลเดอร์ data/processed/PHS/solid/YYYY/MM/"""
+    candidates = []
+    
+    # 1. คำนวณจากคอลัมน์ timestamp_utc (ตรงกับชื่อ PHS_YYYYMMDD_HHMMZ_solid.png)
+    ts_str = str(row.get("timestamp_utc", "")).strip()
+    if ts_str and ts_str != "Unknown":
+        try:
+            dt = pd.to_datetime(ts_str)
+            ym = dt.strftime("%Y/%m")
+            filename = f"PHS_{dt.strftime('%Y%m%d_%H%M')}Z_solid.png"
+            candidates.append(f"data/processed/PHS/solid/{ym}/{filename}")
+        except Exception:
+            pass
+
+    # 2. คำนวณพาธสำรองจากชื่อไฟล์ raw_file
+    raw_val = str(row.get("raw_file", "")).strip().replace("\\", "/").lstrip("/")
+    if raw_val:
+        # แปลง raw/PHS/2026/09/... -> processed/PHS/solid/2026/09/...
+        parts = raw_val.split("/")
+        if len(parts) >= 4:
+            year_part, month_part = parts[-3], parts[-2]
+            filename_only = parts[-1].rsplit(".", 1)[0]
+            # หากชื่อดิบเป็น PHS_YYYYMMDD_HHMMSS ให้ตัดเป็น HHMMZ_solid.png
+            sub_parts = filename_only.split("_")
+            if len(sub_parts) >= 3:
+                date_str = sub_parts[1]
+                time_str = sub_parts[2][:4]
+                candidates.append(f"data/processed/PHS/solid/{year_part}/{month_part}/PHS_{date_str}_{time_str}Z_solid.png")
+            candidates.append(f"data/processed/PHS/solid/{year_part}/{month_part}/{filename_only}_solid.png")
+
+    for cand in candidates:
+        content = fetch_image_bytes(cand)
+        if content:
+            return content, cand
+
+    fallback_path = candidates[0] if candidates else "processed/PHS/solid/..."
+    return None, fallback_path
 
 # -------------------------------------------------------------
 # Dashboard UI
@@ -111,7 +149,7 @@ st.markdown("---")
 
 col_left, col_right = st.columns([1, 2.3], gap="large")
 
-# ================= 1 & 2. แผงควบคุมและข้อมูลพื้นที่ฝั่งซ้าย =================
+# ================= แผงควบคุมฝั่งซ้าย =================
 with col_left:
     st.subheader("1. System Control")
     current_status = get_pipeline_status()
@@ -144,7 +182,7 @@ with col_left:
         status_badge = "✅ สำเร็จ (Success)" if latest_run_status == "success" else f"⚠️ {latest_run_status.title()}"
         st.write(f"**สถานะบอทล่าสุด:** {status_badge}")
 
-# ================= 3. ส่วนแสดงภาพเรดาร์ล่าสุดฝั่งขวา =================
+# ================= ส่วนแสดงผลภาพเรดาร์ฝั่งขวา =================
 with col_right:
     st.subheader("3. Latest Frame Preview (PHS Station)")
     
@@ -153,15 +191,9 @@ with col_right:
         timestamp_str = latest_row.get("timestamp_utc", "Unknown")
         raw_path = str(latest_row.get("raw_file", ""))
 
-        # คำนวณพาธของภาพ Alpha Mask อัตโนมัติจากชื่อไฟล์ Raw
-        alpha_path = raw_path.replace("raw/", "processed/")
-        if "." in alpha_path:
-            base, _ = alpha_path.rsplit(".", 1)
-            alpha_path = f"{base}_alpha.png"
-
-        # ดึงข้อมูลภาพ
-        raw_img_bytes = fetch_image(raw_path)
-        alpha_img_bytes = fetch_image(alpha_path)
+        # ดึงภาพดิบและภาพ solid
+        raw_img_bytes = fetch_image_bytes(raw_path)
+        solid_img_bytes, matched_path = fetch_solid_image(latest_row)
 
         c1, c2 = st.columns(2)
         with c1:
@@ -169,18 +201,18 @@ with col_right:
             if raw_img_bytes:
                 st.image(raw_img_bytes, use_container_width=True)
             else:
-                st.warning("กำลังโหลดไฟล์ภาพดิบ...")
+                st.error(f"ไม่พบไฟล์: {raw_path}")
 
         with c2:
-            st.markdown("**Processed Alpha Mask** (Transparent)")
-            if alpha_img_bytes:
-                st.image(alpha_img_bytes, use_container_width=True)
+            st.markdown("**Processed Solid Image** (.png)")
+            if solid_img_bytes:
+                st.image(solid_img_bytes, use_container_width=True)
             else:
-                st.warning("กำลังโหลดไฟล์ภาพ Alpha Mask...")
+                st.warning(f"ยังไม่พบไฟล์: {matched_path}")
     else:
         st.info("กำลังรอการเชื่อมต่อฐานข้อมูล...")
 
-# ================= 4. ตาราง Activity Log ด้านล่าง =================
+# ================= ตาราง Activity Log ด้านล่าง =================
 st.markdown("---")
 st.subheader("4. Activity Log")
 if not df_log.empty:
