@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import pandas as pd
 from datetime import datetime, timezone, timedelta
+import time
 
 # -------------------------------------------------------------
 # Configuration & Setup
@@ -61,9 +62,11 @@ def get_repo_metrics():
         pass
     return 0.0
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=30)
 def load_activity_log():
-    url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/data/log/PHS_index.csv"
+    # ใส่ timestamp ป้องกัน CDN Fastly ของ GitHub แคชไฟล์เก่า
+    ts = int(time.time())
+    url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/data/log/PHS_index.csv?t={ts}"
     try:
         df = pd.read_csv(url)
         return df
@@ -86,14 +89,15 @@ def calculate_next_run():
     return f"{minutes:02d}:{seconds:02d} นาที"
 
 def fetch_image_bytes(clean_relative_path):
-    """ดึงภาพ Content โดยตรงจาก GitHub Repository"""
+    """ดึง Content ภาพโดยตรงจาก GitHub (พร้อม Cache-Buster)"""
     if not clean_relative_path:
         return None
     p = str(clean_relative_path).strip().replace("\\", "/").lstrip("/")
     if not p.startswith("data/"):
         p = f"data/{p}"
     
-    url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{p}"
+    ts = int(time.time())
+    url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{p}?t={ts}"
     try:
         res = requests.get(url, headers=HEADERS, timeout=10)
         if res.status_code == 200:
@@ -106,7 +110,7 @@ def fetch_solid_image(row):
     """คำนวณและดึงภาพ solid จากโฟลเดอร์ data/processed/PHS/solid/YYYY/MM/"""
     candidates = []
     
-    # 1. คำนวณจากคอลัมน์ timestamp_utc (ตรงกับชื่อ PHS_YYYYMMDD_HHMMZ_solid.png)
+    # 1. ดึงจาก timestamp_utc
     ts_str = str(row.get("timestamp_utc", "")).strip()
     if ts_str and ts_str != "Unknown":
         try:
@@ -117,15 +121,13 @@ def fetch_solid_image(row):
         except Exception:
             pass
 
-    # 2. คำนวณพาธสำรองจากชื่อไฟล์ raw_file
+    # 2. แปลงพาธจากคอลัมน์ raw_file
     raw_val = str(row.get("raw_file", "")).strip().replace("\\", "/").lstrip("/")
     if raw_val:
-        # แปลง raw/PHS/2026/09/... -> processed/PHS/solid/2026/09/...
         parts = raw_val.split("/")
         if len(parts) >= 4:
             year_part, month_part = parts[-3], parts[-2]
             filename_only = parts[-1].rsplit(".", 1)[0]
-            # หากชื่อดิบเป็น PHS_YYYYMMDD_HHMMSS ให้ตัดเป็น HHMMZ_solid.png
             sub_parts = filename_only.split("_")
             if len(sub_parts) >= 3:
                 date_str = sub_parts[1]
@@ -138,88 +140,110 @@ def fetch_solid_image(row):
         if content:
             return content, cand
 
-    fallback_path = candidates[0] if candidates else "processed/PHS/solid/..."
-    return None, fallback_path
+    fallback = candidates[0] if candidates else "data/processed/PHS/solid/..."
+    return None, fallback
 
 # -------------------------------------------------------------
-# Dashboard UI
+# Fragment Setup (สำหรับ Auto-Refresh ทุกๆ 60 วินาที)
+# -------------------------------------------------------------
+if hasattr(st, "fragment"):
+    auto_refresh_decorator = st.fragment(run_every=60)
+elif hasattr(st, "experimental_fragment"):
+    auto_refresh_decorator = st.experimental_fragment(run_every=60)
+else:
+    def auto_refresh_decorator(func):
+        return func
+
+# -------------------------------------------------------------
+# Main Dashboard Function
+# -------------------------------------------------------------
+@auto_refresh_decorator
+def render_dashboard():
+    col_left, col_right = st.columns([1, 2.3], gap="large")
+
+    # ================= 1 & 2. แผงควบคุมและข้อมูลพื้นที่ฝั่งซ้าย =================
+    with col_left:
+        st.subheader("1. System Control")
+        current_status = get_pipeline_status()
+        
+        with st.container(border=True):
+            is_on = st.toggle("System Power [ ON / OFF ]", value=current_status)
+            
+            if is_on != current_status:
+                if set_pipeline_status(is_on):
+                    st.toast(f"อัปเดตสถานะ: {'เปิดระบบ (ACTIVE)' if is_on else 'ปิดระบบ (PAUSED)'}")
+                    st.rerun()
+                else:
+                    st.error("ไม่สามารถเชื่อมต่อเพื่อเปลี่ยนค่าบน GitHub ได้")
+
+            status_color = "green" if current_status else "red"
+            status_text = "ACTIVE" if current_status else "PAUSED"
+            st.markdown(f"**System Status:** :{status_color}[{status_text}]")
+            st.caption(f"⏱ รอบการดึงภาพถัดไป: **{calculate_next_run()}**")
+
+        st.subheader("2. Storage Monitor")
+        df_log = load_activity_log()
+        total_frames = len(df_log) if not df_log.empty else 0
+        repo_mb = get_repo_metrics()
+        latest_run_status = get_latest_action_run()
+
+        with st.container(border=True):
+            st.metric("จำนวนเฟรมทั้งหมดในระบบ", f"{total_frames:,} frames")
+            st.metric("ขนาดพื้นที่ Repo โดยประมาณ", f"{repo_mb:.2f} MB")
+            
+            status_badge = "✅ สำเร็จ (Success)" if latest_run_status == "success" else f"⚠️ {latest_run_status.title()}"
+            st.write(f"**สถานะบอทล่าสุด:** {status_badge}")
+            
+            if st.button("🔄 รีเฟรชทันที (Refresh)", use_container_width=True):
+                st.cache_data.clear()
+                st.rerun()
+
+    # ================= 3. ส่วนแสดงผลภาพเรดาร์ฝั่งขวา =================
+    with col_right:
+        st.subheader("3. Latest Frame Preview (PHS Station)")
+        
+        if not df_log.empty:
+            latest_row = df_log.iloc[-1]
+            timestamp_str = latest_row.get("timestamp_utc", "Unknown")
+            raw_path = str(latest_row.get("raw_file", ""))
+
+            # ดึงภาพดิบและภาพ Solid
+            raw_img_bytes = fetch_image_bytes(raw_path)
+            solid_img_bytes, matched_path = fetch_solid_image(latest_row)
+
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown(f"**Raw TMD Image** ({timestamp_str} UTC)")
+                if raw_img_bytes:
+                    st.image(raw_img_bytes, use_container_width=True)
+                else:
+                    st.error(f"ไม่พบไฟล์: {raw_path}")
+
+            with c2:
+                st.markdown("**Processed Solid Image** (.png)")
+                if solid_img_bytes:
+                    st.image(solid_img_bytes, use_container_width=True)
+                else:
+                    st.warning(f"ยังไม่พบไฟล์: {matched_path}")
+        else:
+            st.info("กำลังรอการเชื่อมต่อฐานข้อมูล...")
+
+    # ================= 4. ตาราง Activity Log ด้านล่าง =================
+    st.markdown("---")
+    st.subheader("4. Activity Log")
+    if not df_log.empty:
+        st.dataframe(
+            df_log.tail(15).iloc[::-1],
+            use_container_width=True,
+            hide_index=True
+        )
+    else:
+        st.write("ยังไม่มีประวัติ Log ในระบบ")
+
+# -------------------------------------------------------------
+# Main Entry Point
 # -------------------------------------------------------------
 st.title(f"{REPO_OWNER}/{REPO_NAME} | ADMIN HUB")
 st.markdown("---")
 
-col_left, col_right = st.columns([1, 2.3], gap="large")
-
-# ================= แผงควบคุมฝั่งซ้าย =================
-with col_left:
-    st.subheader("1. System Control")
-    current_status = get_pipeline_status()
-    
-    with st.container(border=True):
-        is_on = st.toggle("System Power [ ON / OFF ]", value=current_status)
-        
-        if is_on != current_status:
-            if set_pipeline_status(is_on):
-                st.toast(f"อัปเดตสถานะ: {'เปิดระบบ (ACTIVE)' if is_on else 'ปิดระบบ (PAUSED)'}")
-                st.rerun()
-            else:
-                st.error("ไม่สามารถเชื่อมต่อเพื่อเปลี่ยนค่าบน GitHub ได้")
-
-        status_color = "green" if current_status else "red"
-        status_text = "ACTIVE" if current_status else "PAUSED"
-        st.markdown(f"**System Status:** :{status_color}[{status_text}]")
-        st.caption(f"⏱ รอบการดึงภาพถัดไป: **{calculate_next_run()}**")
-
-    st.subheader("2. Storage Monitor")
-    df_log = load_activity_log()
-    total_frames = len(df_log) if not df_log.empty else 0
-    repo_mb = get_repo_metrics()
-    latest_run_status = get_latest_action_run()
-
-    with st.container(border=True):
-        st.metric("จำนวนเฟรมทั้งหมดในระบบ", f"{total_frames:,} frames")
-        st.metric("ขนาดพื้นที่ Repo โดยประมาณ", f"{repo_mb:.2f} MB")
-        
-        status_badge = "✅ สำเร็จ (Success)" if latest_run_status == "success" else f"⚠️ {latest_run_status.title()}"
-        st.write(f"**สถานะบอทล่าสุด:** {status_badge}")
-
-# ================= ส่วนแสดงผลภาพเรดาร์ฝั่งขวา =================
-with col_right:
-    st.subheader("3. Latest Frame Preview (PHS Station)")
-    
-    if not df_log.empty:
-        latest_row = df_log.iloc[-1]
-        timestamp_str = latest_row.get("timestamp_utc", "Unknown")
-        raw_path = str(latest_row.get("raw_file", ""))
-
-        # ดึงภาพดิบและภาพ solid
-        raw_img_bytes = fetch_image_bytes(raw_path)
-        solid_img_bytes, matched_path = fetch_solid_image(latest_row)
-
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown(f"**Raw TMD Image** ({timestamp_str} UTC)")
-            if raw_img_bytes:
-                st.image(raw_img_bytes, use_container_width=True)
-            else:
-                st.error(f"ไม่พบไฟล์: {raw_path}")
-
-        with c2:
-            st.markdown("**Processed Solid Image** (.png)")
-            if solid_img_bytes:
-                st.image(solid_img_bytes, use_container_width=True)
-            else:
-                st.warning(f"ยังไม่พบไฟล์: {matched_path}")
-    else:
-        st.info("กำลังรอการเชื่อมต่อฐานข้อมูล...")
-
-# ================= ตาราง Activity Log ด้านล่าง =================
-st.markdown("---")
-st.subheader("4. Activity Log")
-if not df_log.empty:
-    st.dataframe(
-        df_log.tail(15).iloc[::-1],
-        use_container_width=True,
-        hide_index=True
-    )
-else:
-    st.write("ยังไม่มีประวัติ Log ในระบบ")
+render_dashboard()
