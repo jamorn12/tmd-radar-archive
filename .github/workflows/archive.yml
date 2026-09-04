@@ -20,6 +20,7 @@ permissions:
 jobs:
   fetch-and-archive:
     runs-on: ubuntu-latest
+    if: vars.PIPELINE_ENABLED != 'false' || github.event.inputs.mode == 'repair'
     timeout-minutes: 14
     concurrency:
       group: radar-archive
