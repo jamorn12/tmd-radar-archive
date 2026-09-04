@@ -8,7 +8,6 @@ from datetime import datetime, timezone, timedelta
 # -------------------------------------------------------------
 st.set_page_config(page_title="TMD Radar | Admin Hub", layout="wide", page_icon="📡")
 
-# ดึงค่า Secrets จากระบบ Streamlit Cloud
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
 REPO_OWNER = st.secrets.get("REPO_OWNER", "jamorn12")
 REPO_NAME = st.secrets.get("REPO_NAME", "tmd-radar-archive")
@@ -23,31 +22,46 @@ HEADERS = {
 # -------------------------------------------------------------
 def get_pipeline_status():
     url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/actions/variables/PIPELINE_ENABLED"
-    r = requests.get(url, headers=HEADERS)
-    if r.status_code == 200:
-        return r.json().get("value", "true") == "true"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=5)
+        if r.status_code == 200:
+            return r.json().get("value", "true") == "true"
+    except Exception:
+        pass
     return True
 
 def set_pipeline_status(enabled: bool):
     url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/actions/variables/PIPELINE_ENABLED"
     val = "true" if enabled else "false"
-    r = requests.patch(url, headers=HEADERS, json={"name": "PIPELINE_ENABLED", "value": val})
-    return r.status_code in [200, 204]
+    try:
+        r = requests.patch(url, headers=HEADERS, json={"name": "PIPELINE_ENABLED", "value": val}, timeout=5)
+        return r.status_code in [200, 204]
+    except Exception:
+        return False
 
 def get_latest_action_run():
     url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/actions/runs?per_page=1"
-    r = requests.get(url, headers=HEADERS)
-    if r.status_code == 200 and r.json().get("workflow_runs"):
-        latest = r.json()["workflow_runs"][0]
-        return latest.get("conclusion") or latest.get("status")
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=5)
+        if r.status_code == 200 and r.json().get("workflow_runs"):
+            latest = r.json()["workflow_runs"][0]
+            return latest.get("conclusion") or latest.get("status")
+    except Exception:
+        pass
     return "Unknown"
 
 def get_repo_metrics():
     url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}"
-    r = requests.get(url, headers=HEADERS)
-    size_kb = r.json().get("size", 0) if r.status_code == 200 else 0
-    return size_kb / 1024  # แปลงเป็น MB
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=5)
+        if r.status_code == 200:
+            size_kb = r.json().get("size", 0)
+            return size_kb / 1024
+    except Exception:
+        pass
+    return 0.0
 
+@st.cache_data(ttl=60)
 def load_activity_log():
     url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/data/log/PHS_index.csv"
     try:
@@ -71,6 +85,19 @@ def calculate_next_run():
     minutes, seconds = divmod(int(diff.total_seconds()), 60)
     return f"{minutes:02d}:{seconds:02d} นาที"
 
+def build_raw_github_url(file_path, default_subfolder="raw"):
+    if not file_path or pd.isna(file_path):
+        return None
+    file_str = str(file_path).strip().replace("\\", "/")
+    
+    if file_str.startswith("http"):
+        return file_str
+    if file_str.startswith("data/"):
+        return f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{file_str}"
+    
+    # กรณีเป็น path ย่อยหรือเฉพาะชื่อไฟล์
+    return f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/data/{default_subfolder}/PHS/{file_str}"
+
 # -------------------------------------------------------------
 # Dashboard UI
 # -------------------------------------------------------------
@@ -89,10 +116,10 @@ with col_left:
         
         if is_on != current_status:
             if set_pipeline_status(is_on):
-                st.toast(f"อัปเดตสถานะสำเร็จ: {'เปิดระบบ (ACTIVE)' if is_on else 'ปิดพักระบบ (PAUSED)'}")
+                st.toast(f"อัปเดตสถานะ: {'เปิดระบบ (ACTIVE)' if is_on else 'ปิดระบบ (PAUSED)'}")
                 st.rerun()
             else:
-                st.error("ไม่สามารถเชื่อมต่อเพื่อเปลี่ยนค่าบน GitHub ได้ (ตรวจเช็ก Token)")
+                st.error("ไม่สามารถเชื่อมต่อเพื่อเปลี่ยนค่าบน GitHub ได้")
 
         status_color = "green" if current_status else "red"
         status_text = "ACTIVE" if current_status else "PAUSED"
@@ -118,25 +145,36 @@ with col_right:
     
     if not df_log.empty:
         latest_row = df_log.iloc[-1]
-        raw_filename = latest_row.get("raw_filename", "")
-        proc_filename = latest_row.get("processed_filename", "")
         timestamp_str = latest_row.get("timestamp_utc", "Unknown")
 
-        raw_url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/data/raw/PHS/{raw_filename}"
-        proc_url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/data/processed/PHS/{proc_filename}"
+        # ค้นหาคอลัมน์ชื่อไฟล์ Raw อัตโนมัติ
+        raw_col = next((c for c in ["raw_file", "raw_filename", "raw_path"] if c in df_log.columns), None)
+        raw_val = latest_row.get(raw_col, "") if raw_col else ""
+        raw_url = build_raw_github_url(raw_val, "raw")
+
+        # ค้นหาคอลัมน์ชื่อไฟล์ Processed / Alpha อัตโนมัติ
+        proc_col = next((c for c in ["alpha_file", "processed_file", "proc_file", "solid_file"] if c in df_log.columns), None)
+        proc_val = latest_row.get(proc_col, "") if proc_col else ""
+        proc_url = build_raw_github_url(proc_val, "processed")
 
         c1, c2 = st.columns(2)
         with c1:
             st.markdown(f"**Raw TMD Image** ({timestamp_str} UTC)")
-            st.image(raw_url, use_container_width=True)
+            if raw_url:
+                st.image(raw_url, use_container_width=True)
+            else:
+                st.info("ไม่พบคอลัมน์ raw_file")
 
         with c2:
             st.markdown("**Processed Alpha Mask** (Transparent)")
-            st.image(proc_url, use_container_width=True)
+            if proc_url:
+                st.image(proc_url, use_container_width=True)
+            else:
+                st.info("ไม่พบคอลัมน์ alpha_file")
     else:
-        st.info("กำลังรอการบันทึกภาพเฟรมแรกเข้าสู่ระบบ...")
+        st.info("กำลังรอการเชื่อมต่อฐานข้อมูล...")
 
-# ================= ตารางบันทึกสถานะด้านล่าง =================
+# ================= ตาราง Activity Log ด้านล่าง =================
 st.markdown("---")
 st.subheader("4. Activity Log")
 if not df_log.empty:
@@ -146,4 +184,4 @@ if not df_log.empty:
         hide_index=True
     )
 else:
-    st.write("ยังไม่มีประวัติ Log ในไฟล์ PHS_index.csv")
+    st.write("ยังไม่มีประวัติ Log ในระบบ")
