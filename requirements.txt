@@ -4,6 +4,9 @@ Pillow>=10.0
 scipy>=1.10
 PyYAML>=6.0
 pytesseract>=0.3.10
+streamlit
+pandas
+opencv-python-headless
 
 # หมายเหตุ: เคยมี scikit-image อยู่บรรทัดนี้ — เอาออกแล้วตั้งแต่ v0.3.0
 # skimage ดึง matplotlib เข้ามาตอน import ทำให้ชนกับ NumPy 2.x (_ARRAY_API not found)
