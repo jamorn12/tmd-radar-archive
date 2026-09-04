@@ -44,10 +44,16 @@ def log_path(root: Path, st: Station) -> Path:
 
 
 def get_palette(root: Path, st: Station, img: Image.Image) -> tuple[np.ndarray, np.ndarray]:
-    """ใช้ palette ที่เคยสกัดไว้ ถ้ายังไม่มีก็สกัดจากภาพนี้แล้วเก็บไว้"""
+    """ใช้ palette ที่เคยสกัดไว้ ถ้ายังไม่มีก็สกัดจากภาพนี้แล้วเก็บไว้
+
+    ถ้าไฟล์ที่เก็บไว้เป็นเวอร์ชันเก่า (ค่า dBZ ได้มาจากการ interpolate เชิงเส้น
+    ซึ่งคลาดที่สองแถบล่างสุด) จะสกัดใหม่ทับให้อัตโนมัติ
+    """
     p = palette_path(root, st)
-    if p.exists():
+    if p.exists() and not palette.needs_upgrade(p):
         return palette.load_palette(p)
+    if p.exists():
+        print(f"[i] {st.code}: palette เดิมเป็นเวอร์ชันก่อนแก้ค่า dBZ — สกัดใหม่ทับ")
     rgb, dbz = palette.extract_palette(img, st)
     palette.save_palette(p, rgb, dbz)
     return rgb, dbz
