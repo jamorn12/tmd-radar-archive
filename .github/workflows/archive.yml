@@ -56,26 +56,29 @@ jobs:
             --outputs alpha,solid \
             --background 0,0,0
 
-      - name: Generate Nowcast Forecast
-        if: ${{ github.event.inputs.mode != 'repair' }}
-        run: |
-          python -m radar_archive.nowcast --station PHS --engine light --out data/nowcast
-
       - name: Repair Archive (manual only)
         if: ${{ github.event.inputs.mode == 'repair' }}
         run: |
           python -m radar_archive.cli --station PHS repair --apply
 
+      # nowcast ล้มไม่ควรทำให้การเก็บคลังล้มตาม — คลังคือของที่กู้คืนไม่ได้
+      # ส่วน nowcast รอบหน้า (อีก 15 นาที) คำนวณใหม่ได้อยู่แล้ว
+      - name: Nowcast (extrapolation, 60 min)
+        if: ${{ github.event.inputs.mode != 'repair' }}
+        continue-on-error: true
+        run: |
+          python -m radar_archive.nowcast --station PHS --out docs/nowcast/PHS
+
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A data/
+          git add -A data/ docs/nowcast/
           if git diff --staged --quiet; then
             echo "No changes to commit"
             exit 0
           fi
-          MSG="archive: update radar data & nowcast [skip ci]"
+          MSG="archive: update radar data + nowcast [skip ci]"
           if [ "${{ github.event.inputs.mode }}" = "repair" ]; then
             MSG="repair: fix OCR timestamps, drop duplicate frames, rebuild index [skip ci]"
           fi
