@@ -18,21 +18,21 @@
 
 <style>
 :root {
-  --card: rgba(15, 23, 42, 0.82);
+  --card: rgba(15, 23, 42, 0.85);
   --card-line: rgba(255, 255, 255, 0.12);
   --text: #F8FAFC;
   --text-dim: #94A3B8;
   --accent: #38BDF8;
   --warn: #F59E0B;
   --ok: #10B981;
-  --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
   --blur: blur(16px);
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: var(--text); font-family: "IBM Plex Sans Thai", sans-serif; overflow: hidden; }
 
-#map { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; background: #0b1320; }
+#map { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; background: #1a202c; }
 
 .glass {
   background: var(--card);
@@ -46,26 +46,26 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 /* Top Bar */
 .top-bar {
   position: absolute; top: 12px; left: 12px; right: 12px; z-index: 1000;
-  display: flex; gap: 10px; align-items: center; pointer-events: none;
+  display: flex; gap: 8px; align-items: center; pointer-events: none;
 }
 .top-bar > * { pointer-events: auto; }
 
-.brand { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; }
-.brand b { font-size: 15px; letter-spacing: -0.01em; color: var(--accent); }
-.brand span { font-size: 13px; color: var(--text-dim); }
+.brand { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; }
+.brand b { font-size: 14px; letter-spacing: -0.01em; color: var(--accent); }
+.brand span { font-size: 12px; color: var(--text-dim); }
 
-.pill { padding: 8px 14px; border-radius: 999px; font-size: 12px; display: flex; align-items: center; gap: 8px; }
+.pill { padding: 7px 12px; border-radius: 999px; font-size: 11.5px; display: flex; align-items: center; gap: 7px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
 .dot.warn { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
 
 /* Basemap Switcher Widget */
 .map-switch {
-  display: flex; gap: 4px; padding: 4px; border-radius: 999px; margin-left: auto;
+  display: flex; gap: 2px; padding: 3px; border-radius: 999px; margin-left: auto;
 }
 .map-btn {
   border: none; background: transparent; color: var(--text-dim);
-  padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 500;
-  cursor: pointer; transition: all 0.2s;
+  padding: 5px 11px; border-radius: 999px; font-size: 11.5px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
 }
 .map-btn.active {
   background: var(--accent); color: #070B12; font-weight: 700;
@@ -73,29 +73,29 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 /* Left Card (ETA) */
 .rail {
-  position: absolute; top: 68px; left: 12px; width: 330px; z-index: 999;
+  position: absolute; top: 64px; left: 12px; width: 320px; z-index: 999;
   display: flex; flex-direction: column; gap: 10px; pointer-events: none;
 }
 .rail > * { pointer-events: auto; }
-.card { padding: 16px 18px; }
+.card { padding: 15px 16px; }
 .card-head { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); }
-.eta-val { font-size: 42px; font-weight: 700; line-height: 1.1; margin: 6px 0; color: #fff; }
-.eta-val small { font-size: 16px; font-weight: 400; color: var(--text-dim); margin-left: 4px; }
-.eta-desc { font-size: 13px; color: var(--text-dim); line-height: 1.4; }
+.eta-val { font-size: 38px; font-weight: 700; line-height: 1.1; margin: 4px 0; color: #fff; }
+.eta-val small { font-size: 15px; font-weight: 400; color: var(--text-dim); margin-left: 4px; }
+.eta-desc { font-size: 12.5px; color: var(--text-dim); line-height: 1.4; }
 
 .btn-loc {
-  width: 100%; margin-top: 12px; padding: 8px; border-radius: 10px;
+  width: 100%; margin-top: 10px; padding: 7px; border-radius: 10px;
   background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3);
-  color: var(--accent); font-weight: 600; cursor: pointer; font-size: 13px;
+  color: var(--accent); font-weight: 600; cursor: pointer; font-size: 12.5px;
 }
 .btn-loc:hover { background: rgba(56, 189, 248, 0.25); }
 
 /* Slider & Opacity Tool */
 .opacity-box {
-  margin-top: 10px; display: flex; align-items: center; justify-content: space-between;
-  font-size: 12px; color: var(--text-dim);
+  margin-top: 8px; display: flex; align-items: center; justify-content: space-between;
+  font-size: 11.5px; color: var(--text-dim);
 }
-.opacity-box input { width: 140px; accent-color: var(--accent); }
+.opacity-box input { width: 130px; accent-color: var(--accent); }
 
 /* Legend */
 .legend {
@@ -112,26 +112,27 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .timeline {
   position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
   width: min(620px, calc(100% - 24px)); z-index: 1000;
-  padding: 10px 16px; border-radius: 18px;
+  padding: 8px 16px; border-radius: 18px;
 }
-.tl-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.tl-time { font-size: 15px; font-weight: 700; }
-.tl-tag { font-size: 12px; padding: 2px 8px; border-radius: 6px; }
+.tl-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.tl-time { font-size: 14px; font-weight: 700; }
+.tl-tag { font-size: 11.5px; padding: 2px 7px; border-radius: 6px; }
 .tl-tag.obs { background: rgba(16, 185, 129, 0.2); color: #34D399; }
 .tl-tag.fc { background: rgba(245, 158, 11, 0.2); color: #FBBF24; }
 
 .tl-controls { display: flex; align-items: center; gap: 12px; }
 .btn-play {
-  width: 36px; height: 36px; border-radius: 50%; border: none;
-  background: var(--accent); color: #070B12; font-size: 16px;
+  width: 34px; height: 34px; border-radius: 50%; border: none;
+  background: var(--accent); color: #070B12; font-size: 15px;
   display: grid; place-items: center; cursor: pointer; flex: none;
 }
 .track { flex: 1; accent-color: var(--accent); cursor: pointer; }
 
-@media (max-width: 768px) {
-  .rail { width: calc(100% - 24px); top: auto; bottom: 85px; }
+@media (max-width: 820px) {
+  .rail { width: calc(100% - 24px); top: auto; bottom: 80px; }
   .legend { display: none; }
   .timeline { bottom: 8px; }
+  .brand span { display: none; }
 }
 </style>
 </head>
@@ -150,9 +151,10 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     <span id="freshTime">กำลังเชื่อมต่อ...</span>
   </div>
 
-  <!-- Basemap Switcher -->
+  <!-- Basemap Switcher (เพิ่มปุ่ม DEM) -->
   <div class="map-switch glass">
     <button class="map-btn active" data-layer="dark">มืด</button>
+    <button class="map-btn" data-layer="terrain">DEM ภูมิประเทศ</button>
     <button class="map-btn" data-layer="satellite">ดาวเทียม</button>
     <button class="map-btn" data-layer="light">สว่าง</button>
   </div>
@@ -199,20 +201,31 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 const MANIFEST_URL = "nowcast/PHS/latest.json";
 const R_EARTH = 6371.0088;
 
-// 1. กำหนด Basemaps ระดับสากล
+// 1. กำหนด Basemaps ระดับสากล (แก้ปัญหา API Key และเพิ่ม DEM Shaded Relief)
 const baseLayers = {
-  dark: L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: "abcd", maxZoom: 19
+  // โหมดมืด: ใช้ Esri Dark Gray Canvas (ไม่มีลายน้ำ สะอาด คมชัด)
+  dark: L.layerGroup([
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
+  ]),
+
+  // โหมด DEM ภูมิประเทศ: แสดงเงาเทือกเขา (Hillshade/Shaded Relief) + เส้นชั้นความสูง (Contours)
+  terrain: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}", {
+    attribution: 'Tiles &copy; Esri World Topo',
+    maxZoom: 19
   }),
-  light: L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: "abcd", maxZoom: 19
-  }),
+
+  // ภาพถ่ายดาวเทียมความละเอียดสูง (Google Hybrid) พร้อมป้ายชื่อภาษาไทย
   satellite: L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", {
     attribution: "&copy; Google Maps",
     maxZoom: 19
-  })
+  }),
+
+  // โหมดสว่าง: ใช้ Esri Light Gray Canvas
+  light: L.layerGroup([
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
+  ])
 };
 
 // เริ่มต้นแผนที่ตรงกลางที่พิษณุโลก
