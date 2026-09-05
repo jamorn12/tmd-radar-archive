@@ -86,7 +86,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .custom-checkbox input, .layer-label-check input { accent-color: var(--accent); cursor: pointer; }
 .divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0; }
 
-/* Actionable Weather Card (รองรับโหมดย่อ-ขยาย) */
+/* Actionable Weather Card */
 .rail {
   position: absolute; top: 62px; left: 12px; width: 345px; z-index: 999;
   display: flex; flex-direction: column; gap: 10px; pointer-events: none;
@@ -116,7 +116,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .badge-raining { background: rgba(239, 68, 68, 0.2); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 .badge-clear { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
 
-/* ป้ายเตือนภัยระดับวิกฤต (Severe Weather / Hail) */
 .badge-hail {
   background: rgba(192, 132, 252, 0.25); color: #E9D5FF;
   border: 1px solid rgba(192, 132, 252, 0.5); font-weight: 700;
@@ -140,7 +139,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .ac-grid-lbl { font-size: 10.5px; color: var(--text-dim); margin-bottom: 2px; }
 .ac-grid-val { font-size: 12.5px; font-weight: 600; color: #fff; font-family: "IBM Plex Mono", monospace; }
 
-/* Meteogram Micro-Chart Section (กราฟพยากรณ์ฝนรายจุด) */
+/* Meteogram Micro-Chart Section */
 .meteogram-box {
   background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 10px; padding: 8px 10px; margin-bottom: 10px;
@@ -149,6 +148,14 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   display: flex; justify-content: space-between; align-items: center;
   font-size: 10.5px; color: var(--text-dim); margin-bottom: 4px;
 }
+.mg-header-right { display: flex; align-items: center; gap: 6px; }
+.btn-expand-mg {
+  background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3);
+  color: var(--accent); border-radius: 6px; padding: 2px 6px; font-size: 11px;
+  cursor: pointer; transition: all 0.2s; font-family: "IBM Plex Sans Thai", sans-serif;
+}
+.btn-expand-mg:hover { background: rgba(56, 189, 248, 0.25); }
+
 .mg-chart-svg { width: 100%; height: 52px; overflow: visible; }
 
 .ac-desc { font-size: 11.5px; color: var(--text-dim); line-height: 1.45; margin-bottom: 10px; }
@@ -176,7 +183,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .opacity-box { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-dim); }
 .opacity-box input { width: 120px; accent-color: var(--accent); }
 
-/* สไตล์เมื่อหน้าต่างถูกย่อ (Collapsed Pill) */
+/* สไตล์เมื่อหน้าต่างถูกย่อ */
 .rail.collapsed { width: fit-content; }
 .rail.collapsed .action-card { display: none; }
 .ac-pill {
@@ -187,6 +194,44 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .ac-pill:hover { transform: scale(1.03); }
 .rail.collapsed .ac-pill { display: flex; }
 .ac-pill-text { font-size: 12px; font-weight: 600; color: #fff; }
+
+/* Modal ขยายกราฟเต็มจอ (Meteogram Detail Dialog) */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
+  display: none; place-items: center; padding: 16px;
+}
+.modal-backdrop.open { display: grid; }
+.modal-box {
+  width: min(580px, 100%); padding: 20px; border-radius: 18px;
+  animation: modal-in 0.25s ease-out;
+}
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.modal-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 10px;
+}
+.modal-title { font-size: 16px; font-weight: 700; color: #fff; }
+.modal-subtitle { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.modal-close-btn {
+  background: rgba(255, 255, 255, 0.1); border: none; color: var(--text);
+  width: 28px; height: 28px; border-radius: 50%; font-size: 14px;
+  cursor: pointer; display: grid; place-items: center;
+}
+.modal-close-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+.modal-svg-wrap { width: 100%; height: 180px; margin: 16px 0; }
+.modal-svg-wrap svg { width: 100%; height: 100%; overflow: visible; }
+
+.modal-legend-row {
+  display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px;
+  color: var(--text-dim); justify-content: center;
+}
+.mg-badge-item { display: flex; align-items: center; gap: 5px; }
+.mg-dot { width: 8px; height: 8px; border-radius: 2px; }
 
 /* สเกลสีเรดาร์ */
 .legend {
@@ -343,7 +388,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- Actionable Weather Card (พร้อม Meteogram & ระบบเตือนภัยวิกฤต) -->
+<!-- Actionable Weather Card -->
 <div class="rail" id="actionRail">
   <div class="action-card glass" id="actionCard">
     <div class="ac-head">
@@ -376,14 +421,17 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
       </div>
     </div>
 
-    <!-- กราฟ Meteogram 105 นาที (ย้อนหลัง 45 นาที - ล่วงหน้า 60 นาที) -->
+    <!-- กล่อง Meteogram Micro-Chart พร้อมปุ่มขยาย -->
     <div class="meteogram-box">
       <div class="mg-header">
         <span>📊 แนวโน้มฝน 105 นาที (dBZ)</span>
-        <span id="mgPeakLabel">สูงสุด: — dBZ</span>
+        <div class="mg-header-right">
+          <span id="mgPeakLabel">สูงสุด: — dBZ</span>
+          <button class="btn-expand-mg" id="btnOpenModal" title="ขยายกราฟเต็มจอ">⛶ ขยาย</button>
+        </div>
       </div>
       <svg class="mg-chart-svg" id="mgChartSvg" viewBox="0 0 280 50">
-        <!-- SVG Bars จะถูกเรนเดอร์โดย JavaScript -->
+        <!-- Mini SVG Bars -->
       </svg>
     </div>
 
@@ -407,6 +455,34 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     <span id="acPillBadge">🌤️</span>
     <span class="ac-pill-text" id="acPillText">กำลังวิเคราะห์...</span>
     <span style="font-size: 11px; color: var(--accent);">▶</span>
+  </div>
+</div>
+
+<!-- Modal ขยายกราฟ Meteogram 105 นาที แบบละเอียด -->
+<div class="modal-backdrop" id="mgModal">
+  <div class="modal-box glass">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">📊 กราฟวิเคราะห์ฝน 105 นาทีรายพิกัด (Meteogram)</div>
+        <div class="modal-subtitle" id="modalLocationLabel">ตำแหน่งตรวจวัด: พิษณุโลก</div>
+      </div>
+      <button class="modal-close-btn" id="btnCloseModal">✕</button>
+    </div>
+
+    <!-- กราฟใหญ่ความละเอียดสูง -->
+    <div class="modal-svg-wrap">
+      <svg id="modalChartSvg" viewBox="0 0 520 180"></svg>
+    </div>
+
+    <!-- คำอธิบายเกณฑ์ความแรง (Legend) -->
+    <div class="modal-legend-row">
+      <div class="mg-badge-item"><span class="mg-dot" style="background:#64748B;"></span> อดีต (-45 น.)</div>
+      <div class="mg-badge-item"><span class="mg-dot" style="background:#38BDF8;"></span> ฝนเบา (&lt;28 dBZ)</div>
+      <div class="mg-badge-item"><span class="mg-dot" style="background:#10B981;"></span> ปานกลาง (28-38)</div>
+      <div class="mg-badge-item"><span class="mg-dot" style="background:#F59E0B;"></span> หนัก (38-45)</div>
+      <div class="mg-badge-item"><span class="mg-dot" style="background:#EF4444;"></span> หนักมาก (&gt;45)</div>
+      <div class="mg-badge-item"><span class="mg-dot" style="background:#C084FC;"></span> ลูกเห็บ (&ge;52 dBZ)</div>
+    </div>
   </div>
 </div>
 
@@ -543,6 +619,9 @@ let stationMarkerElement = null;
 let isAlertEnabled = localStorage.getItem("tanfon_alert_enabled") === "true";
 let lastAlertTimestamp = 0;
 
+// บันทึกข้อมูลแท่งกราฟล่าสุดไว้ขยายใน Modal
+let currentSampledDbzList = [];
+
 const SCAN_RES = 160;
 const scanCanvas = document.createElement("canvas");
 scanCanvas.width = SCAN_RES;
@@ -621,53 +700,43 @@ function triggerRainNotification(etaMin, startStr, durationMin, isHailRisk) {
   try { new Notification(title, options); } catch (e) {}
 }
 
-// แปลงค่าสี RGB เป็นค่าการสะท้อน dBZ
 function rgbToDbz(r, g, b, a) {
   if (a < 35) return 0;
-  // สีม่วง/ชมพู/ขาว (Hail / Extreme Core: > 52 dBZ)
   if (r > 170 && b > 170) return 56;
-  // สีแดงเข้ม (Very Heavy Rain: 48 - 52 dBZ)
   if (r > 190 && g < 70 && b < 70) return 50;
-  // สีส้ม (Heavy Rain: 40 - 45 dBZ)
   if (r > 200 && g > 100 && b < 60) return 42;
-  // สีเหลือง (Moderate: 32 - 38 dBZ)
   if (r > 190 && g > 190 && b < 70) return 35;
-  // สีเขียว (Light - Moderate: 20 - 30 dBZ)
   if (g > 130 && r < 140) return 25;
-  // สีฟ้าอ่อน (Very Light: 15 - 20 dBZ)
   if (b > 160 && g > 160) return 18;
   return 0;
 }
 
-// แปลงค่า dBZ เป็นอัตราฝนตก (mm/h) ด้วยสมการ Z = 200 * R^1.6
 function dbzToRainRate(dbz) {
   if (dbz < 15) return 0;
   const z = Math.pow(10, dbz / 10);
   return Math.pow(z / 200, 1 / 1.6);
 }
 
-// 1. เรนเดอร์กราฟ Meteogram 105 นาที (SVG)
+// 1. เรนเดอร์กราฟ Meteogram ขนาดเล็กในการ์ด
 function renderMeteogram(sampledDbzList, peakDbz) {
+  currentSampledDbzList = sampledDbzList;
   const svg = document.getElementById("mgChartSvg");
   const peakLabel = document.getElementById("mgPeakLabel");
   peakLabel.textContent = `สูงสุด: ${peakDbz.toFixed(0)} dBZ`;
 
-  const totalSteps = sampledDbzList.length; // 8 เฟรม
+  const totalSteps = sampledDbzList.length;
   const w = 280;
   const h = 50;
   const barWidth = 20;
   const stepGap = w / totalSteps;
 
   let svgHtml = "";
-
-  // วาดเส้นแบ่งแกน Y (Gridlines)
   svgHtml += `
     <line x1="0" y1="12" x2="${w}" y2="12" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,2"/>
     <line x1="0" y1="30" x2="${w}" y2="30" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,2"/>
     <line x1="0" y1="${h - 10}" x2="${w}" y2="${h - 10}" stroke="rgba(255,255,255,0.15)"/>
   `;
 
-  // เส้นแบ่งเวลา "ตอนนี้" (Now Separator)
   const nowX = (manifest ? manifest.frames.findIndex(f => f.offset_min === 0) : 3) * stepGap + stepGap / 2;
   svgHtml += `
     <line x1="${nowX}" y1="0" x2="${nowX}" y2="${h - 10}" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3,3"/>
@@ -680,35 +749,119 @@ function renderMeteogram(sampledDbzList, peakDbz) {
     const barHeight = Math.min(36, Math.max(3, (dbz / 65) * 36));
     const y = (h - 10) - barHeight;
 
-    // เลือกสีตามความแรง dBZ
     let fillColor = "#38BDF8";
     if (item.offset < 0) {
-      fillColor = "#64748B"; // อดีต: สีเทาฟ้า
+      fillColor = "#64748B";
     } else {
-      if (dbz >= 52) fillColor = "#C084FC"; // ม่วง (ลูกเห็บ)
-      else if (dbz >= 45) fillColor = "#EF4444"; // แดง (หนักมาก)
-      else if (dbz >= 38) fillColor = "#F59E0B"; // ส้ม
-      else if (dbz >= 28) fillColor = "#10B981"; // เขียว
-      else if (dbz >= 15) fillColor = "#38BDF8"; // ฟ้า
+      if (dbz >= 52) fillColor = "#C084FC";
+      else if (dbz >= 45) fillColor = "#EF4444";
+      else if (dbz >= 38) fillColor = "#F59E0B";
+      else if (dbz >= 28) fillColor = "#10B981";
+      else if (dbz >= 15) fillColor = "#38BDF8";
       else fillColor = "rgba(255,255,255,0.08)";
     }
 
-    // แท่งกราฟ
-    svgHtml += `
-      <rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="2" fill="${fillColor}"/>
-    `;
-
-    // ป้ายเวลาแกน X
+    svgHtml += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="2" fill="${fillColor}"/>`;
     const labelText = item.offset === 0 ? "0" : (item.offset > 0 ? `+${item.offset}` : `${item.offset}`);
-    svgHtml += `
-      <text x="${x + barWidth / 2}" y="${h - 1}" text-anchor="middle" fill="#94A3B8" font-size="7.5" font-family="IBM Plex Mono">${labelText}</text>
-    `;
+    svgHtml += `<text x="${x + barWidth / 2}" y="${h - 1}" text-anchor="middle" fill="#94A3B8" font-size="7.5" font-family="IBM Plex Mono">${labelText}</text>`;
   });
 
   svg.innerHTML = svgHtml;
 }
 
-// 2. วิเคราะห์ผลกระทบฝน, ตรวจจับลูกเห็บ, คำนวณฝนสะสม และสร้าง Meteogram
+// 2. เรนเดอร์กราฟ Meteogram ใน Modal ขนาดใหญ่ (ขยายเต็มจอ)
+function renderModalMeteogram() {
+  if (currentSampledDbzList.length === 0) return;
+
+  const svg = document.getElementById("modalChartSvg");
+  const w = 520;
+  const h = 180;
+  const chartBottom = 145;
+  const chartTop = 20;
+  const chartHeight = chartBottom - chartTop;
+
+  const totalSteps = currentSampledDbzList.length;
+  const barWidth = 36;
+  const stepGap = w / totalSteps;
+
+  let svgHtml = "";
+
+  // ลากเส้นระดับ Thresholds
+  const levels = [
+    { dbz: 20, label: "20 dBZ (ฝนเบา)", color: "rgba(56, 189, 248, 0.2)" },
+    { dbz: 35, label: "35 dBZ (ปานกลาง)", color: "rgba(16, 185, 129, 0.2)" },
+    { dbz: 45, label: "45 dBZ (ฝนหนัก)", color: "rgba(245, 158, 11, 0.2)" },
+    { dbz: 52, label: "52 dBZ (เสี่ยงลูกเห็บ)", color: "rgba(192, 132, 252, 0.35)" }
+  ];
+
+  levels.forEach(lv => {
+    const y = chartBottom - (lv.dbz / 65) * chartHeight;
+    svgHtml += `
+      <line x1="30" y1="${y}" x2="${w - 10}" y2="${y}" stroke="${lv.color}" stroke-dasharray="3,3"/>
+      <text x="32" y="${y - 3}" fill="${lv.color}" font-size="8.5" font-family="IBM Plex Mono">${lv.label}</text>
+    `;
+  });
+
+  // แกนเวลา "ตอนนี้"
+  const nowIdx = manifest ? manifest.frames.findIndex(f => f.offset_min === 0) : 3;
+  const nowX = nowIdx * stepGap + stepGap / 2;
+  svgHtml += `
+    <line x1="${nowX}" y1="${chartTop}" x2="${nowX}" y2="${chartBottom}" stroke="var(--accent)" stroke-width="1.8" stroke-dasharray="4,4"/>
+    <text x="${nowX + 4}" y="${chartTop + 12}" fill="var(--accent)" font-size="10.5" font-weight="600" font-family="IBM Plex Sans Thai">● ปัจจุบัน</text>
+  `;
+
+  // วาดแท่งกราฟและตัวเลข dBZ / mm/h กำกับบนหัวแท่ง
+  currentSampledDbzList.forEach((item, i) => {
+    const x = i * stepGap + (stepGap - barWidth) / 2;
+    const dbz = item.dbz;
+    const rainRate = dbzToRainRate(dbz);
+    const barH = Math.min(chartHeight, Math.max(4, (dbz / 65) * chartHeight));
+    const y = chartBottom - barH;
+
+    let fillColor = "#38BDF8";
+    if (item.offset < 0) {
+      fillColor = "#64748B";
+    } else {
+      if (dbz >= 52) fillColor = "#C084FC";
+      else if (dbz >= 45) fillColor = "#EF4444";
+      else if (dbz >= 38) fillColor = "#F59E0B";
+      else if (dbz >= 28) fillColor = "#10B981";
+      else if (dbz >= 15) fillColor = "#38BDF8";
+      else fillColor = "rgba(255,255,255,0.06)";
+    }
+
+    // แท่งกราฟ
+    svgHtml += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barH}" rx="4" fill="${fillColor}"/>`;
+
+    // ค่าตัวเลข dBZ บนหัวแท่ง
+    if (dbz > 0) {
+      svgHtml += `
+        <text x="${x + barWidth / 2}" y="${y - 12}" text-anchor="middle" fill="#FFF" font-size="10" font-weight="700" font-family="IBM Plex Mono">${dbz.toFixed(0)}</text>
+        <text x="${x + barWidth / 2}" y="${y - 3}" text-anchor="middle" fill="var(--text-dim)" font-size="7.5" font-family="IBM Plex Mono">${rainRate.toFixed(1)} mm</text>
+      `;
+    }
+
+    // เวลาจริงใต้แท่ง
+    let timeStr = "";
+    if (manifest && manifest.frames[i]) {
+      const d = new Date(manifest.frames[i].t * 1000);
+      timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
+    const offsetText = item.offset === 0 ? "0น." : (item.offset > 0 ? `+${item.offset}น.` : `${item.offset}น.`);
+    svgHtml += `
+      <text x="${x + barWidth / 2}" y="${chartBottom + 14}" text-anchor="middle" fill="#FFF" font-size="9" font-family="IBM Plex Mono">${timeStr}</text>
+      <text x="${x + barWidth / 2}" y="${chartBottom + 26}" text-anchor="middle" fill="var(--text-dim)" font-size="8" font-family="IBM Plex Mono">${offsetText}</text>
+    `;
+  });
+
+  // เส้นแกนล่าง
+  svgHtml += `<line x1="20" y1="${chartBottom}" x2="${w - 10}" y2="${chartBottom}" stroke="rgba(255,255,255,0.2)"/>`;
+
+  svg.innerHTML = svgHtml;
+}
+
+// 3. วิเคราะห์ผลกระทบฝน, ตรวจจับลูกเห็บ, คำนวณฝนสะสม และสร้าง Meteogram
 function analyzeImpactAtPoint(lat, lon) {
   layerTrajectory.clearLayers();
   if (!manifest || !manifest.motion || frameImages.length === 0) return;
@@ -722,7 +875,6 @@ function analyzeImpactAtPoint(lat, lon) {
   const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
   const [pinE, pinN] = project(lat, lon, lat0, lon0);
 
-  // คำนวณพิกัด Pixel (px, py) บน Scan Canvas
   const targetPx = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
   const targetPy = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
 
@@ -730,7 +882,6 @@ function analyzeImpactAtPoint(lat, lon) {
   let peakDbz = 0;
   let accumulatedRainMm = 0;
 
-  // วนลูปอ่านค่า dBZ จากภาพทุกเฟรม (-45 ถึง +60 นาที) เพื่อสร้าง Meteogram
   manifest.frames.forEach((frame, idx) => {
     const img = frameImages[idx];
     let dbz = 0;
@@ -746,17 +897,17 @@ function analyzeImpactAtPoint(lat, lon) {
     if (dbz > peakDbz) peakDbz = dbz;
     sampledDbzList.push({ offset: frame.offset_min, dbz: dbz });
 
-    // คำนวณฝนสะสมล่วงหน้า (เฟรม offset >= 0)
     if (frame.offset_min >= 0 && dbz >= 15) {
-      const rainRate = dbzToRainRate(dbz); // mm/h
-      accumulatedRainMm += rainRate * (15 / 60); // แต่ละเฟรมห่างกัน 15 นาที
+      const rainRate = dbzToRainRate(dbz);
+      accumulatedRainMm += rainRate * (15 / 60);
     }
   });
 
-  // วาดกราฟ Meteogram ทันที
   renderMeteogram(sampledDbzList, peakDbz);
+  if (document.getElementById("mgModal").classList.contains("open")) {
+    renderModalMeteogram();
+  }
 
-  // สแกนภาพเฟรมปัจจุบันสำหรับ Upwind Raycasting
   const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
   const baseIdx = nowIdx >= 0 ? nowIdx : 0;
   const imgNow = frameImages[baseIdx];
@@ -808,7 +959,6 @@ function analyzeImpactAtPoint(lat, lon) {
   const nowTime = new Date();
   valRainAccum.textContent = accumulatedRainMm > 0 ? `~${accumulatedRainMm.toFixed(1)} มม.` : "0 มม.";
 
-  // ตรวจจับความเสี่ยงลูกเห็บ (> 52 dBZ)
   const isHailRisk = peakDbz >= 52;
   if (isHailRisk) {
     hailBadge.style.display = "flex";
@@ -902,7 +1052,6 @@ function analyzeImpactAtPoint(lat, lon) {
     pillBadge.textContent = willHail ? "⚡" : "🌧️";
     pillText.textContent = `ฝนเข้าในอีก ${etaMin} นาที`;
 
-    // ลากเส้นแนววิถีการปะทะ (Impact Vector Line)
     const rad = deg * Math.PI / 180;
     const [cloudLat, cloudLon] = unproject(pinE - Math.sin(rad) * hitDistFront, pinN - Math.cos(rad) * hitDistFront, lat0, lon0);
     const style = THEME_STYLES[currentTheme];
@@ -940,6 +1089,7 @@ function analyzeImpactAtPoint(lat, lon) {
 function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") {
   userPinLatLon = [lat, lon];
   document.getElementById("pinNameLabel").textContent = `📍 ${label}`;
+  document.getElementById("modalLocationLabel").textContent = `📍 ${label} (Lat: ${lat.toFixed(3)}, Lon: ${lon.toFixed(3)})`;
 
   if (!userPinMarker) {
     userPinMarker = L.marker([lat, lon], { draggable: true, title: "ลากเพื่อย้ายจุดตรวจวัด" }).addTo(map);
@@ -1270,6 +1420,23 @@ document.getElementById("btnExpandAc").addEventListener("click", () => {
   document.getElementById("actionRail").classList.remove("collapsed");
 });
 
+// จัดการ Modal ขยายกราฟ
+document.getElementById("btnOpenModal").addEventListener("click", (e) => {
+  e.stopPropagation();
+  renderModalMeteogram();
+  document.getElementById("mgModal").classList.add("open");
+});
+
+document.getElementById("btnCloseModal").addEventListener("click", () => {
+  document.getElementById("mgModal").classList.remove("open");
+});
+
+document.getElementById("mgModal").addEventListener("click", (e) => {
+  if (e.target.id === "mgModal") {
+    document.getElementById("mgModal").classList.remove("open");
+  }
+});
+
 document.getElementById("toggleLayerCard").addEventListener("click", () => {
   const body = document.getElementById("layerBody");
   const isHidden = body.style.display === "none";
@@ -1277,7 +1444,7 @@ document.getElementById("toggleLayerCard").addEventListener("click", () => {
   document.querySelector(".toggle-icon").textContent = isHidden ? "▼" : "▲";
 });
 
-// ควบคุม Checkbox เลเยอร์
+// Checkbox ควบคุมเลเยอร์
 document.getElementById("chkArrows").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerArrows); else map.removeLayer(layerArrows);
 });
