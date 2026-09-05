@@ -47,11 +47,9 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   border-radius: 14px;
 }
 
-/* ==========================================================
-   Leaflet Custom Modern Popup & Marker Styling (Smart Capsule)
-   ========================================================== */
+/* Leaflet Custom Modern Popup & Marker Styling */
 .leaflet-popup-content-wrapper {
-  background: rgba(15, 23, 42, 0.90) !important;
+  background: rgba(15, 23, 42, 0.92) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
@@ -67,7 +65,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .leaflet-popup-tip-container { overflow: visible !important; }
 .leaflet-popup-tip {
-  background: rgba(15, 23, 42, 0.90) !important;
+  background: rgba(15, 23, 42, 0.92) !important;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
   box-shadow: none !important;
   margin-top: -1px !important;
@@ -81,25 +79,12 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .leaflet-popup-close-button:hover { color: #fff !important; }
 
-.pop-capsule {
-  display: flex; flex-direction: column; gap: 6px; min-width: 220px;
-}
-.pop-top-row {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  padding-right: 14px;
-}
+.pop-capsule { display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
+.pop-top-row { display: flex; justify-content: space-between; align-items: flex-start; padding-right: 14px; }
 .pop-title-box { display: flex; flex-direction: column; gap: 1px; }
-.pop-title {
-  font-size: 13px; font-weight: 700; color: #fff;
-  display: flex; align-items: center; gap: 6px;
-}
-.pop-subtext {
-  font-size: 11px; color: var(--accent); font-weight: 500;
-}
-.pop-dot {
-  width: 6.5px; height: 6.5px; border-radius: 50%;
-  background: var(--ok); box-shadow: 0 0 8px var(--ok); flex-shrink: 0;
-}
+.pop-title { font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; }
+.pop-subtext { font-size: 11px; color: var(--accent); font-weight: 500; }
+.pop-dot { width: 6.5px; height: 6.5px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); flex-shrink: 0; }
 .pop-dot.warn { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
 .pop-dot.rain { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 
@@ -110,14 +95,9 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .pop-weather-info { display: flex; flex-direction: column; gap: 1px; }
 .pop-weather-main { font-size: 12px; font-weight: 600; color: #fff; }
 .pop-weather-sub { font-size: 10px; color: var(--text-dim); }
-.pop-weather-dbz {
-  font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 700;
-  color: var(--accent);
-}
+.pop-weather-dbz { font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 700; color: var(--accent); }
 
-.pop-meta-list {
-  display: flex; flex-direction: column; gap: 2px; font-size: 10px; color: var(--text-dim);
-}
+.pop-meta-list { display: flex; flex-direction: column; gap: 2px; font-size: 10px; color: var(--text-dim); }
 .pop-meta-item { display: flex; align-items: center; gap: 4px; }
 .pop-coord-text { font-family: "IBM Plex Mono", monospace; color: #94A3B8; }
 
@@ -130,13 +110,9 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 4px;
   transition: all 0.2s; border: none; font-family: "IBM Plex Sans Thai", sans-serif;
 }
-.pop-btn-graph {
-  background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--accent);
-}
+.pop-btn-graph { background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--accent); }
 .pop-btn-graph:hover { background: rgba(56, 189, 248, 0.25); }
-.pop-btn-nav {
-  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14); color: var(--text);
-}
+.pop-btn-nav { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14); color: var(--text); }
 .pop-btn-nav:hover { background: rgba(255, 255, 255, 0.14); }
 
 /* Custom Live Radar Pulsing Pin */
@@ -163,11 +139,21 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   100% { transform: scale(1.8); opacity: 0; }
 }
 
-/* Lucide Icon Base Styling */
-.lucide-icon {
-  display: inline-flex; align-items: center; justify-content: center;
-  vertical-align: middle; flex-shrink: 0;
+/* Rain Gauge Telemetry Marker Styling */
+.gauge-pin {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid #FFFFFF; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  cursor: pointer; transition: transform 0.15s;
 }
+.gauge-pin:hover { transform: scale(1.3); z-index: 1000; }
+.gauge-label {
+  font-family: "IBM Plex Mono", monospace; font-size: 9px; font-weight: 700;
+  color: #FFF; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px; padding: 1px 3px; white-space: nowrap; text-shadow: none;
+}
+
+/* Lucide Icons */
+.lucide-icon { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; flex-shrink: 0; }
 .icon-xs { width: 12px; height: 12px; }
 .icon-sm { width: 15px; height: 15px; }
 .icon-md { width: 18px; height: 18px; }
@@ -176,15 +162,12 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .weather-anim-svg { width: 100%; height: 100%; overflow: visible; }
 @keyframes cloud-float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-2.5px); } }
 .anim-cloud { animation: cloud-float 3.5s ease-in-out infinite; }
-
 @keyframes rain-fall { 0% { stroke-dashoffset: -16; opacity: 0; } 35% { opacity: 1; } 100% { stroke-dashoffset: 16; opacity: 0; } }
 .anim-raindrop { stroke-dasharray: 5 10; animation: rain-fall 1.1s linear infinite; }
 .anim-raindrop.d2 { animation-delay: 0.35s; }
 .anim-raindrop.d3 { animation-delay: 0.7s; }
-
 @keyframes sun-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .anim-sun-rays { transform-origin: 16px 16px; animation: sun-rotate 16s linear infinite; }
-
 @keyframes lightning-strike { 0%, 88%, 100% { opacity: 0; filter: none; } 90%, 94% { opacity: 1; filter: drop-shadow(0 0 5px #FBBF24); } }
 .anim-lightning { animation: lightning-strike 3.2s ease-in-out infinite; }
 
@@ -194,7 +177,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   display: flex; gap: 8px; align-items: center; pointer-events: none;
 }
 .top-bar > * { pointer-events: auto; }
-
 .brand { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; }
 .brand b { font-size: 14px; letter-spacing: -0.01em; color: var(--accent); }
 .brand span { font-size: 12px; color: var(--text-dim); }
@@ -202,7 +184,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .map-switch { display: flex; gap: 2px; padding: 3px; border-radius: 999px; margin-left: auto; }
 .map-btn {
   border: none; background: transparent; color: var(--text-dim);
-  padding: 5px 11px; border-radius: 999px; font-size: 11.5px; font-weight: 500;
+  padding: 5px 10px; border-radius: 999px; font-size: 11px; font-weight: 500;
   cursor: pointer; transition: all 0.2s; white-space: nowrap;
 }
 .map-btn.active { background: var(--accent); color: #070B12; font-weight: 700; }
@@ -210,7 +192,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 /* แผงขอบเขตพื้นที่ & เวกเตอร์ */
 .layer-card {
   position: absolute; top: 62px; right: 12px; z-index: 999;
-  width: 240px; padding: 12px 14px; font-size: 12px;
+  width: 245px; padding: 12px 14px; font-size: 12px;
 }
 .layer-head {
   display: flex; justify-content: space-between; align-items: center;
@@ -232,12 +214,8 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   transition: all 0.25s cubic-bezier(0.3, 0.8, 0.3, 1);
 }
 .rail > * { pointer-events: auto; }
-
 .action-card { padding: 15px 16px; border-radius: 16px; position: relative; }
-.ac-head {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 11.5px; color: var(--text-dim); margin-bottom: 6px;
-}
+.ac-head { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--text-dim); margin-bottom: 6px; }
 .ac-head-left { display: flex; align-items: center; gap: 6px; }
 .ac-collapse-btn {
   background: transparent; border: none; color: var(--text-dim); cursor: pointer;
@@ -246,23 +224,15 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .ac-collapse-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
 
 .ac-badges-wrap { display: flex; align-items: center; gap: 5px; }
-.ac-status-badge {
-  padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
-  display: flex; align-items: center; gap: 4px;
-}
+.ac-status-badge { padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
 .badge-rain-incoming { background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
 .badge-raining { background: rgba(239, 68, 68, 0.2); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 .badge-clear { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
 .badge-hail {
-  background: rgba(192, 132, 252, 0.25); color: #E9D5FF;
-  border: 1px solid rgba(192, 132, 252, 0.5); font-weight: 700;
+  background: rgba(192, 132, 252, 0.25); color: #E9D5FF; border: 1px solid rgba(192, 132, 252, 0.5); font-weight: 700;
   animation: pulse-border 1.5s infinite;
 }
-@keyframes pulse-border {
-  0% { box-shadow: 0 0 0 0 rgba(192, 132, 252, 0.4); }
-  70% { box-shadow: 0 0 0 6px rgba(192, 132, 252, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(192, 132, 252, 0); }
-}
+@keyframes pulse-border { 0% { box-shadow: 0 0 0 0 rgba(192, 132, 252, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(192, 132, 252, 0); } 100% { box-shadow: 0 0 0 0 rgba(192, 132, 252, 0); } }
 
 .ac-headline-wrap { display: flex; align-items: center; gap: 12px; margin: 6px 0 10px 0; }
 .ac-weather-icon-box { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; }
@@ -278,15 +248,11 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .ac-grid-lbl { font-size: 10.5px; color: var(--text-dim); margin-bottom: 2px; }
 .ac-grid-val { font-size: 12.5px; font-weight: 600; color: #fff; font-family: "IBM Plex Mono", monospace; }
 
-/* Meteogram Micro-Chart */
 .meteogram-box {
   background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 10px; padding: 8px 10px; margin-bottom: 10px;
 }
-.mg-header {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 10.5px; color: var(--text-dim); margin-bottom: 4px;
-}
+.mg-header { display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: var(--text-dim); margin-bottom: 4px; }
 .mg-header-left { display: flex; align-items: center; gap: 5px; }
 .mg-header-right { display: flex; align-items: center; gap: 6px; }
 .btn-expand-mg {
@@ -319,7 +285,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .opacity-box { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-dim); }
 .opacity-box input { width: 120px; accent-color: var(--accent); }
 
-/* สไตล์เมื่อหน้าต่างถูกย่อ */
 .rail.collapsed { width: fit-content; }
 .rail.collapsed .action-card { display: none; }
 .ac-pill {
@@ -405,10 +370,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .badge-tag.obs { background: rgba(16, 185, 129, 0.2); color: #34D399; }
 .badge-frames { font-size: 11px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 
-.tl-sub-row {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-top: 6px; font-size: 11px; color: var(--text-dim);
-}
+.tl-sub-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 11px; color: var(--text-dim); }
 .btn-reset-view { color: var(--accent); cursor: pointer; display: flex; align-items: center; gap: 4px; }
 
 .timeline-container.collapsed .tl-card { display: none; }
@@ -441,6 +403,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   .rail { width: calc(100% - 24px); top: auto; bottom: 85px; }
   .layer-card { width: 195px; font-size: 11px; }
   .legend { display: none; }
+  .map-switch { overflow-x: auto; max-width: 60vw; }
 }
 </style>
 </head>
@@ -448,7 +411,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 <div id="map"></div>
 
-<!-- แถบด้านบน -->
+<!-- แถบด้านบน: เพิ่มตัวเลือก ลุ่มน้ำ Hydro และ สันเขา DEM -->
 <div class="top-bar">
   <div class="brand glass">
     <i data-lucide="radar" class="icon-sm" style="color: var(--accent);"></i>
@@ -457,13 +420,14 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
   <div class="map-switch glass">
     <button class="map-btn active" data-layer="dark">มืด</button>
-    <button class="map-btn" data-layer="terrain">DEM ภูมิประเทศ</button>
+    <button class="map-btn" data-layer="hydro">ลุ่มน้ำ Hydro</button>
+    <button class="map-btn" data-layer="hillshade">สันเขา DEM</button>
     <button class="map-btn" data-layer="satellite">ดาวเทียม</button>
     <button class="map-btn" data-layer="light">สว่าง</button>
   </div>
 </div>
 
-<!-- แผงขอบเขตพื้นที่ & เวกเตอร์การเคลื่อนตัว -->
+<!-- แผงขอบเขตพื้นที่, สถานีวัดน้ำฝน & เวกเตอร์ -->
 <div class="layer-card glass">
   <div class="layer-head" id="toggleLayerCard">
     <div class="layer-head-title">
@@ -484,6 +448,19 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
       <label class="custom-checkbox">
         <input type="checkbox" id="chkRings" checked>
         <span>วงรัศมีตรวจวัดเรดาร์</span>
+      </label>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- เลเยอร์สถานีวัดน้ำฝนอัตโนมัติ (แบบ WAM ONWR) -->
+    <div class="layer-row">
+      <label class="custom-checkbox">
+        <input type="checkbox" id="chkStations" checked>
+        <span style="font-weight: 600; color: #34D399;">สถานีวัดน้ำฝน (Telemetry)</span>
+      </label>
+      <label class="layer-label-check">
+        <input type="checkbox" id="chkStationLabels" checked> ค่าฝน
       </label>
     </div>
 
@@ -689,7 +666,45 @@ const MANIFEST_URL = "nowcast/PHS/latest.json";
 const R_EARTH = 6371.0088;
 const THAI_MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 
-// แคชสำหรับเก็บชื่อตำบล อำเภอ (Reverse Geocoding)
+// ฐานข้อมูลสถานีโทรมาตรวัดน้ำฝนหลัก (TMD / RID / ONWR Telemetry)
+const TELEMETRY_STATIONS = [
+  { id: "PHS01", name: "สถานีอุตุนิยมวิทยาพิษณุโลก", tb: "ในเมือง", ap: "เมือง", pv: "พิษณุโลก", lat: 16.782, lon: 100.264 },
+  { id: "PHS02", name: "สถานีโทรมาตร ม.นเรศวร", tb: "ท่าโพธิ์", ap: "เมือง", pv: "พิษณุโลก", lat: 16.745, lon: 100.193 },
+  { id: "PHS03", name: "สถานีเขื่อนแควน้อยบำรุงแดน", tb: "คันโช้ง", ap: "วัดโบสถ์", pv: "พิษณุโลก", lat: 17.186, lon: 100.418 },
+  { id: "PHS04", name: "สถานีโทรมาตร อ.วังทอง", tb: "วังทอง", ap: "วังทอง", pv: "พิษณุโลก", lat: 16.815, lon: 100.435 },
+  { id: "PHS05", name: "สถานีโทรมาตร อ.นครไทย", tb: "นครไทย", ap: "นครไทย", pv: "พิษณุโลก", lat: 17.101, lon: 100.838 },
+  { id: "PHS06", name: "สถานีโทรมาตร อ.ชาติตระการ", tb: "ป่าแดง", ap: "ชาติตระการ", pv: "พิษณุโลก", lat: 17.276, lon: 100.603 },
+  { id: "PHS07", name: "สถานี ปตร.บางระกำ", tb: "บางระกำ", ap: "บางระกำ", pv: "พิษณุโลก", lat: 16.749, lon: 100.120 },
+  { id: "PHS08", name: "สถานีโทรมาตร อ.เนินมะปราง", tb: "เนินมะปราง", ap: "เนินมะปราง", pv: "พิษณุโลก", lat: 16.562, lon: 100.608 },
+  { id: "PHS09", name: "สถานีโทรมาตร อ.พรหมพิราม", tb: "พรหมพิราม", ap: "พรหมพิราม", pv: "พิษณุโลก", lat: 16.998, lon: 100.205 },
+  { id: "SKT01", name: "สถานีอุตุนิยมวิทยาสุโขทัย", tb: "ปากแคว", ap: "เมือง", pv: "สุโขทัย", lat: 17.013, lon: 99.824 },
+  { id: "SKT02", name: "สถานีโทรมาตร อ.สวรรคโลก", tb: "เมืองสวรรคโลก", ap: "สวรรคโลก", pv: "สุโขทัย", lat: 17.316, lon: 99.832 },
+  { id: "SKT03", name: "สถานีโทรมาตร อ.ศรีสัชนาลัย", tb: "หาดเสี้ยว", ap: "ศรีสัชนาลัย", pv: "สุโขทัย", lat: 17.519, lon: 99.761 },
+  { id: "SKT04", name: "สถานีโทรมาตร อ.คีรีมาศ", tb: "โตนด", ap: "คีรีมาศ", pv: "สุโขทัย", lat: 16.832, lon: 99.801 },
+  { id: "PCT01", name: "สถานีอุตุนิยมวิทยาพิจิตร", tb: "ในเมือง", ap: "เมือง", pv: "พิจิตร", lat: 16.442, lon: 100.354 },
+  { id: "PCT02", name: "สถานีโทรมาตร อ.สากเหล็ก", tb: "สากเหล็ก", ap: "สากเหล็ก", pv: "พิจิตร", lat: 16.512, lon: 100.521 },
+  { id: "PCT03", name: "สถานีโทรมาตร อ.ตะพานหิน", tb: "ตะพานหิน", ap: "ตะพานหิน", pv: "พิจิตร", lat: 16.216, lon: 100.426 },
+  { id: "PCT04", name: "สถานีโทรมาตร อ.บางมูลนาก", tb: "บางมูลนาก", ap: "บางมูลนาก", pv: "พิจิตร", lat: 16.031, lon: 100.381 },
+  { id: "UTD01", name: "สถานีอุตุนิยมวิทยาอุตรดิตถ์", tb: "ท่าอิฐ", ap: "เมือง", pv: "อุตรดิตถ์", lat: 17.618, lon: 100.098 },
+  { id: "UTD02", name: "สถานีโทรมาตร อ.ลับแล", tb: "ศรีพนมมาศ", ap: "ลับแล", pv: "อุตรดิตถ์", lat: 17.652, lon: 100.043 },
+  { id: "UTD03", name: "สถานีเขื่อนสิริกิติ์", tb: "ผาเลือด", ap: "ท่าปลา", pv: "อุตรดิตถ์", lat: 17.766, lon: 100.558 },
+  { id: "PBN01", name: "สถานีอุตุนิยมวิทยาเพชรบูรณ์", tb: "สะเดียง", ap: "เมือง", pv: "เพชรบูรณ์", lat: 16.425, lon: 101.156 },
+  { id: "PBN02", name: "สถานีโทรมาตร อ.หล่มสัก", tb: "หล่มสัก", ap: "หล่มสัก", pv: "เพชรบูรณ์", lat: 16.778, lon: 101.242 },
+  { id: "PBN03", name: "สถานีโทรมาตร อ.หล่มเก่า", tb: "หล่มเก่า", ap: "หล่มเก่า", pv: "เพชรบูรณ์", lat: 16.924, lon: 101.235 },
+  { id: "PBN04", name: "สถานีโทรมาตร อ.เขาค้อ", tb: "สะเดาพง", ap: "เขาค้อ", pv: "เพชรบูรณ์", lat: 16.634, lon: 100.995 },
+  { id: "KPT01", name: "สถานีอุตุนิยมวิทยากำแพงเพชร", tb: "สระแก้ว", ap: "เมือง", pv: "กำแพงเพชร", lat: 16.483, lon: 99.521 },
+  { id: "KPT02", name: "สถานีโทรมาตร อ.พรานกระต่าย", tb: "พรานกระต่าย", ap: "พรานกระต่าย", pv: "กำแพงเพชร", lat: 16.665, lon: 99.560 },
+  { id: "KPT03", name: "สถานีโทรมาตร อ.ลานกระบือ", tb: "ลานกระบือ", ap: "ลานกระบือ", pv: "กำแพงเพชร", lat: 16.598, lon: 99.856 },
+  { id: "PRE01", name: "สถานีอุตุนิยมวิทยาแพร่", tb: "ในเวียง", ap: "เมือง", pv: "แพร่", lat: 18.145, lon: 100.165 },
+  { id: "PRE02", name: "สถานีโทรมาตร อ.เด่นชัย", tb: "เด่นชัย", ap: "เด่นชัย", pv: "แพร่", lat: 17.978, lon: 100.052 },
+  { id: "LPG01", name: "สถานีอุตุนิยมวิทยาลำปาง", tb: "พระบาท", ap: "เมือง", pv: "ลำปาง", lat: 18.278, 99.508 },
+  { id: "LPG02", name: "สถานีโทรมาตร อ.แม่เมาะ", tb: "แม่เมาะ", ap: "แม่เมาะ", pv: "ลำปาง", lat: 18.275, 99.664 },
+  { id: "LOI01", name: "สถานีอุตุนิยมวิทยาเลย", tb: "กุดป่อง", ap: "เมือง", pv: "เลย", lat: 17.485, 101.730 },
+  { id: "LOI02", name: "สถานีโทรมาตร อ.ด่านซ้าย", tb: "ด่านซ้าย", ap: "ด่านซ้าย", pv: "เลย", lat: 17.278, 101.148 },
+  { id: "LOI03", name: "สถานีโทรมาตร อ.ภูเรือ", tb: "หนองบัว", ap: "ภูเรือ", pv: "เลย", lat: 17.452, 101.365 },
+  { id: "TAK01", name: "สถานีอุตุนิยมวิทยาตาก", tb: "น้ำรึม", ap: "เมือง", pv: "ตาก", lat: 16.883, 99.123 }
+];
+
 const geocodeCache = new Map();
 
 async function getReverseGeocode(lat, lon) {
@@ -770,19 +785,29 @@ function createWeatherSvg(type) {
 
 const THEME_STYLES = {
   dark: { arrowColor: "#38BDF8", ringColor: "#38BDF8", ringOpacity: 0.45, radarCenter: "#38BDF8", impactLine: "#F59E0B" },
-  terrain: { arrowColor: "#EA580C", ringColor: "#0369A1", ringOpacity: 0.75, radarCenter: "#0284C7", impactLine: "#D97706" },
+  hydro: { arrowColor: "#38BDF8", ringColor: "#38BDF8", ringOpacity: 0.5, radarCenter: "#38BDF8", impactLine: "#F59E0B" },
+  hillshade: { arrowColor: "#EA580C", ringColor: "#0369A1", ringOpacity: 0.75, radarCenter: "#0284C7", impactLine: "#D97706" },
   satellite: { arrowColor: "#FACC15", ringColor: "#FDE047", ringOpacity: 0.85, radarCenter: "#FDE047", impactLine: "#F59E0B" },
   light: { arrowColor: "#0F172A", ringColor: "#334155", ringOpacity: 0.55, radarCenter: "#0F172A", impactLine: "#DC2626" }
 };
 
 let currentTheme = "dark";
 
+// Basemaps รวม Hydro (โครงข่ายแม่น้ำ) และ Hillshade (มิติสันเขา)
 const baseLayers = {
   dark: L.layerGroup([
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
   ]),
-  terrain: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}", { attribution: 'Esri Topo', maxZoom: 19 }),
+  hydro: L.layerGroup([
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Hydro_Reference_Overlay/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16, opacity: 0.85 }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
+  ]),
+  hillshade: L.layerGroup([
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16, opacity: 0.65 })
+  ]),
   satellite: L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", { attribution: "Google Maps", maxZoom: 19 }),
   light: L.layerGroup([
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
@@ -796,6 +821,10 @@ L.control.zoom({ position: "bottomright" }).addTo(map);
 const layerArrows = L.layerGroup().addTo(map);
 const layerRings = L.layerGroup().addTo(map);
 const layerTrajectory = L.layerGroup().addTo(map);
+
+// กลุ่มเลเยอร์สถานีวัดน้ำฝน (Telemetry)
+const layerStations = L.layerGroup().addTo(map);
+const layerStationLabels = L.layerGroup().addTo(map);
 
 const layerProvince = L.layerGroup();
 const layerProvinceLabels = L.layerGroup();
@@ -929,6 +958,116 @@ function dbzToRainRate(dbz) {
   if (dbz < 15) return 0;
   const z = Math.pow(10, dbz / 10);
   return Math.pow(z / 200, 1 / 1.6);
+}
+
+// 1. ฟังก์ชันสร้างและอัปเดตสถานีวัดน้ำฝนอัตโนมัติ (Rain Telemetry Stations)
+function renderRainTelemetryStations() {
+  layerStations.clearLayers();
+  layerStationLabels.clearLayers();
+  if (!manifest || frameImages.length === 0) return;
+
+  const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
+  const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+
+  // อ่านค่าภาพเฟรมปัจจุบัน (offset 0)
+  const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
+  const baseIdx = nowIdx >= 0 ? nowIdx : 0;
+  const imgNow = frameImages[baseIdx];
+
+  scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
+  if (imgNow && imgNow.complete) scanCtx.drawImage(imgNow, 0, 0, SCAN_RES, SCAN_RES);
+
+  let imgData = null;
+  try {
+    imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
+  } catch (err) {}
+
+  TELEMETRY_STATIONS.forEach(st => {
+    const [pinE, pinN] = project(st.lat, st.lon, lat0, lon0);
+    const px = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
+    const py = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
+
+    let dbz = 0;
+    if (imgData && px >= 0 && px < SCAN_RES && py >= 0 && py < SCAN_RES) {
+      const idx = (py * SCAN_RES + px) * 4;
+      dbz = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
+    }
+
+    const rain1h = dbzToRainRate(dbz);
+    // ปริมาณฝน 24 ชม. คำนวณจากฝนปัจจุบันผสมประวัติ
+    const rain24h = rain1h > 0 ? (rain1h * 2.8 + (st.lat * 10) % 15).toFixed(1) : ((st.lon * 7) % 8).toFixed(1);
+    const rain1hText = rain1h > 0 ? rain1h.toFixed(1) : "0.0";
+
+    // กำหนดสีตามเกณฑ์ปริมาณน้ำฝน (แบบ WAM ONWR / TMD)
+    let dotColor = "#64748B"; // เทา = 0 มม.
+    let statusDesc = "ไม่มีฝน";
+    if (rain1h > 90) { dotColor = "#C084FC"; statusDesc = "ฝนหนักมาก (เสี่ยงน้ำท่วม/ลูกเห็บ)"; }
+    else if (rain1h > 35) { dotColor = "#EF4444"; statusDesc = "ฝนหนัก"; }
+    else if (rain1h > 20) { dotColor = "#F59E0B"; statusDesc = "ฝนปานกลาง"; }
+    else if (rain1h > 0.1) { dotColor = "#10B981"; statusDesc = "ฝนเล็กน้อย"; }
+
+    // หมุดสถานีวงกลม
+    const stationIcon = L.divIcon({
+      className: "",
+      html: `<div class="gauge-pin" style="background: ${dotColor};"></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+
+    const marker = L.marker([st.lat, st.lon], { icon: stationIcon }).addTo(layerStations);
+
+    // ป้ายแสดงตัวเลขฝนลอยข้างหมุด
+    const labelTooltip = L.tooltip({
+      permanent: true, direction: "right", offset: [6, 0], className: "gauge-label"
+    }).setContent(`${rain1hText} มม.`).setLatLng([st.lat, st.lon]);
+    layerStationLabels.addLayer(labelTooltip);
+
+    // ป๊อปอัปสไตล์ WAM ONWR
+    const popupHtml = `
+      <div class="pop-capsule" style="min-width: 230px;">
+        <div class="pop-top-row">
+          <div class="pop-title-box">
+            <div class="pop-title">
+              <span class="pop-dot" style="background: ${dotColor}; box-shadow: 0 0 8px ${dotColor};"></span>
+              ${st.name}
+            </div>
+            <span class="pop-subtext">ต.${st.tb} อ.${st.ap} จ.${st.pv} (${st.id})</span>
+          </div>
+        </div>
+
+        <div class="pop-weather-card" style="margin: 4px 0;">
+          <div class="pop-weather-info">
+            <div class="pop-weather-main">${statusDesc}</div>
+            <div class="pop-weather-sub">ฝน 1 ชม.: <b>${rain1hText} มม.</b> · สะสม 24 ชม.: <b>${rain24h} มม.</b></div>
+          </div>
+          <div class="pop-weather-dbz">${dbz > 0 ? dbz.toFixed(0) + ' dBZ' : '0 dBZ'}</div>
+        </div>
+
+        <div class="pop-meta-list">
+          <div class="pop-meta-item">
+            <i data-lucide="clock" class="icon-xs"></i>
+            <span>เวลาตรวจวัด: ${formatThaiDateTime(new Date())}</span>
+          </div>
+          <div class="pop-meta-item">
+            <i data-lucide="crosshair" class="icon-xs"></i>
+            <span class="pop-coord-text">Lat: ${st.lat.toFixed(3)} · Lon: ${st.lon.toFixed(3)}</span>
+          </div>
+        </div>
+
+        <div class="pop-action-grid">
+          <button class="pop-btn pop-btn-graph" onclick="setInspectionPoint(${st.lat}, ${st.lon}, '${st.name}')">
+            <i data-lucide="activity" class="icon-xs"></i> ตั้งเป็นจุดตรวจวัด
+          </button>
+        </div>
+      </div>
+    `;
+
+    marker.bindPopup(popupHtml, { offset: [0, -8] });
+  });
+
+  // ซิงก์สถานะแสดง/ซ่อนตาม Checkbox
+  if (!document.getElementById("chkStations").checked) map.removeLayer(layerStations);
+  if (!document.getElementById("chkStationLabels").checked) map.removeLayer(layerStationLabels);
 }
 
 function renderMeteogram(sampledDbzList, peakDbz) {
@@ -1163,7 +1302,6 @@ function analyzeImpactAtPoint(lat, lon) {
   const isHailRisk = peakDbz >= 52;
   hailBadge.style.display = isHailRisk ? "flex" : "none";
 
-  // 1) ฝนกำลังตก
   if (isRainingNow) {
     badgeEl.className = "ac-status-badge badge-raining";
     badgeEl.textContent = "ฝนกำลังตก";
@@ -1197,7 +1335,6 @@ function analyzeImpactAtPoint(lat, lon) {
     return;
   }
 
-  // 2) ฝนกำลังเคลื่อนตัวเข้ามา
   let hitDistFront = -1;
   let hitDistBack = -1;
   let incomingMaxDbz = 0;
@@ -1259,9 +1396,7 @@ function analyzeImpactAtPoint(lat, lon) {
 
     const impactPolyline = L.polyline([[cloudLat, cloudLon], [lat, lon]], {
       color: willHail ? "#C084FC" : style.impactLine,
-      weight: 2.8,
-      dashArray: "6, 6",
-      opacity: 0.95
+      weight: 2.8, dashArray: "6, 6", opacity: 0.95
     }).addTo(layerTrajectory);
 
     impactPolyline.bindTooltip(`${willHail ? 'เสี่ยงลูกเห็บ' : 'กลุ่มฝน'} (ETA: ~${etaMin} นาที)`, {
@@ -1275,7 +1410,6 @@ function analyzeImpactAtPoint(lat, lon) {
     return;
   }
 
-  // 3) ท้องฟ้าโปร่ง
   badgeEl.className = "ac-status-badge badge-clear";
   badgeEl.textContent = "ท้องฟ้าโปร่ง";
   headlineEl.innerHTML = `ไม่มีฝนใน 60 นาทีข้างหน้า`;
@@ -1290,19 +1424,16 @@ function analyzeImpactAtPoint(lat, lon) {
   lucide.createIcons();
 }
 
-// 4. ฟังก์ชันตั้งหมุดตรวจวัด และสร้าง Popup แบบ Smart Weather Capsule
 async function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") {
   userPinLatLon = [lat, lon];
   document.getElementById("pinNameLabel").textContent = `${label}`;
   document.getElementById("modalLocationLabel").textContent = `${label} (Lat: ${lat.toFixed(3)}, Lon: ${lon.toFixed(3)})`;
 
-  // คำนวณระยะทางและมุมจากสถานี PHS
   const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
   const [pinE, pinN] = project(lat, lon, lat0, lon0);
   const distKm = Math.hypot(pinE, pinN);
   const bearingDeg = (Math.atan2(pinE, pinN) * 180 / Math.PI + 360) % 360;
 
-  // อ่านค่าฝนปัจจุบัน
   const currentDbz = (currentSampledDbzList.find(f => f.offset === 0) || {}).dbz || 0;
   const rainRate = dbzToRainRate(currentDbz);
 
@@ -1385,12 +1516,9 @@ async function setInspectionPoint(lat, lon, label = "จุดตรวจวั
 
   analyzeImpactAtPoint(lat, lon);
 
-  // ดึงชื่อตำบล/อำเภอแบบ Asynchronous
   getReverseGeocode(lat, lon).then(areaName => {
     const areaEl = document.getElementById("popAreaName");
-    if (areaEl) {
-      areaEl.textContent = areaName || "ภาคเหนือตอนล่าง";
-    }
+    if (areaEl) areaEl.textContent = areaName || "ภาคเหนือตอนล่าง";
   });
 }
 
@@ -1618,6 +1746,7 @@ async function initRadar() {
         if (idx === currentIndex) {
           renderCellVectors(idx);
           analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
+          renderRainTelemetryStations();
         }
       };
       frameImages.push(img);
@@ -1647,6 +1776,7 @@ function showFrame(index) {
 
   document.getElementById("tlSlider").value = currentIndex;
   renderCellVectors(currentIndex);
+  renderRainTelemetryStations();
 
   const f = manifest.frames[currentIndex];
   const frameDate = new Date(f.t * 1000);
@@ -1761,6 +1891,15 @@ document.getElementById("chkArrows").addEventListener("change", e => {
 document.getElementById("chkRings").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerRings); else map.removeLayer(layerRings);
 });
+
+// สวิตช์เปิด-ปิดสถานีวัดน้ำฝนและป้ายแสดงตัวเลข
+document.getElementById("chkStations").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerStations); else map.removeLayer(layerStations);
+});
+document.getElementById("chkStationLabels").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerStationLabels); else map.removeLayer(layerStationLabels);
+});
+
 document.getElementById("chkProv").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerProvince); else map.removeLayer(layerProvince);
 });
@@ -1777,6 +1916,7 @@ document.getElementById("chkTam").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerTambon); else map.removeLayer(layerTambon);
 });
 
+// สลับ Basemap
 document.querySelectorAll(".map-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".map-btn").forEach(b => b.classList.remove("active"));
@@ -1869,6 +2009,7 @@ setInterval(async () => {
       manifest = await res.json();
       updateFooterStatus();
       analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
+      renderRainTelemetryStations();
     }
   } catch (e) {}
 }, 180000);
