@@ -47,6 +47,112 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   border-radius: 14px;
 }
 
+/* ==========================================================
+   Leaflet Custom Modern Popup & Marker Styling (ยกเครื่อง UI ใหม่)
+   ========================================================== */
+.leaflet-popup-content-wrapper {
+  background: rgba(15, 23, 42, 0.88) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55) !important;
+  padding: 0 !important;
+  color: var(--text) !important;
+}
+.leaflet-popup-content {
+  margin: 10px 14px !important;
+  line-height: 1.35 !important;
+  font-family: "IBM Plex Sans Thai", sans-serif !important;
+}
+.leaflet-popup-tip-container {
+  overflow: visible !important;
+}
+.leaflet-popup-tip {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: none !important;
+  margin-top: -1px !important;
+}
+.leaflet-popup-close-button {
+  color: var(--text-dim) !important;
+  padding: 6px 8px 0 0 !important;
+  font-size: 15px !important;
+  font-weight: 300 !important;
+  transition: color 0.2s !important;
+}
+.leaflet-popup-close-button:hover {
+  color: #fff !important;
+}
+
+.custom-popup-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.custom-popup-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.custom-popup-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 6px var(--ok);
+}
+.custom-popup-coord {
+  font-size: 11px;
+  color: var(--accent);
+  font-family: "IBM Plex Mono", monospace;
+  opacity: 0.9;
+}
+
+/* Custom Live Radar Pulsing Pin */
+.custom-pin-wrap {
+  background: transparent !important;
+  border: none !important;
+}
+.modern-pin {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+}
+.pin-core {
+  width: 14px;
+  height: 14px;
+  background: #38BDF8;
+  border: 2.5px solid #FFFFFF;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8), 0 2px 6px rgba(0,0,0,0.5);
+  z-index: 2;
+  transition: transform 0.2s;
+}
+.modern-pin:hover .pin-core {
+  transform: scale(1.15);
+}
+.pin-pulse {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: rgba(56, 189, 248, 0.4);
+  border-radius: 50%;
+  animation: pin-radar-wave 2s infinite cubic-bezier(0.1, 0.7, 0.3, 1);
+  z-index: 1;
+}
+@keyframes pin-radar-wave {
+  0% { transform: scale(0.4); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
 /* Lucide Icon Base Styling */
 .lucide-icon {
   display: inline-flex;
@@ -62,14 +168,12 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 /* Animated Weather SVGs (Apple Weather Style) */
 .weather-anim-svg { width: 100%; height: 100%; overflow: visible; }
 
-/* 1. เมฆลอยนุ่มนวล */
 @keyframes cloud-float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-2.5px); }
 }
 .anim-cloud { animation: cloud-float 3.5s ease-in-out infinite; }
 
-/* 2. เม็ดฝนโปรยลงมา */
 @keyframes rain-fall {
   0% { stroke-dashoffset: -16; opacity: 0; }
   35% { opacity: 1; }
@@ -82,7 +186,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .anim-raindrop.d2 { animation-delay: 0.35s; }
 .anim-raindrop.d3 { animation-delay: 0.7s; }
 
-/* 3. ดวงอาทิตย์หมุนและส่องรัศมี */
 @keyframes sun-rotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -92,7 +195,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   animation: sun-rotate 16s linear infinite;
 }
 
-/* 4. ฟ้าแลบวาบ */
 @keyframes lightning-strike {
   0%, 88%, 100% { opacity: 0; filter: none; }
   90%, 94% { opacity: 1; filter: drop-shadow(0 0 5px #FBBF24); }
@@ -180,7 +282,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   100% { box-shadow: 0 0 0 0 rgba(192, 132, 252, 0); }
 }
 
-/* ส่วนหัวเรื่องพร้อม Animated SVG Icon */
 .ac-headline-wrap {
   display: flex; align-items: center; gap: 12px; margin: 6px 0 10px 0;
 }
@@ -456,7 +557,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- Actionable Weather Card (พร้อม Animated Weather SVG) -->
+<!-- Actionable Weather Card -->
 <div class="rail" id="actionRail">
   <div class="action-card glass" id="actionCard">
     <div class="ac-head">
@@ -475,11 +576,8 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
       </button>
     </div>
 
-    <!-- ส่วนหัวเรื่อง: Animated Weather Icon + ข้อความสถานะ -->
     <div class="ac-headline-wrap">
-      <div class="ac-weather-icon-box" id="headlineWeatherIcon">
-        <!-- Animated SVG will be injected here -->
-      </div>
+      <div class="ac-weather-icon-box" id="headlineWeatherIcon"></div>
       <div class="ac-headline" id="acHeadline">
         กำลังสแกนสนามฝน...
       </div>
@@ -500,7 +598,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
       </div>
     </div>
 
-    <!-- Meteogram Micro-Chart พร้อมปุ่มขยาย -->
     <div class="meteogram-box">
       <div class="mg-header">
         <div class="mg-header-left">
@@ -537,7 +634,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     </div>
   </div>
 
-  <!-- โหมดย่อ (Collapsed Pill) -->
   <div class="ac-pill glass" id="btnExpandAc" title="กดเพื่อขยายหน้าต่าง">
     <div class="ac-pill-icon" id="pillWeatherIcon"></div>
     <span class="ac-pill-text" id="acPillText">กำลังวิเคราะห์...</span>
@@ -631,7 +727,6 @@ const MANIFEST_URL = "nowcast/PHS/latest.json";
 const R_EARTH = 6371.0088;
 const THAI_MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 
-// โรงงานสร้าง Animated Weather SVGs (Apple Weather Style)
 function createWeatherSvg(type) {
   if (type === "clear") {
     return `
@@ -741,6 +836,20 @@ let isAlertEnabled = localStorage.getItem("tanfon_alert_enabled") === "true";
 let lastAlertTimestamp = 0;
 let currentSampledDbzList = [];
 
+// กำหนด Custom DivIcon แบบ Apple/Radar Pulse
+const liveGpsIcon = L.divIcon({
+  className: "custom-pin-wrap",
+  html: `
+    <div class="modern-pin">
+      <div class="pin-pulse"></div>
+      <div class="pin-core"></div>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -14]
+});
+
 const SCAN_RES = 160;
 const scanCanvas = document.createElement("canvas");
 scanCanvas.width = SCAN_RES;
@@ -836,7 +945,6 @@ function dbzToRainRate(dbz) {
   return Math.pow(z / 200, 1 / 1.6);
 }
 
-// 1. เรนเดอร์กราฟ Meteogram ในการ์ด
 function renderMeteogram(sampledDbzList, peakDbz) {
   currentSampledDbzList = sampledDbzList;
   const svg = document.getElementById("mgChartSvg");
@@ -887,7 +995,6 @@ function renderMeteogram(sampledDbzList, peakDbz) {
   svg.innerHTML = svgHtml;
 }
 
-// 2. เรนเดอร์กราฟ Meteogram ใน Modal ขยาย
 function renderModalMeteogram() {
   if (currentSampledDbzList.length === 0) return;
 
@@ -970,7 +1077,6 @@ function renderModalMeteogram() {
   svg.innerHTML = svgHtml;
 }
 
-// 3. วิเคราะห์ผลกระทบฝน และอัปเดตไอคอนสภาพอากาศแบบเคลื่อนไหว
 function analyzeImpactAtPoint(lat, lon) {
   layerTrajectory.clearLayers();
   if (!manifest || !manifest.motion || frameImages.length === 0) return;
@@ -1198,13 +1304,29 @@ function analyzeImpactAtPoint(lat, lon) {
   lucide.createIcons();
 }
 
+// ตั้งค่าจุดตรวจวัดพร้อมใช้ Custom Marker และ Dark Glass Popup
 function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") {
   userPinLatLon = [lat, lon];
   document.getElementById("pinNameLabel").textContent = `${label}`;
   document.getElementById("modalLocationLabel").textContent = `${label} (Lat: ${lat.toFixed(3)}, Lon: ${lon.toFixed(3)})`;
 
+  const popupContent = `
+    <div class="custom-popup-body">
+      <div class="custom-popup-title">
+        <span class="custom-popup-dot"></span>
+        ${label}
+      </div>
+      <div class="custom-popup-coord">Lat: ${lat.toFixed(3)} · Lon: ${lon.toFixed(3)}</div>
+    </div>
+  `;
+
   if (!userPinMarker) {
-    userPinMarker = L.marker([lat, lon], { draggable: true, title: "ลากเพื่อย้ายจุดตรวจวัด" }).addTo(map);
+    userPinMarker = L.marker([lat, lon], {
+      icon: liveGpsIcon,
+      draggable: true,
+      title: "ลากเพื่อย้ายจุดตรวจวัด"
+    }).addTo(map);
+
     userPinMarker.on("dragend", (e) => {
       const pos = e.target.getLatLng();
       setInspectionPoint(pos.lat, pos.lng, "จุดที่คุณลากหมุด");
@@ -1213,7 +1335,7 @@ function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") 
     userPinMarker.setLatLng([lat, lon]);
   }
 
-  userPinMarker.bindPopup(`<b>${label}</b><br>Lat: ${lat.toFixed(3)}, Lon: ${lon.toFixed(3)}`).openPopup();
+  userPinMarker.bindPopup(popupContent, { offset: [0, -10] }).openPopup();
   analyzeImpactAtPoint(lat, lon);
 }
 
@@ -1321,8 +1443,13 @@ function renderRangeRings() {
   });
 
   stationMarkerElement = L.circleMarker([lat0, lon0], {
-    radius: 4.5, color: style.radarCenter, fillColor: "#FFF", fillOpacity: 1, weight: 2
-  }).addTo(layerRings).bindPopup("<b>สถานีเรดาร์ตรวจอากาศพิษณุโลก (PHS)</b>");
+    radius: 5, color: style.radarCenter, fillColor: "#FFF", fillOpacity: 1, weight: 2
+  }).addTo(layerRings).bindPopup(`
+    <div class="custom-popup-body">
+      <div class="custom-popup-title">สถานีเรดาร์พิษณุโลก (PHS)</div>
+      <div class="custom-popup-coord">สถานีหลักตรวจวัดอากาศ</div>
+    </div>
+  `, { offset: [0, -6] });
 }
 
 function updateThemeVisuals(themeKey) {
