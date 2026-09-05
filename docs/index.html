@@ -66,10 +66,10 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .map-btn.active { background: var(--accent); color: #070B12; font-weight: 700; }
 
-/* แผงขอบเขตพื้นที่ & เวกเตอร์การเคลื่อนตัว */
+/* แผงขอบเขตพื้นที่ & เวกเตอร์การเคลื่อนตัว (ตามแบบภาพที่ 2) */
 .layer-card {
   position: absolute; top: 62px; right: 12px; z-index: 999;
-  width: 235px; padding: 12px 14px; font-size: 12px;
+  width: 240px; padding: 12px 14px; font-size: 12px;
 }
 .layer-head {
   display: flex; justify-content: space-between; align-items: center;
@@ -77,7 +77,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   margin-bottom: 6px;
 }
 .layer-head span.toggle-icon { font-size: 11px; transition: transform 0.2s; }
-.layer-status { font-size: 10px; color: var(--text-dim); margin-bottom: 8px; display: block; }
+.layer-status { font-size: 10px; color: var(--ok); margin-bottom: 8px; display: block; }
 .layer-content { display: flex; flex-direction: column; gap: 8px; }
 .layer-row { display: flex; align-items: center; justify-content: space-between; }
 .layer-label-check { display: flex; align-items: center; gap: 4px; color: var(--text-dim); font-size: 11px; cursor: pointer; }
@@ -85,7 +85,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .custom-checkbox input, .layer-label-check input { accent-color: var(--accent); cursor: pointer; }
 .divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0; }
 
-/* Actionable Weather Card (การ์ดวิเคราะห์สถานการณ์ฝนเฉพาะจุด) */
+/* Actionable Weather Card */
 .rail {
   position: absolute; top: 62px; left: 12px; width: 330px; z-index: 999;
   display: flex; flex-direction: column; gap: 10px; pointer-events: none;
@@ -102,10 +102,9 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .badge-raining { background: rgba(239, 68, 68, 0.2); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 .badge-clear { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
 
-.ac-headline { font-size: 22px; font-weight: 700; line-height: 1.25; margin: 6px 0 10px 0; color: #fff; }
+.ac-headline { font-size: 21px; font-weight: 700; line-height: 1.25; margin: 6px 0 10px 0; color: #fff; }
 .ac-headline span.time-highlight { color: var(--accent); font-family: "IBM Plex Mono", monospace; }
 
-/* ตารางสรุป 3 ช่อง (เริ่มตก - ตกนาน - หยุดตก) */
 .ac-grid {
   display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
   background: rgba(0, 0, 0, 0.25); padding: 10px 8px; border-radius: 10px;
@@ -113,9 +112,8 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .ac-grid-col { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .ac-grid-lbl { font-size: 10.5px; color: var(--text-dim); margin-bottom: 2px; }
-.ac-grid-val { font-size: 13.5px; font-weight: 600; color: #fff; font-family: "IBM Plex Mono", monospace; }
+.ac-grid-val { font-size: 13px; font-weight: 600; color: #fff; font-family: "IBM Plex Mono", monospace; }
 
-/* แถบเส้นเวลาจำลองฝน (Rain Event Mini-Timeline) */
 .ac-timeline-bar-wrap { margin-bottom: 12px; }
 .ac-tl-label-row { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
 .ac-tl-track {
@@ -197,7 +195,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   display: grid; place-items: center; cursor: pointer;
 }
 
-/* ป้ายชื่อและสไตล์เวกเตอร์ */
+/* สไตล์ป้ายและเวกเตอร์ */
 .leaflet-tooltip.map-label {
   background: transparent; border: none; box-shadow: none;
   color: #fff; font-weight: 600; text-shadow: 0 1px 3px #000, 0 0 6px #000;
@@ -239,13 +237,13 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- แผงขอบเขตพื้นที่ & เวกเตอร์ทิศทางลม -->
+<!-- แผงขอบเขตพื้นที่ & เวกเตอร์การเคลื่อนตัว (กำหนดค่าเริ่มต้นตามภาพที่ 2) -->
 <div class="layer-card glass">
   <div class="layer-head" id="toggleLayerCard">
     <span>📐 ชั้นข้อมูล & เวกเตอร์</span>
     <span class="toggle-icon">▼</span>
   </div>
-  <span class="layer-status" id="boundaryStatus">กำลังเชื่อมต่อข้อมูล...</span>
+  <span class="layer-status" id="boundaryStatus">● ขอบเขตพื้นที่พร้อมใช้งาน</span>
   <div class="layer-content" id="layerBody">
     <div class="layer-row">
       <label class="custom-checkbox">
@@ -264,21 +262,21 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
     <div class="layer-row">
       <label class="custom-checkbox">
-        <input type="checkbox" id="chkProv" checked>
+        <input type="checkbox" id="chkProv">
         <span>ขอบเขตจังหวัด</span>
       </label>
       <label class="layer-label-check">
-        <input type="checkbox" id="chkProvLabel" checked> ป้าย
+        <input type="checkbox" id="chkProvLabel"> ป้าย
       </label>
     </div>
 
     <div class="layer-row">
       <label class="custom-checkbox">
-        <input type="checkbox" id="chkAmp" checked>
+        <input type="checkbox" id="chkAmp">
         <span>ขอบเขตอำเภอ</span>
       </label>
       <label class="layer-label-check">
-        <input type="checkbox" id="chkAmpLabel" checked> ป้าย
+        <input type="checkbox" id="chkAmpLabel"> ป้าย
       </label>
     </div>
 
@@ -294,7 +292,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- Actionable Weather Card (กล่องตอบโจทย์คนใช้จริง) -->
+<!-- Actionable Weather Card -->
 <div class="rail">
   <div class="action-card glass" id="actionCard">
     <div class="ac-head">
@@ -306,7 +304,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
       กำลังสแกนสนามฝน...
     </div>
 
-    <!-- ตารางสรุป 3 ค่าสำคัญ -->
     <div class="ac-grid" id="acGrid">
       <div class="ac-grid-col">
         <span class="ac-grid-lbl">เริ่มตก</span>
@@ -322,7 +319,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
       </div>
     </div>
 
-    <!-- แถบ Mini-Timeline กิจกรรมฝน -->
     <div class="ac-timeline-bar-wrap" id="acTlWrap">
       <div class="ac-tl-label-row">
         <span>ตอนนี้</span>
@@ -349,14 +345,14 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- สเกลความแรงเรดาร์ (Legend) -->
+<!-- สเกลสีเรดาร์ -->
 <div class="legend glass">
   <div class="lg-labels"><span>20</span><span>30</span><span>40</span><span>50</span><span>60+ dBZ</span></div>
   <div class="lg-bar"></div>
   <div class="lg-labels"><span>เบา</span><span>ปานกลาง</span><span>หนัก</span><span>หนักมาก</span></div>
 </div>
 
-<!-- แถบช่วงเวลาในการแสดงผล (Timeline Controller V2) -->
+<!-- แถบช่วงเวลาในการแสดงผล -->
 <div class="timeline-container" id="timelineBox">
   <div class="tl-card glass">
     <div class="tl-header">
@@ -453,14 +449,16 @@ const map = L.map("map", {
 
 L.control.zoom({ position: "bottomright" }).addTo(map);
 
-// กลุ่มเลเยอร์
+// กลุ่มเลเยอร์: เวกเตอร์, รัศมี, และเส้นวิถีเปิดเป็นค่าเริ่มต้น
 const layerArrows = L.layerGroup().addTo(map);
 const layerRings = L.layerGroup().addTo(map);
-const layerTrajectory = L.layerGroup().addTo(map); // แสดงเส้นพุ่งชนของเซลล์ฝน
-const layerProvince = L.layerGroup().addTo(map);
-const layerProvinceLabels = L.layerGroup().addTo(map);
-const layerAmphoe = L.layerGroup().addTo(map);
-const layerAmphoeLabels = L.layerGroup().addTo(map);
+const layerTrajectory = L.layerGroup().addTo(map);
+
+// เลเยอร์ขอบเขตการปกครอง: ปิดเป็นค่าเริ่มต้นทั้งหมด (ไม่ใส่ .addTo(map))
+const layerProvince = L.layerGroup();
+const layerProvinceLabels = L.layerGroup();
+const layerAmphoe = L.layerGroup();
+const layerAmphoeLabels = L.layerGroup();
 const layerTambon = L.layerGroup();
 
 let manifest = null;
@@ -472,7 +470,6 @@ let playTimer = null;
 let radarBounds = null;
 let radarStationLatLon = [16.77, 100.22];
 
-// หมุดตรวจวัดจุดปัจจุบันของผู้ใช้ (Inspection Point)
 let userPinLatLon = [16.77, 100.22];
 let userPinMarker = null;
 
@@ -485,7 +482,6 @@ scanCanvas.width = SCAN_RES;
 scanCanvas.height = SCAN_RES;
 const scanCtx = scanCanvas.getContext("2d", { willReadFrequently: true });
 
-// แปลง Azimuthal Equidistant <-> Lat/Lon
 function unproject(E, Nn, lat0, lon0) {
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
   const rho = Math.hypot(E, Nn);
@@ -519,7 +515,7 @@ function formatThaiDateTime(dateObj, showFull = false) {
   return `${d} ${m} ${y} ${hh}:${mm} น.`;
 }
 
-// 1. หัวใจสำคัญ: ระบบคำนวณ Upwind Ray-Casting ตอบโจทย์ Actionable Card
+// วิเคราะห์ผลกระทบฝน (Upwind Raycasting)
 function analyzeImpactAtPoint(lat, lon) {
   layerTrajectory.clearLayers();
   if (!manifest || !manifest.motion || frameImages.length === 0) return;
@@ -528,7 +524,6 @@ function analyzeImpactAtPoint(lat, lon) {
   const spd = motion.speed_kmh || motion.kmh || 0;
   const deg = motion.direction_deg !== undefined ? motion.direction_deg : (motion.bearing || 0);
 
-  // ดึงภาพเรดาร์ล่าสุด (เฟรม offset_min === 0)
   const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
   const baseIdx = nowIdx >= 0 ? nowIdx : 0;
   const img = frameImages[baseIdx];
@@ -548,17 +543,13 @@ function analyzeImpactAtPoint(lat, lon) {
   const lat0 = radarStationLatLon[0];
   const lon0 = radarStationLatLon[1];
   const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
-
-  // แปลงพิกัดหมุดตรวจวัดเป็น (E, N)
   const [pinE, pinN] = project(lat, lon, lat0, lon0);
 
-  // ฟังก์ชันช่วยเช็กว่าพิกัด (e, n) มีฝนหรือไม่
   function hasRainAt(e, n) {
     const px = Math.round(((e / halfKm) + 1) / 2 * (SCAN_RES - 1));
     const py = Math.round((1 - (n / halfKm)) / 2 * (SCAN_RES - 1));
     if (px < 0 || px >= SCAN_RES || py < 0 || py >= SCAN_RES) return false;
 
-    // ตรวจสอบแบบหน้าต่าง 3x3
     let rainVotes = 0;
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
@@ -587,17 +578,15 @@ function analyzeImpactAtPoint(lat, lon) {
 
   const nowTime = new Date();
 
-  // กรณีที่ 1: ขณะนี้ฝนกำลังตกอยู่ ณ จุดตรวจวัด (Currently Raining)
   if (isRainingNow) {
     badgeEl.className = "ac-status-badge badge-raining";
     badgeEl.textContent = "● ฝนกำลังตก";
     headlineEl.innerHTML = `☔ ขณะนี้มีกลุ่มฝนในพื้นที่`;
 
-    // ยิงสแกนไปตามทิศลม (Downwind) เพื่อดูว่าขอบหลังของเมฆฝนอยู่ห่างไปเท่าไหร่
     let dBack = 5;
     if (spd >= 2) {
       const rad = deg * Math.PI / 180;
-      const stepE = -Math.sin(rad); // ย้อนทางลมเพื่อหาขอบหลัง
+      const stepE = -Math.sin(rad);
       const stepN = -Math.cos(rad);
       for (let d = 2; d <= 80; d += 2) {
         if (!hasRainAt(pinE + stepE * d, pinN + stepN * d)) {
@@ -614,7 +603,6 @@ function analyzeImpactAtPoint(lat, lon) {
     valEta.textContent = "กำลังตก";
     valDur.textContent = `~${remainingMin} นาที`;
     valEtd.textContent = stopTimeStr;
-
     descEl.textContent = `กลุ่มฝนครอบคลุมพื้นที่ คาดว่าจะตกแช่อีกประมาณ ${remainingMin} นาที และจะเริ่มซาลงในเวลา ${stopTimeStr}`;
 
     tlTrack.innerHTML = `
@@ -624,17 +612,13 @@ function analyzeImpactAtPoint(lat, lon) {
     return;
   }
 
-  // กรณีที่ 2: ตอนนี้ยังไม่ตก -> ลากเส้นสแกนต้นลม (Upwind Raycasting) หาเซลล์ฝนที่กำลังมุ่งหน้ามา
   let hitDistFront = -1;
   let hitDistBack = -1;
 
   if (spd >= 2) {
     const rad = deg * Math.PI / 180;
-    // ทิศทางต้นลม = ทิศตรงข้ามกับทิศทางการเคลื่อนตัว (-sin, -cos)
     const upE = -Math.sin(rad);
     const upN = -Math.cos(rad);
-
-    // ยิงรังสีสแกนออกไปไกลสุด 70 กม. (เทียบเท่าเวลาเดินทาง ~1 ชั่วโมง)
     const maxScanKm = Math.min(80, spd * 1.3);
 
     for (let d = 3; d <= maxScanKm; d += 2) {
@@ -652,7 +636,6 @@ function analyzeImpactAtPoint(lat, lon) {
     }
   }
 
-  // ถ้าเจอเซลล์ฝนกำลังเคลื่อนตัวเข้ามาในระยะ 60 นาที!
   if (hitDistFront > 0) {
     if (hitDistBack === -1) hitDistBack = hitDistFront + 12;
 
@@ -675,7 +658,6 @@ function analyzeImpactAtPoint(lat, lon) {
 
     descEl.innerHTML = `พบกลุ่มฝนความเร็ว <b>${spd.toFixed(1)} กม./ชม.</b> อยู่ห่างออกไป ${hitDistFront.toFixed(0)} กม. กำลังมุ่งหน้ามายังตำแหน่งของคุณ`;
 
-    // คำนวณเปอร์เซ็นต์แถบ Mini Timeline
     const startPct = Math.min(85, Math.round((etaMin / 60) * 100));
     const durPct = Math.min(100 - startPct, Math.round((durationMin / 60) * 100));
     const endPct = 100 - startPct - durPct;
@@ -686,7 +668,6 @@ function analyzeImpactAtPoint(lat, lon) {
       <div class="ac-tl-seg-clear" style="width: ${endPct}%;"></div>
     `;
 
-    // ลากเส้นแนววิถีการปะทะ (Impact Vector Line) บนแผนที่
     const rad = deg * Math.PI / 180;
     const [cloudLat, cloudLon] = unproject(pinE - Math.sin(rad) * hitDistFront, pinN - Math.cos(rad) * hitDistFront, lat0, lon0);
     const style = THEME_STYLES[currentTheme];
@@ -704,7 +685,6 @@ function analyzeImpactAtPoint(lat, lon) {
     return;
   }
 
-  // กรณีที่ 3: ไม่มีฝนในเส้นทาง (Clear Sky)
   badgeEl.className = "ac-status-badge badge-clear";
   badgeEl.textContent = "● ท้องฟ้าโปร่ง";
   headlineEl.innerHTML = `🌤️ ไม่มีฝนใน 60 นาทีข้างหน้า`;
@@ -712,13 +692,11 @@ function analyzeImpactAtPoint(lat, lon) {
   valEta.textContent = "ไม่มี";
   valDur.textContent = "0 นาที";
   valEtd.textContent = "—";
-
   descEl.textContent = `จากการวิเคราะห์ทิศทางและแนวพัดของลม ไม่พบเซลล์ฝนที่กำลังเคลื่อนตัวเข้าหาจุดนี้ใน 1 ชั่วโมงข้างหน้า`;
-
   tlTrack.innerHTML = `<div class="ac-tl-seg-clear" style="width: 100%;"></div>`;
 }
 
-// 2. ฟังก์ชันย้ายหมุดตรวจวัด (ตั้งค่าพิกัดใหม่เมื่อคลิกแผนที่ หรือกด GPS)
+// ตั้งค่าจุดตรวจวัด
 function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") {
   userPinLatLon = [lat, lon];
   document.getElementById("pinNameLabel").textContent = `📍 ${label}`;
@@ -738,17 +716,14 @@ function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") 
   }
 
   userPinMarker.bindPopup(`<b>${label}</b><br>Lat: ${lat.toFixed(3)}, Lon: ${lon.toFixed(3)}`).openPopup();
-
-  // วิเคราะห์สถานการณ์ฝนสำหรับจุดนี้ทันที
   analyzeImpactAtPoint(lat, lon);
 }
 
-// คลิกบนแผนที่เพื่อย้ายจุดตรวจวัดอิสระ
 map.on("click", (e) => {
   setInspectionPoint(e.latlng.lat, e.latlng.lng, "จุดที่คุณแตะเลือก");
 });
 
-// 3. วาดเวกเตอร์ลูกศรเฉพาะบนกลุ่มก้อนฝน
+// วาดลูกศรเฉพาะบนก้อนฝน
 function renderCellVectors(frameIdx) {
   layerArrows.clearLayers();
   if (!manifest || !manifest.motion) return;
@@ -823,7 +798,7 @@ function renderCellVectors(frameIdx) {
   }
 }
 
-// 4. วงแหวนระยะเรดาร์
+// วงแหวนระยะตรวจวัด
 function renderRangeRings() {
   layerRings.clearLayers();
   rangeCircleElements = [];
@@ -874,10 +849,8 @@ function updateThemeVisuals(themeKey) {
   analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
 }
 
-// 5. ขอบเขตพื้นที่
+// โหลดข้อมูลขอบเขตเตรียมไว้ในหน่วยความจำ
 async function loadBoundaries() {
-  const statusEl = document.getElementById("boundaryStatus");
-
   try {
     const resProv = await fetch("https://cdn.jsdelivr.net/gh/apisit/thailand.json@master/thailand.json");
     if (resProv.ok) {
@@ -898,7 +871,6 @@ async function loadBoundaries() {
   } catch (err) {}
 
   try {
-    statusEl.textContent = "กำลังโหลดขอบเขตอำเภอ...";
     const resAmp = await fetch("https://cdn.jsdelivr.net/gh/wmgeolab/geoBoundaries@main/releaseData/gbOpen/THA/ADM2/geoBoundaries-THA-ADM2_simplified.geojson");
     if (resAmp.ok) {
       const dataAmp = await resAmp.json();
@@ -921,14 +893,10 @@ async function loadBoundaries() {
   try {
     const fallbackTambon = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { opacity: 0.4 });
     layerTambon.addLayer(fallbackTambon);
-    statusEl.textContent = "● ขอบเขตพื้นที่พร้อมใช้งาน";
-    statusEl.style.color = "var(--ok)";
-  } catch (err) {
-    statusEl.textContent = "● ขอบเขตพื้นที่พร้อมใช้งาน";
-  }
+  } catch (err) {}
 }
 
-// 6. โหลดข้อมูลเรดาร์
+// เริ่มต้นระบบเรดาร์
 async function initRadar() {
   try {
     const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
@@ -1069,6 +1037,7 @@ document.getElementById("toggleLayerCard").addEventListener("click", () => {
   document.querySelector(".toggle-icon").textContent = isHidden ? "▼" : "▲";
 });
 
+// ควบคุมการเปิด-ปิดเลเยอร์ตามการกด Checkbox
 document.getElementById("chkArrows").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerArrows); else map.removeLayer(layerArrows);
 });
@@ -1112,7 +1081,7 @@ document.getElementById("radarOpacity").addEventListener("input", (e) => {
   radarOverlays[currentIndex].setOpacity(targetOpacity);
 });
 
-// ดึงพิกัด GPS ผู้ใช้
+// ค้นหาตำแหน่ง GPS
 document.getElementById("btnLoc").addEventListener("click", () => {
   if (!navigator.geolocation) return alert("เบราว์เซอร์ไม่รองรับ GPS");
   navigator.geolocation.getCurrentPosition((pos) => {
