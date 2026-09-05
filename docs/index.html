@@ -18,7 +18,7 @@
 
 <style>
 :root {
-  --card: rgba(15, 23, 42, 0.90);
+  --card: rgba(15, 23, 42, 0.92);
   --card-solid: #0F172A;
   --card-line: rgba(255, 255, 255, 0.12);
   --text: #F8FAFC;
@@ -27,6 +27,7 @@
   --warn: #F59E0B;
   --ok: #10B981;
   --danger: #EF4444;
+  --purple: #C084FC;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
   --blur: blur(16px);
 }
@@ -87,16 +88,16 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 /* Actionable Weather Card (รองรับโหมดย่อ-ขยาย) */
 .rail {
-  position: absolute; top: 62px; left: 12px; width: 335px; z-index: 999;
+  position: absolute; top: 62px; left: 12px; width: 345px; z-index: 999;
   display: flex; flex-direction: column; gap: 10px; pointer-events: none;
   transition: all 0.25s cubic-bezier(0.3, 0.8, 0.3, 1);
 }
 .rail > * { pointer-events: auto; }
 
-.action-card { padding: 16px; border-radius: 16px; position: relative; }
+.action-card { padding: 15px 16px; border-radius: 16px; position: relative; }
 .ac-head {
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 11.5px; color: var(--text-dim); margin-bottom: 6px;
+  font-size: 11.5px; color: var(--text-dim); margin-bottom: 4px;
 }
 .ac-head-left { display: flex; align-items: center; gap: 6px; }
 
@@ -106,38 +107,53 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .ac-collapse-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
 
+.ac-badges-wrap { display: flex; align-items: center; gap: 5px; }
 .ac-status-badge {
   padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
-  display: flex; align-items: center; gap: 5px;
+  display: flex; align-items: center; gap: 4px;
 }
 .badge-rain-incoming { background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
 .badge-raining { background: rgba(239, 68, 68, 0.2); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 .badge-clear { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
 
-.ac-headline { font-size: 21px; font-weight: 700; line-height: 1.25; margin: 6px 0 10px 0; color: #fff; }
+/* ป้ายเตือนภัยระดับวิกฤต (Severe Weather / Hail) */
+.badge-hail {
+  background: rgba(192, 132, 252, 0.25); color: #E9D5FF;
+  border: 1px solid rgba(192, 132, 252, 0.5); font-weight: 700;
+  animation: pulse-border 1.5s infinite;
+}
+@keyframes pulse-border {
+  0% { box-shadow: 0 0 0 0 rgba(192, 132, 252, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(192, 132, 252, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(192, 132, 252, 0); }
+}
+
+.ac-headline { font-size: 20px; font-weight: 700; line-height: 1.25; margin: 4px 0 8px 0; color: #fff; }
 .ac-headline span.time-highlight { color: var(--accent); font-family: "IBM Plex Mono", monospace; }
 
 .ac-grid {
   display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
-  background: rgba(0, 0, 0, 0.25); padding: 10px 8px; border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 12px;
+  background: rgba(0, 0, 0, 0.25); padding: 8px; border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 10px;
 }
 .ac-grid-col { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .ac-grid-lbl { font-size: 10.5px; color: var(--text-dim); margin-bottom: 2px; }
-.ac-grid-val { font-size: 13px; font-weight: 600; color: #fff; font-family: "IBM Plex Mono", monospace; }
+.ac-grid-val { font-size: 12.5px; font-weight: 600; color: #fff; font-family: "IBM Plex Mono", monospace; }
 
-.ac-timeline-bar-wrap { margin-bottom: 12px; }
-.ac-tl-label-row { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
-.ac-tl-track {
-  height: 8px; width: 100%; border-radius: 999px; background: rgba(255, 255, 255, 0.1);
-  position: relative; overflow: hidden; display: flex;
+/* Meteogram Micro-Chart Section (กราฟพยากรณ์ฝนรายจุด) */
+.meteogram-box {
+  background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px; padding: 8px 10px; margin-bottom: 10px;
 }
-.ac-tl-seg-clear { background: rgba(255, 255, 255, 0.08); height: 100%; }
-.ac-tl-seg-rain { background: linear-gradient(90deg, #38BDF8, #F59E0B); height: 100%; }
+.mg-header {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 10.5px; color: var(--text-dim); margin-bottom: 4px;
+}
+.mg-chart-svg { width: 100%; height: 52px; overflow: visible; }
 
-.ac-desc { font-size: 12px; color: var(--text-dim); line-height: 1.45; margin-bottom: 10px; }
+.ac-desc { font-size: 11.5px; color: var(--text-dim); line-height: 1.45; margin-bottom: 10px; }
 
-.ac-btn-row { display: flex; gap: 6px; margin-bottom: 8px; }
+.ac-btn-row { display: flex; gap: 6px; margin-bottom: 6px; }
 .btn-loc-sm {
   flex: 1; padding: 7px 10px; border-radius: 9px;
   background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3);
@@ -327,14 +343,16 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- Actionable Weather Card (รองรับการย่อ/ขยาย) -->
+<!-- Actionable Weather Card (พร้อม Meteogram & ระบบเตือนภัยวิกฤต) -->
 <div class="rail" id="actionRail">
-  <!-- โหมดเต็ม -->
   <div class="action-card glass" id="actionCard">
     <div class="ac-head">
       <div class="ac-head-left">
         <span id="pinNameLabel">📍 ตำแหน่งตรวจวัด</span>
-        <span class="ac-status-badge badge-clear" id="statusBadge">● กำลังวิเคราะห์</span>
+        <div class="ac-badges-wrap">
+          <span class="ac-status-badge badge-clear" id="statusBadge">● กำลังวิเคราะห์</span>
+          <span class="ac-status-badge badge-hail" id="hailBadge" style="display: none;">⚡ เสี่ยงลูกเห็บ</span>
+        </div>
       </div>
       <button class="ac-collapse-btn" id="btnCollapseAc" title="ย่อหน้าต่าง">◀</button>
     </div>
@@ -353,20 +371,20 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
         <span class="ac-grid-val" id="valDuration">—</span>
       </div>
       <div class="ac-grid-col">
-        <span class="ac-grid-lbl">คาดว่าหยุด</span>
-        <span class="ac-grid-val" id="valEtd">—</span>
+        <span class="ac-grid-lbl">ฝนสะสม 1 ชม.</span>
+        <span class="ac-grid-val" id="valRainAccum" style="color: var(--accent);">~0 มม.</span>
       </div>
     </div>
 
-    <div class="ac-timeline-bar-wrap" id="acTlWrap">
-      <div class="ac-tl-label-row">
-        <span>ตอนนี้</span>
-        <span id="tlMidLabel">+30 นาที</span>
-        <span>+60 นาที</span>
+    <!-- กราฟ Meteogram 105 นาที (ย้อนหลัง 45 นาที - ล่วงหน้า 60 นาที) -->
+    <div class="meteogram-box">
+      <div class="mg-header">
+        <span>📊 แนวโน้มฝน 105 นาที (dBZ)</span>
+        <span id="mgPeakLabel">สูงสุด: — dBZ</span>
       </div>
-      <div class="ac-tl-track" id="acTlTrack">
-        <div class="ac-tl-seg-clear" style="width: 100%;"></div>
-      </div>
+      <svg class="mg-chart-svg" id="mgChartSvg" viewBox="0 0 280 50">
+        <!-- SVG Bars จะถูกเรนเดอร์โดย JavaScript -->
+      </svg>
     </div>
 
     <div class="ac-desc" id="acDesc">
@@ -384,7 +402,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     </div>
   </div>
 
-  <!-- โหมดย่อ (Collapsed Pill) แสดงสรุปสถานะเมื่อย่อ -->
+  <!-- โหมดย่อ (Collapsed Pill) -->
   <div class="ac-pill glass" id="btnExpandAc" title="กดเพื่อขยายหน้าต่าง">
     <span id="acPillBadge">🌤️</span>
     <span class="ac-pill-text" id="acPillText">กำลังวิเคราะห์...</span>
@@ -564,15 +582,15 @@ function formatThaiDateTime(dateObj, showFull = false) {
   return `${d} ${m} ${y} ${hh}:${mm} น.`;
 }
 
-function playAlertChime() {
+function playAlertChime(isSevere = false) {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(880.00, ctx.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    osc.type = isSevere ? "sawtooth" : "sine";
+    osc.frequency.setValueAtTime(isSevere ? 750 : 587.33, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(isSevere ? 1100 : 880, ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
     osc.connect(gain);
     gain.connect(ctx.destination);
@@ -581,26 +599,116 @@ function playAlertChime() {
   } catch (e) {}
 }
 
-function triggerRainNotification(etaMin, startStr, durationMin) {
+function triggerRainNotification(etaMin, startStr, durationMin, isHailRisk) {
   if (!isAlertEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
   const now = Date.now();
-  if (now - lastAlertTimestamp < 30 * 60 * 1000) return;
+  if (now - lastAlertTimestamp < 25 * 60 * 1000) return;
   lastAlertTimestamp = now;
 
-  playAlertChime();
-  const title = `🌧️ ทันฝน: ฝนจะเริ่มตกในอีก ${etaMin} นาที!`;
+  playAlertChime(isHailRisk);
+  const title = isHailRisk 
+    ? `⚡ เตือนภัยพายุรุนแรง/ลูกเห็บ: ฝนจะเข้าใน ${etaMin} นาที!` 
+    : `🌧️ ทันฝน: ฝนจะเริ่มตกในอีก ${etaMin} นาที!`;
+
   const options = {
-    body: `คาดว่าจะเริ่มตกเวลา ${startStr} (ตกต่อเนื่อง ~${durationMin} นาที) บริเวณตำแหน่งของคุณ`,
+    body: `คาดว่าจะเริ่มตกเวลา ${startStr} (ตกต่อเนื่อง ~${durationMin} นาที) ${isHailRisk ? 'ระวังลมกระโชกแรงและลูกเห็บตก' : 'บริเวณตำแหน่งของคุณ'}`,
     icon: "icon-192.png",
     badge: "icon-192.png",
-    vibrate: [200, 100, 200],
+    vibrate: isHailRisk ? [300, 150, 300, 150, 300] : [200, 100, 200],
     tag: "tanfon-rain-alert",
     renotify: true
   };
   try { new Notification(title, options); } catch (e) {}
 }
 
-// วิเคราะห์ผลกระทบฝน (Upwind Raycasting)
+// แปลงค่าสี RGB เป็นค่าการสะท้อน dBZ
+function rgbToDbz(r, g, b, a) {
+  if (a < 35) return 0;
+  // สีม่วง/ชมพู/ขาว (Hail / Extreme Core: > 52 dBZ)
+  if (r > 170 && b > 170) return 56;
+  // สีแดงเข้ม (Very Heavy Rain: 48 - 52 dBZ)
+  if (r > 190 && g < 70 && b < 70) return 50;
+  // สีส้ม (Heavy Rain: 40 - 45 dBZ)
+  if (r > 200 && g > 100 && b < 60) return 42;
+  // สีเหลือง (Moderate: 32 - 38 dBZ)
+  if (r > 190 && g > 190 && b < 70) return 35;
+  // สีเขียว (Light - Moderate: 20 - 30 dBZ)
+  if (g > 130 && r < 140) return 25;
+  // สีฟ้าอ่อน (Very Light: 15 - 20 dBZ)
+  if (b > 160 && g > 160) return 18;
+  return 0;
+}
+
+// แปลงค่า dBZ เป็นอัตราฝนตก (mm/h) ด้วยสมการ Z = 200 * R^1.6
+function dbzToRainRate(dbz) {
+  if (dbz < 15) return 0;
+  const z = Math.pow(10, dbz / 10);
+  return Math.pow(z / 200, 1 / 1.6);
+}
+
+// 1. เรนเดอร์กราฟ Meteogram 105 นาที (SVG)
+function renderMeteogram(sampledDbzList, peakDbz) {
+  const svg = document.getElementById("mgChartSvg");
+  const peakLabel = document.getElementById("mgPeakLabel");
+  peakLabel.textContent = `สูงสุด: ${peakDbz.toFixed(0)} dBZ`;
+
+  const totalSteps = sampledDbzList.length; // 8 เฟรม
+  const w = 280;
+  const h = 50;
+  const barWidth = 20;
+  const stepGap = w / totalSteps;
+
+  let svgHtml = "";
+
+  // วาดเส้นแบ่งแกน Y (Gridlines)
+  svgHtml += `
+    <line x1="0" y1="12" x2="${w}" y2="12" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,2"/>
+    <line x1="0" y1="30" x2="${w}" y2="30" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,2"/>
+    <line x1="0" y1="${h - 10}" x2="${w}" y2="${h - 10}" stroke="rgba(255,255,255,0.15)"/>
+  `;
+
+  // เส้นแบ่งเวลา "ตอนนี้" (Now Separator)
+  const nowX = (manifest ? manifest.frames.findIndex(f => f.offset_min === 0) : 3) * stepGap + stepGap / 2;
+  svgHtml += `
+    <line x1="${nowX}" y1="0" x2="${nowX}" y2="${h - 10}" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3,3"/>
+    <text x="${nowX + 3}" y="8" fill="var(--accent)" font-size="8" font-family="IBM Plex Mono">ตอนนี้</text>
+  `;
+
+  sampledDbzList.forEach((item, i) => {
+    const x = i * stepGap + (stepGap - barWidth) / 2;
+    const dbz = item.dbz;
+    const barHeight = Math.min(36, Math.max(3, (dbz / 65) * 36));
+    const y = (h - 10) - barHeight;
+
+    // เลือกสีตามความแรง dBZ
+    let fillColor = "#38BDF8";
+    if (item.offset < 0) {
+      fillColor = "#64748B"; // อดีต: สีเทาฟ้า
+    } else {
+      if (dbz >= 52) fillColor = "#C084FC"; // ม่วง (ลูกเห็บ)
+      else if (dbz >= 45) fillColor = "#EF4444"; // แดง (หนักมาก)
+      else if (dbz >= 38) fillColor = "#F59E0B"; // ส้ม
+      else if (dbz >= 28) fillColor = "#10B981"; // เขียว
+      else if (dbz >= 15) fillColor = "#38BDF8"; // ฟ้า
+      else fillColor = "rgba(255,255,255,0.08)";
+    }
+
+    // แท่งกราฟ
+    svgHtml += `
+      <rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="2" fill="${fillColor}"/>
+    `;
+
+    // ป้ายเวลาแกน X
+    const labelText = item.offset === 0 ? "0" : (item.offset > 0 ? `+${item.offset}` : `${item.offset}`);
+    svgHtml += `
+      <text x="${x + barWidth / 2}" y="${h - 1}" text-anchor="middle" fill="#94A3B8" font-size="7.5" font-family="IBM Plex Mono">${labelText}</text>
+    `;
+  });
+
+  svg.innerHTML = svgHtml;
+}
+
+// 2. วิเคราะห์ผลกระทบฝน, ตรวจจับลูกเห็บ, คำนวณฝนสะสม และสร้าง Meteogram
 function analyzeImpactAtPoint(lat, lon) {
   layerTrajectory.clearLayers();
   if (!manifest || !manifest.motion || frameImages.length === 0) return;
@@ -609,68 +717,112 @@ function analyzeImpactAtPoint(lat, lon) {
   const spd = motion.speed_kmh || motion.kmh || 0;
   const deg = motion.direction_deg !== undefined ? motion.direction_deg : (motion.bearing || 0);
 
-  const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
-  const baseIdx = nowIdx >= 0 ? nowIdx : 0;
-  const img = frameImages[baseIdx];
-
-  if (!img || !img.complete || img.naturalWidth === 0) return;
-
-  scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
-  scanCtx.drawImage(img, 0, 0, SCAN_RES, SCAN_RES);
-
-  let imgData;
-  try {
-    imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
-  } catch (err) {
-    return;
-  }
-
   const lat0 = radarStationLatLon[0];
   const lon0 = radarStationLatLon[1];
   const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
   const [pinE, pinN] = project(lat, lon, lat0, lon0);
 
-  function hasRainAt(e, n) {
+  // คำนวณพิกัด Pixel (px, py) บน Scan Canvas
+  const targetPx = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
+  const targetPy = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
+
+  const sampledDbzList = [];
+  let peakDbz = 0;
+  let accumulatedRainMm = 0;
+
+  // วนลูปอ่านค่า dBZ จากภาพทุกเฟรม (-45 ถึง +60 นาที) เพื่อสร้าง Meteogram
+  manifest.frames.forEach((frame, idx) => {
+    const img = frameImages[idx];
+    let dbz = 0;
+    if (img && img.complete && img.naturalWidth > 0 && targetPx >= 0 && targetPx < SCAN_RES && targetPy >= 0 && targetPy < SCAN_RES) {
+      scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
+      scanCtx.drawImage(img, 0, 0, SCAN_RES, SCAN_RES);
+      try {
+        const pData = scanCtx.getImageData(targetPx, targetPy, 1, 1).data;
+        dbz = rgbToDbz(pData[0], pData[1], pData[2], pData[3]);
+      } catch (e) {}
+    }
+
+    if (dbz > peakDbz) peakDbz = dbz;
+    sampledDbzList.push({ offset: frame.offset_min, dbz: dbz });
+
+    // คำนวณฝนสะสมล่วงหน้า (เฟรม offset >= 0)
+    if (frame.offset_min >= 0 && dbz >= 15) {
+      const rainRate = dbzToRainRate(dbz); // mm/h
+      accumulatedRainMm += rainRate * (15 / 60); // แต่ละเฟรมห่างกัน 15 นาที
+    }
+  });
+
+  // วาดกราฟ Meteogram ทันที
+  renderMeteogram(sampledDbzList, peakDbz);
+
+  // สแกนภาพเฟรมปัจจุบันสำหรับ Upwind Raycasting
+  const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
+  const baseIdx = nowIdx >= 0 ? nowIdx : 0;
+  const imgNow = frameImages[baseIdx];
+
+  scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
+  if (imgNow && imgNow.complete) scanCtx.drawImage(imgNow, 0, 0, SCAN_RES, SCAN_RES);
+
+  let imgData = null;
+  try {
+    imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
+  } catch (err) {}
+
+  function getPixelInfoAt(e, n) {
+    if (!imgData) return { hasRain: false, maxDbz: 0 };
     const px = Math.round(((e / halfKm) + 1) / 2 * (SCAN_RES - 1));
     const py = Math.round((1 - (n / halfKm)) / 2 * (SCAN_RES - 1));
-    if (px < 0 || px >= SCAN_RES || py < 0 || py >= SCAN_RES) return false;
+    if (px < 0 || px >= SCAN_RES || py < 0 || py >= SCAN_RES) return { hasRain: false, maxDbz: 0 };
 
     let rainVotes = 0;
+    let localMaxDbz = 0;
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
         const x = px + dx, y = py + dy;
         if (x >= 0 && x < SCAN_RES && y >= 0 && y < SCAN_RES) {
           const idx = (y * SCAN_RES + x) * 4;
-          const a = imgData[idx + 3];
-          const r = imgData[idx];
-          const g = imgData[idx + 1];
-          const b = imgData[idx + 2];
-          if (a > 35 && (r > 30 || g > 30 || b > 30)) rainVotes++;
+          const dbz = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
+          if (dbz > localMaxDbz) localMaxDbz = dbz;
+          if (dbz >= 18) rainVotes++;
         }
       }
     }
-    return rainVotes >= 3;
+    return { hasRain: rainVotes >= 2, maxDbz: localMaxDbz };
   }
 
-  const isRainingNow = hasRainAt(pinE, pinN);
+  const currentStatus = getPixelInfoAt(pinE, pinN);
+  const isRainingNow = currentStatus.hasRain;
+
   const badgeEl = document.getElementById("statusBadge");
+  const hailBadge = document.getElementById("hailBadge");
   const headlineEl = document.getElementById("acHeadline");
   const valEta = document.getElementById("valEta");
   const valDur = document.getElementById("valDuration");
-  const valEtd = document.getElementById("valEtd");
+  const valRainAccum = document.getElementById("valRainAccum");
   const descEl = document.getElementById("acDesc");
-  const tlTrack = document.getElementById("acTlTrack");
 
   const pillBadge = document.getElementById("acPillBadge");
   const pillText = document.getElementById("acPillText");
 
   const nowTime = new Date();
+  valRainAccum.textContent = accumulatedRainMm > 0 ? `~${accumulatedRainMm.toFixed(1)} มม.` : "0 มม.";
 
-  // ฝนกำลังตก
+  // ตรวจจับความเสี่ยงลูกเห็บ (> 52 dBZ)
+  const isHailRisk = peakDbz >= 52;
+  if (isHailRisk) {
+    hailBadge.style.display = "flex";
+  } else {
+    hailBadge.style.display = "none";
+  }
+
+  // 1) กรณีฝนกำลังตก
   if (isRainingNow) {
     badgeEl.className = "ac-status-badge badge-raining";
     badgeEl.textContent = "● ฝนกำลังตก";
-    headlineEl.innerHTML = `☔ ขณะนี้มีกลุ่มฝนในพื้นที่`;
+    headlineEl.innerHTML = isHailRisk 
+      ? `⛈️ ฝนตกหนักมาก <span style="color: var(--purple);">(เสี่ยงลูกเห็บ)</span>` 
+      : `☔ ขณะนี้มีกลุ่มฝนในพื้นที่`;
 
     let dBack = 5;
     if (spd >= 2) {
@@ -678,7 +830,7 @@ function analyzeImpactAtPoint(lat, lon) {
       const stepE = -Math.sin(rad);
       const stepN = -Math.cos(rad);
       for (let d = 2; d <= 80; d += 2) {
-        if (!hasRainAt(pinE + stepE * d, pinN + stepN * d)) {
+        if (!getPixelInfoAt(pinE + stepE * d, pinN + stepN * d).hasRain) {
           dBack = d;
           break;
         }
@@ -686,26 +838,19 @@ function analyzeImpactAtPoint(lat, lon) {
     }
 
     const remainingMin = Math.max(10, Math.round((dBack / Math.max(spd, 12)) * 60));
-    const stopDate = new Date(nowTime.getTime() + remainingMin * 60000);
-    const stopTimeStr = `${String(stopDate.getHours()).padStart(2, '0')}:${String(stopDate.getMinutes()).padStart(2, '0')} น.`;
-
     valEta.textContent = "กำลังตก";
     valDur.textContent = `~${remainingMin} นาที`;
-    valEtd.textContent = stopTimeStr;
-    descEl.textContent = `กลุ่มฝนครอบคลุมพื้นที่ คาดว่าจะตกแช่อีกประมาณ ${remainingMin} นาที และจะเริ่มซาลงในเวลา ${stopTimeStr}`;
+    descEl.textContent = `กลุ่มฝนครอบคลุมพื้นที่ คาดว่าจะตกแช่อีกประมาณ ${remainingMin} นาที ปริมาณฝนสะสมคาดการณ์ ${accumulatedRainMm.toFixed(1)} มม.`;
 
-    tlTrack.innerHTML = `
-      <div class="ac-tl-seg-rain" style="width: 60%;"></div>
-      <div class="ac-tl-seg-clear" style="width: 40%;"></div>
-    `;
-
-    pillBadge.textContent = "☔";
-    pillText.textContent = `ฝนกำลังตก (อีก ~${remainingMin} น.)`;
+    pillBadge.textContent = isHailRisk ? "⚡" : "☔";
+    pillText.textContent = `ฝนตกอยู่ (อีก ~${remainingMin} น.)`;
     return;
   }
 
+  // 2) กรณีฝนกำลังเคลื่อนตัวเข้ามา (Upwind Raycasting)
   let hitDistFront = -1;
   let hitDistBack = -1;
+  let incomingMaxDbz = 0;
 
   if (spd >= 2) {
     const rad = deg * Math.PI / 180;
@@ -716,9 +861,11 @@ function analyzeImpactAtPoint(lat, lon) {
     for (let d = 3; d <= maxScanKm; d += 2) {
       const sampleE = pinE + upE * d;
       const sampleN = pinN + upN * d;
+      const info = getPixelInfoAt(sampleE, sampleN);
 
-      if (hasRainAt(sampleE, sampleN)) {
+      if (info.hasRain) {
         if (hitDistFront === -1) hitDistFront = d;
+        if (info.maxDbz > incomingMaxDbz) incomingMaxDbz = info.maxDbz;
       } else {
         if (hitDistFront !== -1 && hitDistBack === -1) {
           hitDistBack = d;
@@ -728,7 +875,6 @@ function analyzeImpactAtPoint(lat, lon) {
     }
   }
 
-  // ฝนกำลังจะมาถึงใน 60 นาที!
   if (hitDistFront > 0) {
     if (hitDistBack === -1) hitDistBack = hitDistFront + 12;
 
@@ -737,64 +883,55 @@ function analyzeImpactAtPoint(lat, lon) {
     const durationMin = Math.max(10, etdMin - etaMin);
 
     const startDate = new Date(nowTime.getTime() + etaMin * 60000);
-    const stopDate = new Date(nowTime.getTime() + etdMin * 60000);
     const startStr = `${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')} น.`;
-    const stopStr = `${String(stopDate.getHours()).padStart(2, '0')}:${String(stopDate.getMinutes()).padStart(2, '0')} น.`;
+
+    const willHail = incomingMaxDbz >= 52 || peakDbz >= 52;
+    if (willHail) hailBadge.style.display = "flex";
 
     badgeEl.className = "ac-status-badge badge-rain-incoming";
     badgeEl.textContent = `● ฝนเข้าใน ${etaMin} นาที`;
-    headlineEl.innerHTML = `🌧️ ฝนจะเริ่มตกในอีก <span class="time-highlight">${etaMin}</span> นาที`;
+    headlineEl.innerHTML = willHail
+      ? `⛈️ ฝนจะเข้าใน <span class="time-highlight">${etaMin}</span> น. <span style="color: var(--purple); font-size:16px;">(ระวังพายุ/ลูกเห็บ)</span>`
+      : `🌧️ ฝนจะเริ่มตกในอีก <span class="time-highlight">${etaMin}</span> นาที`;
 
     valEta.textContent = startStr;
     valDur.textContent = `~${durationMin} นาที`;
-    valEtd.textContent = stopStr;
 
-    descEl.innerHTML = `พบกลุ่มฝนความเร็ว <b>${spd.toFixed(1)} กม./ชม.</b> อยู่ห่างออกไป ${hitDistFront.toFixed(0)} กม. กำลังมุ่งหน้ามายังตำแหน่งของคุณ`;
+    descEl.innerHTML = `พบกลุ่มฝนความแรง <b>${incomingMaxDbz.toFixed(0)} dBZ</b> ความเร็ว ${spd.toFixed(1)} กม./ชม. กำลังมุ่งหน้ามายังตำแหน่งของคุณ`;
 
-    const startPct = Math.min(85, Math.round((etaMin / 60) * 100));
-    const durPct = Math.min(100 - startPct, Math.round((durationMin / 60) * 100));
-    const endPct = 100 - startPct - durPct;
+    pillBadge.textContent = willHail ? "⚡" : "🌧️";
+    pillText.textContent = `ฝนเข้าในอีก ${etaMin} นาที`;
 
-    tlTrack.innerHTML = `
-      <div class="ac-tl-seg-clear" style="width: ${startPct}%;"></div>
-      <div class="ac-tl-seg-rain" style="width: ${durPct}%;"></div>
-      <div class="ac-tl-seg-clear" style="width: ${endPct}%;"></div>
-    `;
-
-    pillBadge.textContent = "🌧️";
-    pillText.textContent = `ฝนจะเข้าในอีก ${etaMin} นาที`;
-
+    // ลากเส้นแนววิถีการปะทะ (Impact Vector Line)
     const rad = deg * Math.PI / 180;
     const [cloudLat, cloudLon] = unproject(pinE - Math.sin(rad) * hitDistFront, pinN - Math.cos(rad) * hitDistFront, lat0, lon0);
     const style = THEME_STYLES[currentTheme];
 
     const impactPolyline = L.polyline([[cloudLat, cloudLon], [lat, lon]], {
-      color: style.impactLine,
-      weight: 2.5,
+      color: willHail ? "#C084FC" : style.impactLine,
+      weight: 2.8,
       dashArray: "6, 6",
-      opacity: 0.9
+      opacity: 0.95
     }).addTo(layerTrajectory);
 
-    impactPolyline.bindTooltip(`⚡ เซลล์ฝนกำลังมุ่งหน้ามา (ETA: ~${etaMin} นาที)`, {
+    impactPolyline.bindTooltip(`${willHail ? '⚡ เสี่ยงลูกเห็บ' : '🌧️ กลุ่มฝน'} (ETA: ~${etaMin} นาที)`, {
       permanent: true, direction: "center", className: "map-label"
     });
 
     if (etaMin <= 60) {
-      triggerRainNotification(etaMin, startStr, durationMin);
+      triggerRainNotification(etaMin, startStr, durationMin, willHail);
     }
     return;
   }
 
-  // ท้องฟ้าโปร่ง
+  // 3) ท้องฟ้าโปร่ง
   badgeEl.className = "ac-status-badge badge-clear";
   badgeEl.textContent = "● ท้องฟ้าโปร่ง";
   headlineEl.innerHTML = `🌤️ ไม่มีฝนใน 60 นาทีข้างหน้า`;
 
   valEta.textContent = "ไม่มี";
   valDur.textContent = "0 นาที";
-  valEtd.textContent = "—";
-  descEl.textContent = `จากการวิเคราะห์ทิศทางและแนวพัดของลม ไม่พบเซลล์ฝนที่กำลังเคลื่อนตัวเข้าหาจุดนี้ใน 1 ชั่วโมงข้างหน้า`;
-  tlTrack.innerHTML = `<div class="ac-tl-seg-clear" style="width: 100%;"></div>`;
+  descEl.textContent = `จากการวิเคราะห์แนวพัดลมและโมเดล Nowcast ไม่พบเซลล์ฝนที่กำลังเคลื่อนตัวเข้าหาจุดนี้ใน 1 ชั่วโมงข้างหน้า`;
 
   pillBadge.textContent = "🌤️";
   pillText.textContent = "ไม่มีฝนใน 60 นาที";
@@ -805,11 +942,7 @@ function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") 
   document.getElementById("pinNameLabel").textContent = `📍 ${label}`;
 
   if (!userPinMarker) {
-    userPinMarker = L.marker([lat, lon], {
-      draggable: true,
-      title: "ลากเพื่อย้ายจุดตรวจวัด"
-    }).addTo(map);
-
+    userPinMarker = L.marker([lat, lon], { draggable: true, title: "ลากเพื่อย้ายจุดตรวจวัด" }).addTo(map);
     userPinMarker.on("dragend", (e) => {
       const pos = e.target.getLatLng();
       setInspectionPoint(pos.lat, pos.lng, "จุดที่คุณลากหมุด");
@@ -1129,7 +1262,6 @@ document.getElementById("btnExpandTl").addEventListener("click", () => {
   document.getElementById("timelineBox").classList.remove("collapsed");
 });
 
-// จัดการย่อ / ขยาย Action Card (ปุ่มย่อหน้าต่าง)
 document.getElementById("btnCollapseAc").addEventListener("click", () => {
   document.getElementById("actionRail").classList.add("collapsed");
 });
@@ -1232,7 +1364,7 @@ btnAlert.addEventListener("click", async () => {
       isAlertEnabled = true;
       localStorage.setItem("tanfon_alert_enabled", "true");
       syncAlertBtnUI();
-      playAlertChime();
+      playAlertChime(false);
       new Notification("🔔 ทันฝน: เปิดระบบแจ้งเตือนสำเร็จ", {
         body: "ระบบจะแจ้งเตือนอัตโนมัติล่วงหน้า 1 ชั่วโมงเมื่อมีกลุ่มฝนมุ่งหน้ามาหาคุณ",
         icon: "icon-192.png"
