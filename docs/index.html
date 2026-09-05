@@ -18,7 +18,8 @@
 
 <style>
 :root {
-  --card: rgba(15, 23, 42, 0.85);
+  --card: rgba(15, 23, 42, 0.88);
+  --card-solid: #0F172A;
   --card-line: rgba(255, 255, 255, 0.12);
   --text: #F8FAFC;
   --text-dim: #94A3B8;
@@ -40,10 +41,10 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
   box-shadow: var(--shadow);
-  border-radius: 16px;
+  border-radius: 14px;
 }
 
-/* Top Bar */
+/* แถบด้านบน */
 .top-bar {
   position: absolute; top: 12px; left: 12px; right: 12px; z-index: 1000;
   display: flex; gap: 8px; align-items: center; pointer-events: none;
@@ -54,11 +55,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .brand b { font-size: 14px; letter-spacing: -0.01em; color: var(--accent); }
 .brand span { font-size: 12px; color: var(--text-dim); }
 
-.pill { padding: 7px 12px; border-radius: 999px; font-size: 11.5px; display: flex; align-items: center; gap: 7px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
-.dot.warn { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
-
-/* Basemap Switcher Widget */
 .map-switch {
   display: flex; gap: 2px; padding: 3px; border-radius: 999px; margin-left: auto;
 }
@@ -67,72 +63,121 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   padding: 5px 11px; border-radius: 999px; font-size: 11.5px; font-weight: 500;
   cursor: pointer; transition: all 0.2s; white-space: nowrap;
 }
-.map-btn.active {
-  background: var(--accent); color: #070B12; font-weight: 700;
-}
+.map-btn.active { background: var(--accent); color: #070B12; font-weight: 700; }
 
-/* Left Card (ETA) */
+/* แผงขอบเขตพื้นที่ (Boundary Layer Controls) */
+.layer-card {
+  position: absolute; top: 62px; right: 12px; z-index: 999;
+  width: 220px; padding: 12px 14px; font-size: 12px;
+}
+.layer-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 600; color: var(--accent); cursor: pointer; user-select: none;
+  margin-bottom: 8px;
+}
+.layer-head span.toggle-icon { font-size: 11px; transition: transform 0.2s; }
+.layer-content { display: flex; flex-direction: column; gap: 8px; }
+.layer-row { display: flex; align-items: center; justify-content: space-between; }
+.layer-label-check { display: flex; align-items: center; gap: 4px; color: var(--text-dim); font-size: 11px; }
+.custom-checkbox { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.custom-checkbox input { accent-color: var(--accent); cursor: pointer; }
+
+/* การ์ดซ้าย (ETA & ข้อมูลฝน) */
 .rail {
-  position: absolute; top: 64px; left: 12px; width: 320px; z-index: 999;
+  position: absolute; top: 62px; left: 12px; width: 300px; z-index: 999;
   display: flex; flex-direction: column; gap: 10px; pointer-events: none;
 }
 .rail > * { pointer-events: auto; }
-.card { padding: 15px 16px; }
+.card { padding: 14px 16px; }
 .card-head { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); }
-.eta-val { font-size: 38px; font-weight: 700; line-height: 1.1; margin: 4px 0; color: #fff; }
-.eta-val small { font-size: 15px; font-weight: 400; color: var(--text-dim); margin-left: 4px; }
-.eta-desc { font-size: 12.5px; color: var(--text-dim); line-height: 1.4; }
+.eta-val { font-size: 34px; font-weight: 700; line-height: 1.1; margin: 4px 0; color: #fff; }
+.eta-val small { font-size: 14px; font-weight: 400; color: var(--text-dim); margin-left: 4px; }
+.eta-desc { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
 
 .btn-loc {
-  width: 100%; margin-top: 10px; padding: 7px; border-radius: 10px;
+  width: 100%; margin-top: 10px; padding: 7px; border-radius: 9px;
   background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3);
-  color: var(--accent); font-weight: 600; cursor: pointer; font-size: 12.5px;
+  color: var(--accent); font-weight: 600; cursor: pointer; font-size: 12px;
 }
 .btn-loc:hover { background: rgba(56, 189, 248, 0.25); }
+.opacity-box { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--text-dim); }
+.opacity-box input { width: 120px; accent-color: var(--accent); }
 
-/* Slider & Opacity Tool */
-.opacity-box {
-  margin-top: 8px; display: flex; align-items: center; justify-content: space-between;
-  font-size: 11.5px; color: var(--text-dim);
-}
-.opacity-box input { width: 130px; accent-color: var(--accent); }
-
-/* Legend */
+/* สเกลสีเรดาร์ */
 .legend {
-  position: absolute; left: 12px; bottom: 85px; z-index: 999;
-  padding: 8px 12px; border-radius: 12px; width: 220px;
+  position: absolute; left: 12px; bottom: 85px; z-index: 998;
+  padding: 8px 12px; border-radius: 12px; width: 210px;
 }
-.lg-bar {
-  height: 8px; border-radius: 4px; margin: 4px 0;
-  background: linear-gradient(90deg, #00ECEC 0%, #00A000 25%, #FFFF00 50%, #FF9000 75%, #FF0000 100%);
-}
-.lg-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
+.lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #00ECEC 0%, #00A000 25%, #FFFF00 50%, #FF9000 75%, #FF0000 100%); }
+.lg-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 
-/* Timeline Controller */
-.timeline {
+/* แถบช่วงเวลาในการแสดงผล (Timeline Controller V2) */
+.timeline-container {
   position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
-  width: min(620px, calc(100% - 24px)); z-index: 1000;
-  padding: 8px 16px; border-radius: 18px;
+  width: min(640px, calc(100% - 24px)); z-index: 1000;
+  transition: all 0.25s cubic-bezier(0.3, 0.8, 0.3, 1);
 }
-.tl-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.tl-time { font-size: 14px; font-weight: 700; }
-.tl-tag { font-size: 11.5px; padding: 2px 7px; border-radius: 6px; }
-.tl-tag.obs { background: rgba(16, 185, 129, 0.2); color: #34D399; }
-.tl-tag.fc { background: rgba(245, 158, 11, 0.2); color: #FBBF24; }
 
-.tl-controls { display: flex; align-items: center; gap: 12px; }
-.btn-play {
-  width: 34px; height: 34px; border-radius: 50%; border: none;
-  background: var(--accent); color: #070B12; font-size: 15px;
+/* โหมดขยาย */
+.tl-card { padding: 10px 16px; border-radius: 16px; }
+.tl-header {
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 6px; margin-bottom: 8px;
+}
+.tl-title { font-size: 13px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px; }
+.tl-collapse-btn {
+  background: transparent; border: none; color: var(--text-dim); cursor: pointer;
+  font-size: 12px; padding: 2px 6px; border-radius: 6px;
+}
+.tl-collapse-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+
+.tl-main-row { display: flex; align-items: center; gap: 12px; }
+.btn-play-sm {
+  width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: var(--accent); color: #070B12; font-size: 13px; font-weight: bold;
   display: grid; place-items: center; cursor: pointer; flex: none;
 }
-.track { flex: 1; accent-color: var(--accent); cursor: pointer; }
+.tl-slider { flex: 1; accent-color: var(--accent); cursor: pointer; }
+.tl-badges { display: flex; align-items: center; gap: 8px; flex: none; }
+.badge-tag {
+  font-size: 11px; padding: 2px 7px; border-radius: 6px; font-weight: 500;
+}
+.badge-tag.fc { background: rgba(245, 158, 11, 0.2); color: #FBBF24; }
+.badge-tag.obs { background: rgba(16, 185, 129, 0.2); color: #34D399; }
+.badge-frames { font-size: 11px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 
-@media (max-width: 820px) {
-  .rail { width: calc(100% - 24px); top: auto; bottom: 80px; }
+.tl-sub-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 6px; font-size: 11px; color: var(--text-dim);
+}
+
+/* โหมดย่อเป็น Pill */
+.timeline-container.collapsed .tl-card { display: none; }
+.tl-pill {
+  display: none; padding: 7px 14px; border-radius: 999px;
+  align-items: center; gap: 10px; cursor: pointer; margin: 0 auto; width: fit-content;
+}
+.timeline-container.collapsed .tl-pill { display: flex; }
+.tl-pill-text { font-size: 12.5px; font-weight: 600; color: #fff; }
+.tl-pill-play {
+  border: none; background: var(--accent); color: #070B12;
+  border-radius: 50%; width: 22px; height: 22px; font-size: 10px;
+  display: grid; place-items: center; cursor: pointer;
+}
+
+/* ป้ายชื่อพื้นที่บนแผนที่ */
+.leaflet-tooltip.map-label {
+  background: transparent; border: none; box-shadow: none;
+  color: #fff; font-weight: 600; text-shadow: 0 1px 3px #000, 0 0 6px #000;
+  padding: 0; font-size: 11px;
+}
+.leaflet-tooltip.map-label.amphoe { font-size: 9.5px; color: #E2E8F0; }
+.leaflet-tooltip.map-label.tambon { font-size: 8.5px; color: #94A3B8; }
+
+@media (max-width: 768px) {
+  .rail { width: calc(100% - 24px); top: auto; bottom: 85px; }
+  .layer-card { width: 175px; font-size: 11px; }
   .legend { display: none; }
-  .timeline { bottom: 8px; }
-  .brand span { display: none; }
 }
 </style>
 </head>
@@ -140,18 +185,12 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 <div id="map"></div>
 
-<!-- Top Bar -->
+<!-- แถบด้านบน -->
 <div class="top-bar">
   <div class="brand glass">
     <b>ทันฝน</b><span>พิษณุโลก</span>
   </div>
 
-  <div class="pill glass" id="freshPill">
-    <span class="dot" id="freshDot"></span>
-    <span id="freshTime">กำลังเชื่อมต่อ...</span>
-  </div>
-
-  <!-- Basemap Switcher (เพิ่มปุ่ม DEM) -->
   <div class="map-switch glass">
     <button class="map-btn active" data-layer="dark">มืด</button>
     <button class="map-btn" data-layer="terrain">DEM ภูมิประเทศ</button>
@@ -160,7 +199,46 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- Left Cards -->
+<!-- แผงเปิดปิดขอบเขตพื้นที่ & ป้ายชื่อ (เวอร์ชันทันฝน) -->
+<div class="layer-card glass">
+  <div class="layer-head" id="toggleLayerCard">
+    <span>📐 ขอบเขตพื้นที่</span>
+    <span class="toggle-icon">▼</span>
+  </div>
+  <div class="layer-content" id="layerBody">
+    <div class="layer-row">
+      <label class="custom-checkbox">
+        <input type="checkbox" id="chkProv" checked>
+        <span>ขอบเขตจังหวัด</span>
+      </label>
+      <label class="layer-label-check">
+        <input type="checkbox" id="chkProvLabel" checked> ป้าย
+      </label>
+    </div>
+
+    <div class="layer-row">
+      <label class="custom-checkbox">
+        <input type="checkbox" id="chkAmp" checked>
+        <span>ขอบเขตอำเภอ</span>
+      </label>
+      <label class="layer-label-check">
+        <input type="checkbox" id="chkAmpLabel"> ป้าย
+      </label>
+    </div>
+
+    <div class="layer-row">
+      <label class="custom-checkbox">
+        <input type="checkbox" id="chkTam">
+        <span>ขอบเขตตำบล</span>
+      </label>
+      <label class="layer-label-check">
+        <input type="checkbox" id="chkTamLabel"> ป้าย
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- กล่อง ETA & วิเคราะห์กลุ่มฝน -->
 <div class="rail">
   <div class="card glass">
     <div class="card-head">
@@ -178,57 +256,70 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- Legend -->
+<!-- สเกลความแรงเรดาร์ (Legend) -->
 <div class="legend glass">
   <div class="lg-labels"><span>20</span><span>30</span><span>40</span><span>50</span><span>60+ dBZ</span></div>
   <div class="lg-bar"></div>
   <div class="lg-labels"><span>เบา</span><span>ปานกลาง</span><span>หนัก</span><span>หนักมาก</span></div>
 </div>
 
-<!-- Timeline Player -->
-<div class="timeline glass">
-  <div class="tl-top">
-    <div class="tl-time" id="tlTime">—:— น.</div>
-    <span class="tl-tag obs" id="tlTag">กำลังโหลด</span>
+<!-- แถบช่วงเวลาในการแสดงผล (Timeline Controller V2) -->
+<div class="timeline-container" id="timelineBox">
+  <!-- โหมดเต็ม (Expanded) -->
+  <div class="tl-card glass">
+    <div class="tl-header">
+      <div class="tl-title" id="tlFullTitle">
+        📡 ทันฝน เรดาร์พิษณุโลก (Nowcast) — กำลังโหลด...
+      </div>
+      <button class="tl-collapse-btn" id="btnCollapseTl" title="ย่อเป็นแถบเล็ก">▼</button>
+    </div>
+
+    <div class="tl-main-row">
+      <button class="btn-play-sm" id="btnPlay">▶</button>
+      <input type="range" class="tl-slider" id="tlSlider" min="0" max="0" value="0">
+      <div class="tl-badges">
+        <span class="badge-tag obs" id="tlBadge">ตรวจวัดจริง</span>
+        <span class="badge-frames" id="tlFrameCount">0/0</span>
+      </div>
+    </div>
+
+    <div class="tl-sub-row">
+      <span id="tlLatestTime">ข้อมูลล่าสุด: กำลังเชื่อมต่อ...</span>
+      <span style="color: var(--accent); cursor: pointer;" onclick="map.setView([16.77, 100.22], 8)">⌖ รีเซ็ตมุมมอง</span>
+    </div>
   </div>
-  <div class="tl-controls">
-    <button class="btn-play" id="btnPlay">▶</button>
-    <input type="range" class="track" id="tlSlider" min="0" max="0" value="0">
+
+  <!-- โหมดย่อ (Collapsed Pill) -->
+  <div class="tl-pill glass" id="btnExpandTl">
+    <span class="tl-pill-text" id="tlPillText">—:— น.</span>
+    <button class="tl-pill-play" id="btnPlayPill">▶</button>
+    <span style="font-size: 11px; color: var(--accent);">▲ ขยาย</span>
   </div>
 </div>
 
 <script>
 const MANIFEST_URL = "nowcast/PHS/latest.json";
 const R_EARTH = 6371.0088;
+const THAI_MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 
-// 1. กำหนด Basemaps ระดับสากล (แก้ปัญหา API Key และเพิ่ม DEM Shaded Relief)
+// 1. Basemaps
 const baseLayers = {
-  // โหมดมืด: ใช้ Esri Dark Gray Canvas (ไม่มีลายน้ำ สะอาด คมชัด)
   dark: L.layerGroup([
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
   ]),
-
-  // โหมด DEM ภูมิประเทศ: แสดงเงาเทือกเขา (Hillshade/Shaded Relief) + เส้นชั้นความสูง (Contours)
   terrain: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}", {
-    attribution: 'Tiles &copy; Esri World Topo',
-    maxZoom: 19
+    attribution: 'Esri World Topo', maxZoom: 19
   }),
-
-  // ภาพถ่ายดาวเทียมความละเอียดสูง (Google Hybrid) พร้อมป้ายชื่อภาษาไทย
   satellite: L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", {
-    attribution: "&copy; Google Maps",
-    maxZoom: 19
+    attribution: "Google Maps", maxZoom: 19
   }),
-
-  // โหมดสว่าง: ใช้ Esri Light Gray Canvas
   light: L.layerGroup([
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
   ])
 };
 
-// เริ่มต้นแผนที่ตรงกลางที่พิษณุโลก
 const map = L.map("map", {
   center: [16.77, 100.22],
   zoom: 8,
@@ -236,7 +327,15 @@ const map = L.map("map", {
   layers: [baseLayers.dark]
 });
 
-L.control.zoom({ position: "topright" }).addTo(map);
+L.control.zoom({ position: "bottomright" }).addTo(map);
+
+// เลเยอร์ขอบเขตพื้นที่ & ป้ายชื่อ
+const layerProvince = L.layerGroup().addTo(map);
+const layerProvinceLabels = L.layerGroup().addTo(map);
+const layerAmphoe = L.layerGroup().addTo(map);
+const layerAmphoeLabels = L.layerGroup();
+const layerTambon = L.layerGroup();
+const layerTambonLabels = L.layerGroup();
 
 // ตัวแปรระบบเรดาร์
 let manifest = null;
@@ -246,7 +345,7 @@ let isPlaying = false;
 let playTimer = null;
 let radarBounds = null;
 
-// แปลง Azimuthal Equidistant กลับมาเป็น Lat/Lon
+// แปลงพิกัด Azimuthal Equidistant กลับเป็น Lat/Lon
 function unproject(E, Nn, lat0, lon0) {
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
   const rho = Math.hypot(E, Nn);
@@ -257,7 +356,71 @@ function unproject(E, Nn, lat0, lon0) {
   return [lat * 180 / Math.PI, lon * 180 / Math.PI];
 }
 
-// โหลดข้อมูลล่าสุด
+// จัดการแปลงเวลาไทย พ.ศ.
+function formatThaiDateTime(dateObj, showFull = false) {
+  const d = dateObj.getDate();
+  const m = THAI_MONTHS[dateObj.getMonth()];
+  const y = (dateObj.getFullYear() + 543) % 100;
+  const yFull = dateObj.getFullYear() + 543;
+  const hh = String(dateObj.getHours()).padStart(2, '0');
+  const mm = String(dateObj.getMinutes()).padStart(2, '0');
+  if (showFull) {
+    return `${d} ${m} ${yFull} เวลา ${hh}:${mm} น.`;
+  }
+  return `${d} ${m} ${y} ${hh}:${mm} น.`;
+}
+
+// 2. โหลดขอบเขตจังหวัด & อำเภอ & ตำบล (GeoJSON CDN มาตรฐาน)
+async function loadBoundaries() {
+  try {
+    // ขอบเขตจังหวัด
+    const resProv = await fetch("https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json");
+    if (resProv.ok) {
+      const dataProv = await resProv.json();
+      L.geoJSON(dataProv, {
+        style: { color: "#38BDF8", weight: 1.5, fill: false, opacity: 0.65 },
+        onEachFeature: (feature, layer) => {
+          if (feature.properties && feature.properties.name) {
+            const center = layer.getBounds().getCenter();
+            const label = L.tooltip({
+              permanent: true, direction: "center", className: "map-label"
+            }).setContent(feature.properties.name).setLatLng(center);
+            layerProvinceLabels.addLayer(label);
+          }
+        }
+      }).addTo(layerProvince);
+    }
+
+    // ขอบเขตอำเภอ (ดึงเลเยอร์อำเภอแบบละเอียด)
+    const resAmp = await fetch("https://raw.githubusercontent.com/patiparn-n/thailand-geojson/main/districts.geojson");
+    if (resAmp.ok) {
+      const dataAmp = await resAmp.json();
+      L.geoJSON(dataAmp, {
+        style: { color: "#CBD5E1", weight: 0.8, dashArray: "3, 3", fill: false, opacity: 0.4 },
+        onEachFeature: (feature, layer) => {
+          const name = feature.properties.amp_th || feature.properties.name || "";
+          if (name) {
+            const center = layer.getBounds().getCenter();
+            const label = L.tooltip({
+              permanent: true, direction: "center", className: "map-label amphoe"
+            }).setContent(name).setLatLng(center);
+            layerAmphoeLabels.addLayer(label);
+          }
+        }
+      }).addTo(layerAmphoe);
+    }
+
+    // ขอบเขตตำบล (WMS Service สำหรับระดับตำบล เพื่อไม่ให้โหลดไฟล์ใหญ่เกินไป)
+    const tambonTile = L.tileLayer.wms("https://map.disaster.go.th/geoserver/wms", {
+      layers: "tambon", format: "image/png", transparent: true, opacity: 0.4
+    });
+    layerTambon.addLayer(tambonTile);
+  } catch (e) {
+    console.warn("โหลดขอบเขตบางส่วนไม่สำเร็จ:", e);
+  }
+}
+
+// 3. เริ่มต้นโหลดข้อมูลเรดาร์
 async function initRadar() {
   try {
     const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
@@ -269,52 +432,45 @@ async function initRadar() {
     const lon0 = parseFloat(m[2]) || 100.22;
     const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
 
-    // คำนวณขอบเขตแผนที่ LatLngBounds
     const south = unproject(0, -halfKm, lat0, lon0)[0];
     const north = unproject(0, halfKm, lat0, lon0)[0];
     const west = unproject(-halfKm, 0, lat0, lon0)[1];
     const east = unproject(halfKm, 0, lat0, lon0)[1];
     radarBounds = L.latLngBounds([south, west], [north, east]);
 
-    // วงแหวนระยะ 60, 120, 240 กม.
+    // วงแหวนระยะตรวจวัด
     [60000, 120000, 240000].forEach(r => {
       L.circle([lat0, lon0], {
         radius: r, color: "#38BDF8", weight: 1, dashArray: "4, 6", fill: false, opacity: 0.35
       }).addTo(map);
     });
 
-    // Marker สถานี
+    // Marker สถานี PHS
     L.circleMarker([lat0, lon0], {
       radius: 4, color: "#38BDF8", fillColor: "#FFF", fillOpacity: 1
     }).addTo(map).bindPopup("สถานีเรดาร์พิษณุโลก (PHS)");
 
-    // สร้าง Layer ภาพสำหรับแต่ละเฟรม
-    radarOverlays = manifest.frames.map((frame, idx) => {
-      const url = "nowcast/PHS/" + frame.url;
-      const overlay = L.imageOverlay(url, radarBounds, {
-        opacity: 0,
-        interactive: false
+    // เตรียม Image Overlays สำหรับแต่ละเฟรม
+    radarOverlays = manifest.frames.map((frame) => {
+      return L.imageOverlay("nowcast/PHS/" + frame.url, radarBounds, {
+        opacity: 0, interactive: false
       }).addTo(map);
-      return overlay;
     });
 
-    // Setup Timeline Slider
     const slider = document.getElementById("tlSlider");
     slider.max = manifest.frames.length - 1;
-    
-    // ตั้งต้นที่เฟรมปัจจุบัน (offset = 0)
+
     const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
     showFrame(nowIdx >= 0 ? nowIdx : manifest.frames.length - 1);
 
-    updateStatus();
+    updateFooterStatus();
     updateETA();
   } catch (err) {
-    document.getElementById("freshTime").textContent = "เชื่อมต่อล้มเหลว";
-    document.getElementById("freshDot").className = "dot warn";
+    document.getElementById("tlFullTitle").textContent = "📡 เชื่อมต่อฐานข้อมูลเรดาร์ล้มเหลว";
   }
 }
 
-// สลับเฟรมแสดงผล
+// 4. แสดงผลตามเฟรมที่เลือก
 function showFrame(index) {
   currentIndex = index;
   const targetOpacity = document.getElementById("radarOpacity").value / 100;
@@ -324,71 +480,119 @@ function showFrame(index) {
   });
 
   document.getElementById("tlSlider").value = currentIndex;
-  
+
   const f = manifest.frames[currentIndex];
-  const time = new Date(f.t * 1000);
-  const timeStr = String(time.getHours()).padStart(2, '0') + ":" + String(time.getMinutes()).padStart(2, '0');
-  
-  document.getElementById("tlTime").textContent = timeStr + " น.";
-  const tag = document.getElementById("tlTag");
-  
+  const frameDate = new Date(f.t * 1000);
+
+  // อัปเดตหัวข้อและ Badge
+  document.getElementById("tlFullTitle").innerHTML =
+    `📡 ทันฝน เรดาร์พิษณุโลก (Nowcast) — <b>${formatThaiDateTime(frameDate, true)}</b>`;
+
+  document.getElementById("tlPillText").textContent =
+    `${formatThaiDateTime(frameDate)} ${f.offset_min > 0 ? '(+' + f.offset_min + 'น.)' : ''}`;
+
+  const badge = document.getElementById("tlBadge");
   if (f.kind === "nowcast") {
-    tag.textContent = "พยากรณ์ +" + f.offset_min + " นาที";
-    tag.className = "tl-tag fc";
+    badge.textContent = `พยากรณ์ +${f.offset_min} นาที`;
+    badge.className = "badge-tag fc";
   } else {
-    tag.textContent = f.offset_min === 0 ? "ตรวจวัดจริง (ล่าสุด)" : f.offset_min + " นาที";
-    tag.className = "tl-tag obs";
+    badge.textContent = f.offset_min === 0 ? "ภาพตรวจวัดจริง" : `${f.offset_min} นาที`;
+    badge.className = "badge-tag obs";
   }
+
+  document.getElementById("tlFrameCount").textContent =
+    `เฟรม ${currentIndex + 1}/${manifest.frames.length}`;
 }
 
-// อัปเดตสถานะหัวเว็บ
-function updateStatus() {
+// อัปเดตแถบข้อมูลล่าสุด
+function updateFooterStatus() {
   const nowFrame = manifest.frames.find(f => f.offset_min === 0) || manifest.frames[0];
+  const nowDate = new Date(nowFrame.t * 1000);
   const ageMin = Math.round((Date.now() / 1000 - nowFrame.t) / 60);
-  const dot = document.getElementById("freshDot");
-  dot.className = "dot" + (ageMin > 25 ? " warn" : "");
-  document.getElementById("freshTime").textContent = "อัปเดตเมื่อ " + ageMin + " นาทีที่แล้ว";
+
+  document.getElementById("tlLatestTime").textContent =
+    `ข้อมูลตรวจวัดล่าสุด: ${formatThaiDateTime(nowDate, true)} (${ageMin} นาทีที่แล้ว)`;
 }
 
-// คำนวณ ETA คร่าวๆ
+// อัปเดตกล่องคำนวณฝน (ETA)
 function updateETA() {
   const motion = manifest.motion;
   const spd = motion.speed_kmh || 0;
   const deg = motion.direction_deg || 0;
-  
+
   if (spd > 3) {
     document.getElementById("etaMinutes").innerHTML = `${spd.toFixed(0)}<small>กม./ชม.</small>`;
-    document.getElementById("etaDesc").textContent = `กลุ่มฝนเคลื่อนที่ไปทางทิศ ${deg.toFixed(0)}° ด้วยความเร็ว ${spd.toFixed(1)} กม./ชม.`;
+    document.getElementById("etaDesc").textContent = `กลุ่มฝนเคลื่อนตัวทิศ ${deg.toFixed(0)}° ความเร็ว ${spd.toFixed(1)} กม./ชม.`;
   } else {
     document.getElementById("etaMinutes").textContent = "คงที่";
-    document.getElementById("etaDesc").textContent = "กลุ่มฝนเคลื่อนที่ช้ามากหรือก่อตัวอยู่กับที่";
+    document.getElementById("etaDesc").textContent = "กลุ่มฝนเคลื่อนที่ช้ามาก หรือก่อตัวอยู่กับที่";
   }
 }
 
-// ตัวควบคุม Timeline
-document.getElementById("tlSlider").addEventListener("input", (e) => {
-  showFrame(parseInt(e.target.value));
-});
-
-document.getElementById("btnPlay").addEventListener("click", () => {
+// ตัวควบคุม Timeline & Play
+function togglePlay() {
   isPlaying = !isPlaying;
   const btn = document.getElementById("btnPlay");
+  const btnPill = document.getElementById("btnPlayPill");
+
   if (isPlaying) {
     btn.textContent = "⏸";
+    btnPill.textContent = "⏸";
     playTimer = setInterval(() => {
       let next = (currentIndex + 1) % manifest.frames.length;
       showFrame(next);
     }, 800);
   } else {
     btn.textContent = "▶";
+    btnPill.textContent = "▶";
     clearInterval(playTimer);
   }
+}
+
+document.getElementById("btnPlay").addEventListener("click", togglePlay);
+document.getElementById("btnPlayPill").addEventListener("click", (e) => {
+  e.stopPropagation();
+  togglePlay();
 });
 
-// ปรับความโปร่งใส
-document.getElementById("radarOpacity").addEventListener("input", (e) => {
-  const targetOpacity = e.target.value / 100;
-  radarOverlays[currentIndex].setOpacity(targetOpacity);
+document.getElementById("tlSlider").addEventListener("input", (e) => {
+  showFrame(parseInt(e.target.value));
+});
+
+// ย่อ / ขยาย แถบเวลา
+document.getElementById("btnCollapseTl").addEventListener("click", () => {
+  document.getElementById("timelineBox").classList.add("collapsed");
+});
+
+document.getElementById("btnExpandTl").addEventListener("click", () => {
+  document.getElementById("timelineBox").classList.remove("collapsed");
+});
+
+// พับเก็บกล่องเลเยอร์ขอบเขต
+document.getElementById("toggleLayerCard").addEventListener("click", () => {
+  const body = document.getElementById("layerBody");
+  const isHidden = body.style.display === "none";
+  body.style.display = isHidden ? "flex" : "none";
+  document.querySelector(".toggle-icon").textContent = isHidden ? "▼" : "▲";
+});
+
+// Event ควบคุมการเปิดปิดเลเยอร์ขอบเขตพื้นที่ & ป้าย
+document.getElementById("chkProv").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerProvince); else map.removeLayer(layerProvince);
+});
+document.getElementById("chkProvLabel").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerProvinceLabels); else map.removeLayer(layerProvinceLabels);
+});
+
+document.getElementById("chkAmp").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerAmphoe); else map.removeLayer(layerAmphoe);
+});
+document.getElementById("chkAmpLabel").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerAmphoeLabels); else map.removeLayer(layerAmphoeLabels);
+});
+
+document.getElementById("chkTam").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerTambon); else map.removeLayer(layerTambon);
 });
 
 // สลับ Basemap
@@ -396,14 +600,19 @@ document.querySelectorAll(".map-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".map-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-
     const layerKey = btn.dataset.layer;
     Object.values(baseLayers).forEach(layer => map.removeLayer(layer));
     baseLayers[layerKey].addTo(map);
   });
 });
 
-// ดึงพิกัดผู้ใช้
+// ปรับความโปร่งใสเรดาร์
+document.getElementById("radarOpacity").addEventListener("input", (e) => {
+  const targetOpacity = e.target.value / 100;
+  radarOverlays[currentIndex].setOpacity(targetOpacity);
+});
+
+// ค้นหาตำแหน่ง GPS
 document.getElementById("btnLoc").addEventListener("click", () => {
   if (!navigator.geolocation) return alert("เบราว์เซอร์ไม่รองรับ GPS");
   navigator.geolocation.getCurrentPosition((pos) => {
@@ -413,10 +622,11 @@ document.getElementById("btnLoc").addEventListener("click", () => {
     L.marker([userLat, userLon]).addTo(map).bindPopup("ตำแหน่งของคุณ").openPopup();
     document.getElementById("userLocLabel").textContent = "ตำแหน่งของคุณ";
   }, () => {
-    alert("ไม่สามารถเข้าถึงตำแหน่งได้");
+    alert("ไม่สามารถเข้าถึงพิกัด GPS ได้");
   });
 });
 
+loadBoundaries();
 initRadar();
 </script>
 </body>
