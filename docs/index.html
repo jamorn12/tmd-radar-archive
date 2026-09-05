@@ -143,13 +143,14 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   100% { transform: scale(1.8); opacity: 0; }
 }
 
-/* Rain Gauge Telemetry Marker & Dynamic Adaptive Labels */
+/* Rain Gauge Telemetry Marker & Anti-flicker Smooth Transitions */
 .gauge-pin {
   width: 13px; height: 13px; border-radius: 50%;
   border: 2px solid #FFFFFF; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-  cursor: pointer; transition: transform 0.15s;
+  cursor: pointer;
+  transition: background-color 0.35s ease, transform 0.15s ease;
 }
-.gauge-pin:hover { transform: scale(1.3); z-index: 1000; }
+.gauge-pin:hover { transform: scale(1.35); z-index: 1000; }
 
 .gauge-label {
   font-family: "IBM Plex Mono", monospace !important;
@@ -162,9 +163,15 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   padding: 1px 5px !important;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45) !important;
   white-space: nowrap !important;
-  transition: all 0.2s ease !important;
+  transition: opacity 0.3s ease, border-color 0.3s ease, background 0.3s ease !important;
+}
+.gauge-label.zero-rain {
+  opacity: 0.65 !important;
+  font-weight: 500 !important;
 }
 .gauge-label.has-rain {
+  opacity: 1 !important;
+  font-weight: 700 !important;
   border-width: 1.5px !important;
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.6) !important;
 }
@@ -175,27 +182,17 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .icon-sm { width: 15px; height: 15px; }
 .icon-md { width: 18px; height: 18px; }
 
-/* Animated Weather SVGs (Apple Weather Style: แก้จุดหมุนสมมาตร 100%) */
+/* Animated Weather SVGs (Apple Weather Style) */
 .weather-anim-svg { width: 36px; height: 36px; display: block; overflow: visible; }
-
 @keyframes cloud-float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-2px); } }
 .anim-cloud { animation: cloud-float 3.5s ease-in-out infinite; }
-
 @keyframes rain-fall { 0% { stroke-dashoffset: -14; opacity: 0; } 35% { opacity: 1; } 100% { stroke-dashoffset: 14; opacity: 0; } }
 .anim-raindrop { stroke-dasharray: 4 8; animation: rain-fall 1.1s linear infinite; }
 .anim-raindrop.d2 { animation-delay: 0.35s; }
 .anim-raindrop.d3 { animation-delay: 0.7s; }
 
-/* หมุนรอบแกนพิกัด 18px 18px อย่างเที่ยงตรง */
-.anim-sun-spin {
-  transform-origin: 18px 18px;
-  animation: sun-rotate 18s linear infinite;
-}
-@keyframes sun-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
+.anim-sun-spin { transform-origin: 18px 18px; animation: sun-rotate 18s linear infinite; }
+@keyframes sun-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes lightning-strike { 0%, 88%, 100% { opacity: 0; filter: none; } 90%, 94% { opacity: 1; filter: drop-shadow(0 0 6px #FBBF24); } }
 .anim-lightning { animation: lightning-strike 3.2s ease-in-out infinite; }
 
@@ -439,7 +436,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 <div id="map"></div>
 
-<!-- แถบด้านบน: ตัด Hydro ออก เหลือ 4 Basemap คลีนๆ -->
+<!-- แถบด้านบน: 4 Basemaps สะอาดตา -->
 <div class="top-bar">
   <div class="brand glass">
     <i data-lucide="radio" class="icon-sm" style="color: var(--accent);"></i>
@@ -480,14 +477,13 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
     <div class="divider"></div>
 
-    <!-- สถานีวัดน้ำฝนโทรมาตร (ปิดค่าฝน 0.0 มม. ไว้เป็นค่าเริ่มต้นเพื่อความคลีน) -->
     <div class="layer-row">
       <label class="custom-checkbox">
-        <input type="checkbox" id="chkStations">
+        <input type="checkbox" id="chkStations" checked>
         <span style="font-weight: 600; color: #34D399;">สถานีวัดน้ำฝน (Telemetry)</span>
       </label>
       <label class="layer-label-check">
-        <input type="checkbox" id="chkStationLabels"> ค่าฝน
+        <input type="checkbox" id="chkStationLabels" checked> ค่าฝน
       </label>
     </div>
 
@@ -850,7 +846,7 @@ const THEME_STYLES = {
 
 let currentTheme = "dark";
 
-// Basemaps: 4 ธีมมาตรฐาน สะอาดตา
+// Basemaps: 4 ธีมมาตรฐาน
 const baseLayers = {
   dark: L.layerGroup([
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
@@ -875,8 +871,8 @@ const layerRings = L.layerGroup().addTo(map);
 const layerTrajectory = L.layerGroup().addTo(map);
 
 // เลเยอร์สถานีวัดน้ำฝนโทรมาตร
-const layerStations = L.layerGroup();
-const layerStationLabels = L.layerGroup();
+const layerStations = L.layerGroup().addTo(map);
+const layerStationLabels = L.layerGroup().addTo(map);
 
 const layerProvince = L.layerGroup();
 const layerProvinceLabels = L.layerGroup();
@@ -902,6 +898,9 @@ let stationMarkerElement = null;
 let isAlertEnabled = localStorage.getItem("tanfon_alert_enabled") === "true";
 let lastAlertTimestamp = 0;
 let currentSampledDbzList = [];
+
+// เก็บรายการ Instance ของสถานีโทรมาตรเพื่อไม่สร้างซ้ำ (แก้ปัญหากระพริบ 100%)
+let stationMarkerInstances = [];
 
 const liveGpsIcon = L.divIcon({
   className: "custom-pin-wrap",
@@ -1011,28 +1010,67 @@ function dbzToRainRate(dbz) {
   return Math.pow(z / 200, 1 / 1.6);
 }
 
-// สร้างสถานีวัดน้ำฝน และไฮไลต์เฉพาะจุดที่มีฝนจริง
-function renderRainTelemetryStations() {
+// 1. สร้างสถานีโทรมาตรเพียงครั้งเดียว (Mount Once)
+function initTelemetryStationMarkers() {
   layerStations.clearLayers();
   layerStationLabels.clearLayers();
-  if (!manifest || frameImages.length === 0) return;
+  stationMarkerInstances = [];
+
+  TELEMETRY_STATIONS.forEach((st, idx) => {
+    const stationIcon = L.divIcon({
+      className: "",
+      html: `<div class="gauge-pin" id="gpin-${idx}" style="background: #64748B;"></div>`,
+      iconSize: [13, 13],
+      iconAnchor: [6.5, 6.5]
+    });
+
+    const marker = L.marker([st.lat, st.lon], { icon: stationIcon }).addTo(layerStations);
+
+    const labelTooltip = L.tooltip({
+      permanent: true, direction: "right", offset: [6, 0],
+      className: "gauge-label zero-rain"
+    }).setContent("0.0 มม.").setLatLng([st.lat, st.lon]);
+    layerStationLabels.addLayer(labelTooltip);
+
+    marker.bindPopup("", { offset: [0, -8] });
+
+    stationMarkerInstances.push({
+      data: st,
+      idx: idx,
+      marker: marker,
+      tooltip: labelTooltip
+    });
+  });
+
+  if (!document.getElementById("chkStations").checked) map.removeLayer(layerStations);
+  if (!document.getElementById("chkStationLabels").checked) map.removeLayer(layerStationLabels);
+}
+
+// 2. อัปเดตเฉพาะตัวเลขและสีสถานี (In-place Update: นุ่มนวล 100% ไร้การกระพริบ)
+function updateTelemetryStationValues() {
+  if (stationMarkerInstances.length === 0 || !manifest || frameImages.length === 0) return;
 
   const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
   const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
 
-  const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
-  const baseIdx = nowIdx >= 0 ? nowIdx : 0;
-  const imgNow = frameImages[baseIdx];
+  // อ่านภาพเรดาร์ของเฟรมปัจจุบันที่กำลังเล่นอยู่
+  const imgFrame = frameImages[currentIndex];
+  if (!imgFrame || !imgFrame.complete) return;
 
   scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
-  if (imgNow && imgNow.complete) scanCtx.drawImage(imgNow, 0, 0, SCAN_RES, SCAN_RES);
+  scanCtx.drawImage(imgFrame, 0, 0, SCAN_RES, SCAN_RES);
 
   let imgData = null;
   try {
     imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
-  } catch (err) {}
+  } catch (err) {
+    return;
+  }
 
-  TELEMETRY_STATIONS.forEach(st => {
+  const showAllLabels = document.getElementById("chkStationLabels").checked;
+
+  stationMarkerInstances.forEach(item => {
+    const st = item.data;
     const [pinE, pinN] = project(st.lat, st.lon, lat0, lon0);
     const px = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
     const py = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
@@ -1056,24 +1094,26 @@ function renderRainTelemetryStations() {
     else if (rain1h > 20) { dotColor = "#F59E0B"; statusDesc = "ฝนปานกลาง"; hasRain = true; }
     else if (rain1h > 0.1) { dotColor = "#10B981"; statusDesc = "ฝนเล็กน้อย"; hasRain = true; }
 
-    const stationIcon = L.divIcon({
-      className: "",
-      html: `<div class="gauge-pin" style="background: ${dotColor};"></div>`,
-      iconSize: [13, 13],
-      iconAnchor: [6.5, 6.5]
-    });
+    // อัปเดตสีพื้นหลังของจุดสถานีผ่าน CSS Transition โดยไม่ทำลาย DOM
+    const pinEl = document.getElementById(`gpin-${item.idx}`);
+    if (pinEl) pinEl.style.backgroundColor = dotColor;
 
-    const marker = L.marker([st.lat, st.lon], { icon: stationIcon }).addTo(layerStations);
+    // อัปเดตข้อความในป้ายสถานี
+    item.tooltip.setContent(`${rain1hText} มม.`);
 
-    // ถ้ามีฝนจริงจะแสดงป้ายเสมอ ถ้าไม่มีฝนจะซ่อนเพื่อความสะอาดตา
-    if (hasRain || document.getElementById("chkStationLabels").checked) {
-      const labelTooltip = L.tooltip({
-        permanent: hasRain, direction: "right", offset: [6, 0],
-        className: `gauge-label ${hasRain ? 'has-rain' : ''}`
-      }).setContent(`${rain1hText} มม.`).setLatLng([st.lat, st.lon]);
-      layerStationLabels.addLayer(labelTooltip);
+    // คุมการแสดงผลป้าย: ถ้าฝนตกจะเด่นขึ้นมาทันที
+    const tooltipEl = item.tooltip.getElement();
+    if (tooltipEl) {
+      if (hasRain) {
+        tooltipEl.className = "leaflet-tooltip gauge-label has-rain leaflet-zoom-animated";
+        tooltipEl.style.display = "block";
+      } else {
+        tooltipEl.className = "leaflet-tooltip gauge-label zero-rain leaflet-zoom-animated";
+        tooltipEl.style.display = showAllLabels ? "block" : "none";
+      }
     }
 
+    // อัปเดตเนื้อหาใน Popup
     const popupHtml = `
       <div class="pop-capsule" style="min-width: 230px;">
         <div class="pop-top-row">
@@ -1112,15 +1152,8 @@ function renderRainTelemetryStations() {
         </div>
       </div>
     `;
-
-    marker.bindPopup(popupHtml, { offset: [0, -8] });
+    item.marker.setPopupContent(popupHtml);
   });
-
-  if (!document.getElementById("chkStations").checked) map.removeLayer(layerStations);
-  if (!document.getElementById("chkStationLabels").checked && !map.hasLayer(layerStationLabels)) {
-    // ซิงก์เฉพาะจุดที่จำเป็น
-  }
-  safeLucide();
 }
 
 function renderMeteogram(sampledDbzList, peakDbz) {
@@ -1722,7 +1755,7 @@ function updateThemeVisuals(themeKey) {
   });
 
   renderCellVectors(currentIndex);
-  renderRainTelemetryStations();
+  updateTelemetryStationValues();
   analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
 }
 
@@ -1791,6 +1824,7 @@ async function initRadar() {
     radarBounds = L.latLngBounds([south, west], [north, east]);
 
     renderRangeRings();
+    initTelemetryStationMarkers();
 
     radarOverlays = [];
     frameImages = [];
@@ -1807,7 +1841,7 @@ async function initRadar() {
         if (idx === currentIndex) {
           renderCellVectors(idx);
           analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
-          renderRainTelemetryStations();
+          updateTelemetryStationValues();
         }
       };
       frameImages.push(img);
@@ -1837,7 +1871,7 @@ function showFrame(index) {
 
   document.getElementById("tlSlider").value = currentIndex;
   renderCellVectors(currentIndex);
-  renderRainTelemetryStations();
+  updateTelemetryStationValues();
 
   const f = manifest.frames[currentIndex];
   const frameDate = new Date(f.t * 1000);
@@ -1953,6 +1987,7 @@ document.getElementById("chkRings").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerRings); else map.removeLayer(layerRings);
 });
 
+// สลับเปิด-ปิด สถานีวัดน้ำฝนและป้าย
 document.getElementById("chkStations").addEventListener("change", e => {
   if (e.target.checked) {
     map.addLayer(layerStations);
@@ -1963,7 +1998,12 @@ document.getElementById("chkStations").addEventListener("change", e => {
   }
 });
 document.getElementById("chkStationLabels").addEventListener("change", e => {
-  if (e.target.checked) map.addLayer(layerStationLabels); else map.removeLayer(layerStationLabels);
+  if (e.target.checked) {
+    map.addLayer(layerStationLabels);
+  } else {
+    map.removeLayer(layerStationLabels);
+  }
+  updateTelemetryStationValues();
 });
 
 document.getElementById("chkProv").addEventListener("change", e => {
@@ -2075,7 +2115,7 @@ setInterval(async () => {
       manifest = await res.json();
       updateFooterStatus();
       analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
-      renderRainTelemetryStations();
+      updateTelemetryStationValues();
     }
   } catch (e) {}
 }, 180000);
