@@ -66,7 +66,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .map-btn.active { background: var(--accent); color: #070B12; font-weight: 700; }
 
-/* แผงขอบเขตพื้นที่ & เวกเตอร์การเคลื่อนตัว (ตามแบบภาพที่ 2) */
+/* แผงขอบเขตพื้นที่ & เวกเตอร์การเคลื่อนตัว */
 .layer-card {
   position: absolute; top: 62px; right: 12px; z-index: 999;
   width: 240px; padding: 12px 14px; font-size: 12px;
@@ -87,7 +87,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 /* Actionable Weather Card */
 .rail {
-  position: absolute; top: 62px; left: 12px; width: 330px; z-index: 999;
+  position: absolute; top: 62px; left: 12px; width: 335px; z-index: 999;
   display: flex; flex-direction: column; gap: 10px; pointer-events: none;
 }
 .rail > * { pointer-events: auto; }
@@ -125,7 +125,8 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 .ac-desc { font-size: 12px; color: var(--text-dim); line-height: 1.45; margin-bottom: 10px; }
 
-.ac-btn-row { display: flex; gap: 6px; }
+/* แถบปุ่มควบคุม GPS & แจ้งเตือนอัตโนมัติ */
+.ac-btn-row { display: flex; gap: 6px; margin-bottom: 8px; }
 .btn-loc-sm {
   flex: 1; padding: 7px 10px; border-radius: 9px;
   background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3);
@@ -134,7 +135,18 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .btn-loc-sm:hover { background: rgba(56, 189, 248, 0.25); }
 
-.opacity-box { margin-top: 10px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-dim); }
+.btn-alert-sm {
+  flex: 1; padding: 7px 10px; border-radius: 9px;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-dim); font-weight: 600; cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  transition: all 0.2s;
+}
+.btn-alert-sm.active {
+  background: rgba(16, 185, 129, 0.2); border-color: var(--ok); color: #34D399;
+}
+
+.opacity-box { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-dim); }
 .opacity-box input { width: 120px; accent-color: var(--accent); }
 
 /* สเกลสีเรดาร์ */
@@ -237,7 +249,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- แผงขอบเขตพื้นที่ & เวกเตอร์การเคลื่อนตัว (กำหนดค่าเริ่มต้นตามภาพที่ 2) -->
+<!-- แผงขอบเขตพื้นที่ & เวกเตอร์การเคลื่อนตัว -->
 <div class="layer-card glass">
   <div class="layer-head" id="toggleLayerCard">
     <span>📐 ชั้นข้อมูล & เวกเตอร์</span>
@@ -334,8 +346,10 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
       แตะบนแผนที่เพื่อเลือกจุดตรวจวัด หรือกดปุ่มค้นหาตำแหน่ง GPS ของคุณ
     </div>
 
+    <!-- ปุ่ม GPS และปุ่มเปิดแจ้งเตือนฝนอัตโนมัติ -->
     <div class="ac-btn-row">
-      <button class="btn-loc-sm" id="btnLoc">🎯 ตำแหน่งฉัน (GPS)</button>
+      <button class="btn-loc-sm" id="btnLoc">🎯 ตำแหน่งฉัน</button>
+      <button class="btn-alert-sm" id="btnToggleAlert">🔔 แจ้งเตือนอัตโนมัติ</button>
     </div>
 
     <div class="opacity-box">
@@ -449,12 +463,11 @@ const map = L.map("map", {
 
 L.control.zoom({ position: "bottomright" }).addTo(map);
 
-// กลุ่มเลเยอร์: เวกเตอร์, รัศมี, และเส้นวิถีเปิดเป็นค่าเริ่มต้น
+// เลเยอร์ค่าเริ่มต้น
 const layerArrows = L.layerGroup().addTo(map);
 const layerRings = L.layerGroup().addTo(map);
 const layerTrajectory = L.layerGroup().addTo(map);
 
-// เลเยอร์ขอบเขตการปกครอง: ปิดเป็นค่าเริ่มต้นทั้งหมด (ไม่ใส่ .addTo(map))
 const layerProvince = L.layerGroup();
 const layerProvinceLabels = L.layerGroup();
 const layerAmphoe = L.layerGroup();
@@ -475,6 +488,10 @@ let userPinMarker = null;
 
 let rangeCircleElements = [];
 let stationMarkerElement = null;
+
+// ตัวแปรระบบแจ้งเตือนอัตโนมัติ (Auto-Alert System)
+let isAlertEnabled = localStorage.getItem("tanfon_alert_enabled") === "true";
+let lastAlertTimestamp = 0; // ป้องกันการเด้งเตือนซ้ำถี่เกินไป
 
 const SCAN_RES = 160;
 const scanCanvas = document.createElement("canvas");
@@ -515,7 +532,51 @@ function formatThaiDateTime(dateObj, showFull = false) {
   return `${d} ${m} ${y} ${hh}:${mm} น.`;
 }
 
-// วิเคราะห์ผลกระทบฝน (Upwind Raycasting)
+// 1. ระบบเสียงเตือนอัจฉริยะ (Web Audio API Synthesizer)
+function playAlertChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.exponentialRampToValueAtTime(880.00, ctx.currentTime + 0.15); // A5
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.55);
+  } catch (e) {}
+}
+
+// 2. ส่ง Notification แจ้งเตือนเข้าเครื่องผู้ใช้
+function triggerRainNotification(etaMin, startStr, durationMin) {
+  if (!isAlertEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
+
+  const now = Date.now();
+  // ป้องกันการแจ้งซ้ำภายใน 30 นาที
+  if (now - lastAlertTimestamp < 30 * 60 * 1000) return;
+  lastAlertTimestamp = now;
+
+  playAlertChime();
+
+  const title = `🌧️ ทันฝน: ฝนจะเริ่มตกในอีก ${etaMin} นาที!`;
+  const options = {
+    body: `คาดว่าจะเริ่มตกเวลา ${startStr} (ตกต่อเนื่อง ~${durationMin} นาที) บริเวณตำแหน่งของคุณ`,
+    icon: "icon-192.png",
+    badge: "icon-192.png",
+    vibrate: [200, 100, 200],
+    tag: "tanfon-rain-alert",
+    renotify: true
+  };
+
+  try {
+    new Notification(title, options);
+  } catch (e) {}
+}
+
+// 3. วิเคราะห์ผลกระทบฝน (Upwind Raycasting)
 function analyzeImpactAtPoint(lat, lon) {
   layerTrajectory.clearLayers();
   if (!manifest || !manifest.motion || frameImages.length === 0) return;
@@ -578,6 +639,7 @@ function analyzeImpactAtPoint(lat, lon) {
 
   const nowTime = new Date();
 
+  // ฝนกำลังตก
   if (isRainingNow) {
     badgeEl.className = "ac-status-badge badge-raining";
     badgeEl.textContent = "● ฝนกำลังตก";
@@ -636,6 +698,7 @@ function analyzeImpactAtPoint(lat, lon) {
     }
   }
 
+  // ฝนกำลังจะมาถึงใน 60 นาที!
   if (hitDistFront > 0) {
     if (hitDistBack === -1) hitDistBack = hitDistFront + 12;
 
@@ -682,9 +745,15 @@ function analyzeImpactAtPoint(lat, lon) {
     impactPolyline.bindTooltip(`⚡ เซลล์ฝนกำลังมุ่งหน้ามา (ETA: ~${etaMin} นาที)`, {
       permanent: true, direction: "center", className: "map-label"
     });
+
+    // ส่งแจ้งเตือนอัตโนมัติหากผู้ใช้เปิดสวิตช์ไว้
+    if (etaMin <= 60) {
+      triggerRainNotification(etaMin, startStr, durationMin);
+    }
     return;
   }
 
+  // ท้องฟ้าโปร่ง
   badgeEl.className = "ac-status-badge badge-clear";
   badgeEl.textContent = "● ท้องฟ้าโปร่ง";
   headlineEl.innerHTML = `🌤️ ไม่มีฝนใน 60 นาทีข้างหน้า`;
@@ -696,7 +765,6 @@ function analyzeImpactAtPoint(lat, lon) {
   tlTrack.innerHTML = `<div class="ac-tl-seg-clear" style="width: 100%;"></div>`;
 }
 
-// ตั้งค่าจุดตรวจวัด
 function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") {
   userPinLatLon = [lat, lon];
   document.getElementById("pinNameLabel").textContent = `📍 ${label}`;
@@ -723,7 +791,6 @@ map.on("click", (e) => {
   setInspectionPoint(e.latlng.lat, e.latlng.lng, "จุดที่คุณแตะเลือก");
 });
 
-// วาดลูกศรเฉพาะบนก้อนฝน
 function renderCellVectors(frameIdx) {
   layerArrows.clearLayers();
   if (!manifest || !manifest.motion) return;
@@ -798,7 +865,6 @@ function renderCellVectors(frameIdx) {
   }
 }
 
-// วงแหวนระยะตรวจวัด
 function renderRangeRings() {
   layerRings.clearLayers();
   rangeCircleElements = [];
@@ -849,7 +915,6 @@ function updateThemeVisuals(themeKey) {
   analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
 }
 
-// โหลดข้อมูลขอบเขตเตรียมไว้ในหน่วยความจำ
 async function loadBoundaries() {
   try {
     const resProv = await fetch("https://cdn.jsdelivr.net/gh/apisit/thailand.json@master/thailand.json");
@@ -896,7 +961,6 @@ async function loadBoundaries() {
   } catch (err) {}
 }
 
-// เริ่มต้นระบบเรดาร์
 async function initRadar() {
   try {
     const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
@@ -943,9 +1007,12 @@ async function initRadar() {
     const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
     showFrame(nowIdx >= 0 ? nowIdx : manifest.frames.length - 1);
 
-    // ปักหมุดเริ่มต้นที่สถานีพิษณุโลก
+    // ปักหมุดเริ่มต้น
     setInspectionPoint(lat0, lon0, "สถานีเรดาร์ PHS");
     updateFooterStatus();
+
+    // พยายามดึง GPS อัตโนมัติหากผู้ใช้เคยอนุญาตไว้
+    autoDetectGPS();
   } catch (err) {
     document.getElementById("tlFullTitle").textContent = "📡 เชื่อมต่อฐานข้อมูลเรดาร์ล้มเหลว";
   }
@@ -1037,28 +1104,25 @@ document.getElementById("toggleLayerCard").addEventListener("click", () => {
   document.querySelector(".toggle-icon").textContent = isHidden ? "▼" : "▲";
 });
 
-// ควบคุมการเปิด-ปิดเลเยอร์ตามการกด Checkbox
+// ควบคุม Checkbox เลเยอร์
 document.getElementById("chkArrows").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerArrows); else map.removeLayer(layerArrows);
 });
 document.getElementById("chkRings").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerRings); else map.removeLayer(layerRings);
 });
-
 document.getElementById("chkProv").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerProvince); else map.removeLayer(layerProvince);
 });
 document.getElementById("chkProvLabel").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerProvinceLabels); else map.removeLayer(layerProvinceLabels);
 });
-
 document.getElementById("chkAmp").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerAmphoe); else map.removeLayer(layerAmphoe);
 });
 document.getElementById("chkAmpLabel").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerAmphoeLabels); else map.removeLayer(layerAmphoeLabels);
 });
-
 document.getElementById("chkTam").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerTambon); else map.removeLayer(layerTambon);
 });
@@ -1081,7 +1145,17 @@ document.getElementById("radarOpacity").addEventListener("input", (e) => {
   radarOverlays[currentIndex].setOpacity(targetOpacity);
 });
 
-// ค้นหาตำแหน่ง GPS
+// ดึง GPS ผู้ใช้
+function autoDetectGPS() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const userLat = pos.coords.latitude;
+      const userLon = pos.coords.longitude;
+      setInspectionPoint(userLat, userLon, "ตำแหน่งของคุณ (GPS)");
+    }, () => {}, { timeout: 4000 });
+  }
+}
+
 document.getElementById("btnLoc").addEventListener("click", () => {
   if (!navigator.geolocation) return alert("เบราว์เซอร์ไม่รองรับ GPS");
   navigator.geolocation.getCurrentPosition((pos) => {
@@ -1093,6 +1167,58 @@ document.getElementById("btnLoc").addEventListener("click", () => {
     alert("ไม่สามารถเข้าถึงพิกัด GPS ได้");
   });
 });
+
+// จัดการปุ่มเปิด-ปิดแจ้งเตือนอัตโนมัติ (Auto-Alert Switch)
+const btnAlert = document.getElementById("btnToggleAlert");
+function syncAlertBtnUI() {
+  if (isAlertEnabled) {
+    btnAlert.classList.add("active");
+    btnAlert.innerHTML = "🔔 เปิดแจ้งเตือนแล้ว";
+  } else {
+    btnAlert.classList.remove("active");
+    btnAlert.innerHTML = "🔕 ปิดแจ้งเตือนอยู่";
+  }
+}
+syncAlertBtnUI();
+
+btnAlert.addEventListener("click", async () => {
+  if (!("Notification" in window)) {
+    return alert("เบราว์เซอร์นี้ไม่รองรับระบบ Web Notification");
+  }
+
+  if (!isAlertEnabled) {
+    const perm = await Notification.requestPermission();
+    if (perm === "granted") {
+      isAlertEnabled = true;
+      localStorage.setItem("tanfon_alert_enabled", "true");
+      syncAlertBtnUI();
+      playAlertChime();
+      new Notification("🔔 ทันฝน: เปิดระบบแจ้งเตือนสำเร็จ", {
+        body: "ระบบจะแจ้งเตือนอัตโนมัติล่วงหน้า 1 ชั่วโมงเมื่อมีกลุ่มฝนมุ่งหน้ามาหาคุณ",
+        icon: "icon-192.png"
+      });
+      analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
+    } else {
+      alert("กรุณาอนุญาต (Allow) การแจ้งเตือนในการตั้งค่าของเบราว์เซอร์");
+    }
+  } else {
+    isAlertEnabled = false;
+    localStorage.setItem("tanfon_alert_enabled", "false");
+    syncAlertBtnUI();
+  }
+});
+
+// ตั้งเวลาตรวจเช็กข้อมูลเรดาร์และคำนวณฝนใหม่อัตโนมัติทุกๆ 3 นาที (Auto-Polling Loop)
+setInterval(async () => {
+  try {
+    const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if (res.ok) {
+      manifest = await res.json();
+      updateFooterStatus();
+      analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
+    }
+  } catch (e) {}
+}, 180000);
 
 loadBoundaries();
 initRadar();
