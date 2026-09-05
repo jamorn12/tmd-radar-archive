@@ -9,12 +9,13 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
 
-<!-- Fonts & Leaflet Web GIS -->
+<!-- Fonts, Leaflet Web GIS & Lucide Icons -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
 :root {
@@ -46,7 +47,59 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   border-radius: 14px;
 }
 
-/* แถบด้านบน */
+/* Lucide Icon Base Styling */
+.lucide-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.icon-xs { width: 12px; height: 12px; }
+.icon-sm { width: 15px; height: 15px; }
+.icon-md { width: 18px; height: 18px; }
+
+/* Animated Weather SVGs (Apple Weather Style) */
+.weather-anim-svg { width: 100%; height: 100%; overflow: visible; }
+
+/* 1. เมฆลอยนุ่มนวล */
+@keyframes cloud-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-2.5px); }
+}
+.anim-cloud { animation: cloud-float 3.5s ease-in-out infinite; }
+
+/* 2. เม็ดฝนโปรยลงมา */
+@keyframes rain-fall {
+  0% { stroke-dashoffset: -16; opacity: 0; }
+  35% { opacity: 1; }
+  100% { stroke-dashoffset: 16; opacity: 0; }
+}
+.anim-raindrop {
+  stroke-dasharray: 5 10;
+  animation: rain-fall 1.1s linear infinite;
+}
+.anim-raindrop.d2 { animation-delay: 0.35s; }
+.anim-raindrop.d3 { animation-delay: 0.7s; }
+
+/* 3. ดวงอาทิตย์หมุนและส่องรัศมี */
+@keyframes sun-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.anim-sun-rays {
+  transform-origin: 16px 16px;
+  animation: sun-rotate 16s linear infinite;
+}
+
+/* 4. ฟ้าแลบวาบ */
+@keyframes lightning-strike {
+  0%, 88%, 100% { opacity: 0; filter: none; }
+  90%, 94% { opacity: 1; filter: drop-shadow(0 0 5px #FBBF24); }
+}
+.anim-lightning { animation: lightning-strike 3.2s ease-in-out infinite; }
+
+/* Top Bar */
 .top-bar {
   position: absolute; top: 12px; left: 12px; right: 12px; z-index: 1000;
   display: flex; gap: 8px; align-items: center; pointer-events: none;
@@ -67,7 +120,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .map-btn.active { background: var(--accent); color: #070B12; font-weight: 700; }
 
-/* แผงขอบเขตพื้นที่ & เวกเตอร์การเคลื่อนตัว */
+/* แผงขอบเขตพื้นที่ & เวกเตอร์ */
 .layer-card {
   position: absolute; top: 62px; right: 12px; z-index: 999;
   width: 240px; padding: 12px 14px; font-size: 12px;
@@ -77,7 +130,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   font-weight: 600; color: var(--accent); cursor: pointer; user-select: none;
   margin-bottom: 6px;
 }
-.layer-head span.toggle-icon { font-size: 11px; transition: transform 0.2s; }
+.layer-head-title { display: flex; align-items: center; gap: 6px; }
 .layer-status { font-size: 10px; color: var(--ok); margin-bottom: 8px; display: block; }
 .layer-content { display: flex; flex-direction: column; gap: 8px; }
 .layer-row { display: flex; align-items: center; justify-content: space-between; }
@@ -97,13 +150,13 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .action-card { padding: 15px 16px; border-radius: 16px; position: relative; }
 .ac-head {
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 11.5px; color: var(--text-dim); margin-bottom: 4px;
+  font-size: 11.5px; color: var(--text-dim); margin-bottom: 6px;
 }
 .ac-head-left { display: flex; align-items: center; gap: 6px; }
 
 .ac-collapse-btn {
   background: transparent; border: none; color: var(--text-dim); cursor: pointer;
-  font-size: 11px; padding: 2px 6px; border-radius: 6px; transition: all 0.2s;
+  padding: 3px; border-radius: 6px; transition: all 0.2s; display: grid; place-items: center;
 }
 .ac-collapse-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
 
@@ -127,7 +180,15 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   100% { box-shadow: 0 0 0 0 rgba(192, 132, 252, 0); }
 }
 
-.ac-headline { font-size: 20px; font-weight: 700; line-height: 1.25; margin: 4px 0 8px 0; color: #fff; }
+/* ส่วนหัวเรื่องพร้อม Animated SVG Icon */
+.ac-headline-wrap {
+  display: flex; align-items: center; gap: 12px; margin: 6px 0 10px 0;
+}
+.ac-weather-icon-box {
+  width: 44px; height: 44px; flex-shrink: 0;
+  display: grid; place-items: center;
+}
+.ac-headline { font-size: 19px; font-weight: 700; line-height: 1.25; color: #fff; margin: 0; }
 .ac-headline span.time-highlight { color: var(--accent); font-family: "IBM Plex Mono", monospace; }
 
 .ac-grid {
@@ -139,7 +200,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .ac-grid-lbl { font-size: 10.5px; color: var(--text-dim); margin-bottom: 2px; }
 .ac-grid-val { font-size: 12.5px; font-weight: 600; color: #fff; font-family: "IBM Plex Mono", monospace; }
 
-/* Meteogram Micro-Chart Section */
+/* Meteogram Micro-Chart */
 .meteogram-box {
   background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 10px; padding: 8px 10px; margin-bottom: 10px;
@@ -148,16 +209,17 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   display: flex; justify-content: space-between; align-items: center;
   font-size: 10.5px; color: var(--text-dim); margin-bottom: 4px;
 }
+.mg-header-left { display: flex; align-items: center; gap: 5px; }
 .mg-header-right { display: flex; align-items: center; gap: 6px; }
 .btn-expand-mg {
   background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3);
-  color: var(--accent); border-radius: 6px; padding: 2px 6px; font-size: 11px;
+  color: var(--accent); border-radius: 6px; padding: 2px 7px; font-size: 11px;
   cursor: pointer; transition: all 0.2s; font-family: "IBM Plex Sans Thai", sans-serif;
+  display: flex; align-items: center; gap: 4px;
 }
 .btn-expand-mg:hover { background: rgba(56, 189, 248, 0.25); }
 
 .mg-chart-svg { width: 100%; height: 52px; overflow: visible; }
-
 .ac-desc { font-size: 11.5px; color: var(--text-dim); line-height: 1.45; margin-bottom: 10px; }
 
 .ac-btn-row { display: flex; gap: 6px; margin-bottom: 6px; }
@@ -165,7 +227,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   flex: 1; padding: 7px 10px; border-radius: 9px;
   background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3);
   color: var(--accent); font-weight: 600; cursor: pointer; font-size: 12px;
-  display: flex; align-items: center; justify-content: center; gap: 5px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
 }
 .btn-loc-sm:hover { background: rgba(56, 189, 248, 0.25); }
 
@@ -173,7 +235,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   flex: 1; padding: 7px 10px; border-radius: 9px;
   background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15);
   color: var(--text-dim); font-weight: 600; cursor: pointer; font-size: 12px;
-  display: flex; align-items: center; justify-content: center; gap: 5px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
   transition: all 0.2s;
 }
 .btn-alert-sm.active {
@@ -188,14 +250,15 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .rail.collapsed .action-card { display: none; }
 .ac-pill {
   display: none; padding: 8px 14px; border-radius: 999px;
-  align-items: center; gap: 8px; cursor: pointer; width: fit-content;
+  align-items: center; gap: 10px; cursor: pointer; width: fit-content;
   pointer-events: auto; user-select: none; transition: transform 0.2s;
 }
 .ac-pill:hover { transform: scale(1.03); }
 .rail.collapsed .ac-pill { display: flex; }
+.ac-pill-icon { width: 22px; height: 22px; flex-shrink: 0; }
 .ac-pill-text { font-size: 12px; font-weight: 600; color: #fff; }
 
-/* Modal ขยายกราฟเต็มจอ (Meteogram Detail Dialog) */
+/* Modal ขยายกราฟ */
 .modal-backdrop {
   position: fixed; inset: 0; z-index: 2000;
   background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
@@ -214,12 +277,13 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   display: flex; justify-content: space-between; align-items: flex-start;
   margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 10px;
 }
-.modal-title { font-size: 16px; font-weight: 700; color: #fff; }
+.modal-title-wrap { display: flex; align-items: center; gap: 8px; }
+.modal-title { font-size: 15px; font-weight: 700; color: #fff; }
 .modal-subtitle { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
 .modal-close-btn {
   background: rgba(255, 255, 255, 0.1); border: none; color: var(--text);
-  width: 28px; height: 28px; border-radius: 50%; font-size: 14px;
-  cursor: pointer; display: grid; place-items: center;
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; transition: all 0.2s;
 }
 .modal-close-btn:hover { background: rgba(255, 255, 255, 0.2); }
 
@@ -256,14 +320,14 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .tl-title { font-size: 13px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px; }
 .tl-collapse-btn {
   background: transparent; border: none; color: var(--text-dim); cursor: pointer;
-  font-size: 12px; padding: 2px 6px; border-radius: 6px;
+  padding: 2px 5px; border-radius: 6px; display: grid; place-items: center;
 }
 .tl-collapse-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
 
 .tl-main-row { display: flex; align-items: center; gap: 12px; }
 .btn-play-sm {
   width: 32px; height: 32px; border-radius: 50%; border: none;
-  background: var(--accent); color: #070B12; font-size: 13px; font-weight: bold;
+  background: var(--accent); color: #070B12;
   display: grid; place-items: center; cursor: pointer; flex: none;
 }
 .tl-slider { flex: 1; accent-color: var(--accent); cursor: pointer; }
@@ -277,6 +341,9 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   display: flex; justify-content: space-between; align-items: center;
   margin-top: 6px; font-size: 11px; color: var(--text-dim);
 }
+.btn-reset-view {
+  color: var(--accent); cursor: pointer; display: flex; align-items: center; gap: 4px;
+}
 
 .timeline-container.collapsed .tl-card { display: none; }
 .tl-pill {
@@ -287,11 +354,11 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .tl-pill-text { font-size: 12.5px; font-weight: 600; color: #fff; }
 .tl-pill-play {
   border: none; background: var(--accent); color: #070B12;
-  border-radius: 50%; width: 22px; height: 22px; font-size: 10px;
+  border-radius: 50%; width: 22px; height: 22px;
   display: grid; place-items: center; cursor: pointer;
 }
 
-/* สไตล์ป้ายและเวกเตอร์ */
+/* Tooltip & Vector Label */
 .leaflet-tooltip.map-label {
   background: transparent; border: none; box-shadow: none;
   color: #fff; font-weight: 600; text-shadow: 0 1px 3px #000, 0 0 6px #000;
@@ -303,10 +370,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   background: transparent; border: none; box-shadow: none;
   font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
-
-.arrow-icon {
-  display: flex; align-items: center; justify-content: center; pointer-events: none;
-}
+.arrow-icon { display: flex; align-items: center; justify-content: center; pointer-events: none; }
 
 @media (max-width: 768px) {
   .rail { width: calc(100% - 24px); top: auto; bottom: 85px; }
@@ -322,6 +386,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 <!-- แถบด้านบน -->
 <div class="top-bar">
   <div class="brand glass">
+    <i data-lucide="radar" class="icon-sm" style="color: var(--accent);"></i>
     <b>ทันฝน</b><span>พิษณุโลก</span>
   </div>
 
@@ -336,8 +401,11 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 <!-- แผงขอบเขตพื้นที่ & เวกเตอร์การเคลื่อนตัว -->
 <div class="layer-card glass">
   <div class="layer-head" id="toggleLayerCard">
-    <span>📐 ชั้นข้อมูล & เวกเตอร์</span>
-    <span class="toggle-icon">▼</span>
+    <div class="layer-head-title">
+      <i data-lucide="layers" class="icon-sm"></i>
+      <span>ชั้นข้อมูล & เวกเตอร์</span>
+    </div>
+    <i data-lucide="chevron-down" id="layerToggleIcon" class="icon-xs"></i>
   </div>
   <span class="layer-status" id="boundaryStatus">● ขอบเขตพื้นที่พร้อมใช้งาน</span>
   <div class="layer-content" id="layerBody">
@@ -388,22 +456,33 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- Actionable Weather Card -->
+<!-- Actionable Weather Card (พร้อม Animated Weather SVG) -->
 <div class="rail" id="actionRail">
   <div class="action-card glass" id="actionCard">
     <div class="ac-head">
       <div class="ac-head-left">
-        <span id="pinNameLabel">📍 ตำแหน่งตรวจวัด</span>
+        <i data-lucide="map-pin" class="icon-xs" style="color: var(--accent);"></i>
+        <span id="pinNameLabel">ตำแหน่งตรวจวัด</span>
         <div class="ac-badges-wrap">
-          <span class="ac-status-badge badge-clear" id="statusBadge">● กำลังวิเคราะห์</span>
-          <span class="ac-status-badge badge-hail" id="hailBadge" style="display: none;">⚡ เสี่ยงลูกเห็บ</span>
+          <span class="ac-status-badge badge-clear" id="statusBadge">กำลังวิเคราะห์</span>
+          <span class="ac-status-badge badge-hail" id="hailBadge" style="display: none;">
+            <i data-lucide="zap" class="icon-xs"></i> เสี่ยงลูกเห็บ
+          </span>
         </div>
       </div>
-      <button class="ac-collapse-btn" id="btnCollapseAc" title="ย่อหน้าต่าง">◀</button>
+      <button class="ac-collapse-btn" id="btnCollapseAc" title="ย่อหน้าต่าง">
+        <i data-lucide="chevron-left" class="icon-sm"></i>
+      </button>
     </div>
 
-    <div class="ac-headline" id="acHeadline">
-      กำลังสแกนสนามฝน...
+    <!-- ส่วนหัวเรื่อง: Animated Weather Icon + ข้อความสถานะ -->
+    <div class="ac-headline-wrap">
+      <div class="ac-weather-icon-box" id="headlineWeatherIcon">
+        <!-- Animated SVG will be injected here -->
+      </div>
+      <div class="ac-headline" id="acHeadline">
+        กำลังสแกนสนามฝน...
+      </div>
     </div>
 
     <div class="ac-grid" id="acGrid">
@@ -421,18 +500,21 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
       </div>
     </div>
 
-    <!-- กล่อง Meteogram Micro-Chart พร้อมปุ่มขยาย -->
+    <!-- Meteogram Micro-Chart พร้อมปุ่มขยาย -->
     <div class="meteogram-box">
       <div class="mg-header">
-        <span>📊 แนวโน้มฝน 105 นาที (dBZ)</span>
+        <div class="mg-header-left">
+          <i data-lucide="bar-chart-2" class="icon-xs" style="color: var(--accent);"></i>
+          <span>แนวโน้มฝน 105 นาที (dBZ)</span>
+        </div>
         <div class="mg-header-right">
           <span id="mgPeakLabel">สูงสุด: — dBZ</span>
-          <button class="btn-expand-mg" id="btnOpenModal" title="ขยายกราฟเต็มจอ">⛶ ขยาย</button>
+          <button class="btn-expand-mg" id="btnOpenModal" title="ขยายกราฟ">
+            <i data-lucide="maximize-2" class="icon-xs"></i> ขยาย
+          </button>
         </div>
       </div>
-      <svg class="mg-chart-svg" id="mgChartSvg" viewBox="0 0 280 50">
-        <!-- Mini SVG Bars -->
-      </svg>
+      <svg class="mg-chart-svg" id="mgChartSvg" viewBox="0 0 280 50"></svg>
     </div>
 
     <div class="ac-desc" id="acDesc">
@@ -440,8 +522,13 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     </div>
 
     <div class="ac-btn-row">
-      <button class="btn-loc-sm" id="btnLoc">🎯 ตำแหน่งฉัน</button>
-      <button class="btn-alert-sm" id="btnToggleAlert">🔔 แจ้งเตือนอัตโนมัติ</button>
+      <button class="btn-loc-sm" id="btnLoc">
+        <i data-lucide="crosshair" class="icon-sm"></i> ตำแหน่งฉัน
+      </button>
+      <button class="btn-alert-sm" id="btnToggleAlert">
+        <i data-lucide="bell" id="alertIcon" class="icon-sm"></i>
+        <span id="alertLabel">เปิดแจ้งเตือน</span>
+      </button>
     </div>
 
     <div class="opacity-box">
@@ -452,29 +539,32 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
   <!-- โหมดย่อ (Collapsed Pill) -->
   <div class="ac-pill glass" id="btnExpandAc" title="กดเพื่อขยายหน้าต่าง">
-    <span id="acPillBadge">🌤️</span>
+    <div class="ac-pill-icon" id="pillWeatherIcon"></div>
     <span class="ac-pill-text" id="acPillText">กำลังวิเคราะห์...</span>
-    <span style="font-size: 11px; color: var(--accent);">▶</span>
+    <i data-lucide="chevron-right" class="icon-xs" style="color: var(--accent);"></i>
   </div>
 </div>
 
-<!-- Modal ขยายกราฟ Meteogram 105 นาที แบบละเอียด -->
+<!-- Modal ขยายกราฟ Meteogram 105 นาที -->
 <div class="modal-backdrop" id="mgModal">
   <div class="modal-box glass">
     <div class="modal-head">
       <div>
-        <div class="modal-title">📊 กราฟวิเคราะห์ฝน 105 นาทีรายพิกัด (Meteogram)</div>
+        <div class="modal-title-wrap">
+          <i data-lucide="bar-chart-3" class="icon-md" style="color: var(--accent);"></i>
+          <div class="modal-title">กราฟวิเคราะห์ฝน 105 นาทีรายพิกัด (Meteogram)</div>
+        </div>
         <div class="modal-subtitle" id="modalLocationLabel">ตำแหน่งตรวจวัด: พิษณุโลก</div>
       </div>
-      <button class="modal-close-btn" id="btnCloseModal">✕</button>
+      <button class="modal-close-btn" id="btnCloseModal">
+        <i data-lucide="x" class="icon-sm"></i>
+      </button>
     </div>
 
-    <!-- กราฟใหญ่ความละเอียดสูง -->
     <div class="modal-svg-wrap">
       <svg id="modalChartSvg" viewBox="0 0 520 180"></svg>
     </div>
 
-    <!-- คำอธิบายเกณฑ์ความแรง (Legend) -->
     <div class="modal-legend-row">
       <div class="mg-badge-item"><span class="mg-dot" style="background:#64748B;"></span> อดีต (-45 น.)</div>
       <div class="mg-badge-item"><span class="mg-dot" style="background:#38BDF8;"></span> ฝนเบา (&lt;28 dBZ)</div>
@@ -498,13 +588,18 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   <div class="tl-card glass">
     <div class="tl-header">
       <div class="tl-title" id="tlFullTitle">
-        📡 ทันฝน เรดาร์พิษณุโลก (Nowcast) — กำลังโหลด...
+        <i data-lucide="activity" class="icon-xs" style="color: var(--accent);"></i>
+        <span>ทันฝน เรดาร์พิษณุโลก (Nowcast) — กำลังโหลด...</span>
       </div>
-      <button class="tl-collapse-btn" id="btnCollapseTl" title="ย่อเป็นแถบเล็ก">▼</button>
+      <button class="tl-collapse-btn" id="btnCollapseTl" title="ย่อเป็นแถบเล็ก">
+        <i data-lucide="chevron-down" class="icon-sm"></i>
+      </button>
     </div>
 
     <div class="tl-main-row">
-      <button class="btn-play-sm" id="btnPlay">▶</button>
+      <button class="btn-play-sm" id="btnPlay">
+        <i data-lucide="play" id="playIcon" class="icon-sm"></i>
+      </button>
       <input type="range" class="tl-slider" id="tlSlider" min="0" max="0" value="0">
       <div class="tl-badges">
         <span class="badge-tag obs" id="tlBadge">ตรวจวัดจริง</span>
@@ -514,14 +609,20 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
     <div class="tl-sub-row">
       <span id="tlLatestTime">ข้อมูลล่าสุด: กำลังเชื่อมต่อ...</span>
-      <span style="color: var(--accent); cursor: pointer;" onclick="map.setView([16.77, 100.22], 8)">⌖ รีเซ็ตมุมมอง</span>
+      <span class="btn-reset-view" onclick="map.setView([16.77, 100.22], 8)">
+        <i data-lucide="locate" class="icon-xs"></i> รีเซ็ตมุมมอง
+      </span>
     </div>
   </div>
 
   <div class="tl-pill glass" id="btnExpandTl">
     <span class="tl-pill-text" id="tlPillText">—:— น.</span>
-    <button class="tl-pill-play" id="btnPlayPill">▶</button>
-    <span style="font-size: 11px; color: var(--accent);">▲ ขยาย</span>
+    <button class="tl-pill-play" id="btnPlayPill">
+      <i data-lucide="play" id="playIconPill" class="icon-xs"></i>
+    </button>
+    <span style="font-size: 11px; color: var(--accent); display: flex; align-items: center; gap: 2px;">
+      ขยาย <i data-lucide="chevron-up" class="icon-xs"></i>
+    </span>
   </div>
 </div>
 
@@ -530,67 +631,87 @@ const MANIFEST_URL = "nowcast/PHS/latest.json";
 const R_EARTH = 6371.0088;
 const THAI_MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 
-const THEME_STYLES = {
-  dark: {
-    arrowColor: "#38BDF8",
-    ringColor: "#38BDF8",
-    ringOpacity: 0.45,
-    radarCenter: "#38BDF8",
-    impactLine: "#F59E0B"
-  },
-  terrain: {
-    arrowColor: "#EA580C",
-    ringColor: "#0369A1",
-    ringOpacity: 0.75,
-    radarCenter: "#0284C7",
-    impactLine: "#D97706"
-  },
-  satellite: {
-    arrowColor: "#FACC15",
-    ringColor: "#FDE047",
-    ringOpacity: 0.85,
-    radarCenter: "#FDE047",
-    impactLine: "#F59E0B"
-  },
-  light: {
-    arrowColor: "#0F172A",
-    ringColor: "#334155",
-    ringOpacity: 0.55,
-    radarCenter: "#0F172A",
-    impactLine: "#DC2626"
+// โรงงานสร้าง Animated Weather SVGs (Apple Weather Style)
+function createWeatherSvg(type) {
+  if (type === "clear") {
+    return `
+      <svg viewBox="0 0 36 36" class="weather-anim-svg">
+        <g class="anim-sun-rays" stroke="#FBBF24" stroke-width="2" stroke-linecap="round">
+          <line x1="18" y1="2" x2="18" y2="6"/>
+          <line x1="18" y1="30" x2="18" y2="34"/>
+          <line x1="2" y1="18" x2="6" y2="18"/>
+          <line x1="30" y1="18" x2="34" y2="18"/>
+          <line x1="6.7" y1="6.7" x2="9.5" y2="9.5"/>
+          <line x1="26.5" y1="26.5" x2="29.3" y2="29.3"/>
+          <line x1="6.7" y1="29.3" x2="9.5" y2="26.5"/>
+          <line x1="26.5" y1="9.5" x2="29.3" y2="6.7"/>
+        </g>
+        <circle cx="18" cy="18" r="7.5" fill="#F59E0B"/>
+      </svg>
+    `;
   }
+  if (type === "rain") {
+    return `
+      <svg viewBox="0 0 36 36" class="weather-anim-svg">
+        <path class="anim-cloud" d="M9 22 A 6 6 0 0 1 14 13.5 A 7.5 7.5 0 0 1 27 15.5 A 5 5 0 0 1 26 23 Z" fill="url(#rainCloudGrad)"/>
+        <g stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round">
+          <line x1="12" y1="25" x2="10" y2="33" class="anim-raindrop"/>
+          <line x1="18" y1="25" x2="16" y2="33" class="anim-raindrop d2"/>
+          <line x1="24" y1="25" x2="22" y2="33" class="anim-raindrop d3"/>
+        </g>
+        <defs>
+          <linearGradient id="rainCloudGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#94A3B8"/>
+            <stop offset="100%" stop-color="#475569"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    `;
+  }
+  if (type === "hail") {
+    return `
+      <svg viewBox="0 0 36 36" class="weather-anim-svg">
+        <path class="anim-cloud" d="M9 20 A 6 6 0 0 1 14 11.5 A 7.5 7.5 0 0 1 27 13.5 A 5 5 0 0 1 26 21 Z" fill="url(#stormCloudGrad)"/>
+        <polygon points="17,17 12,24 16,24 14,31 22,22 18,22" fill="#FBBF24" class="anim-lightning"/>
+        <circle cx="10" cy="27" r="1.4" fill="#E9D5FF"/>
+        <circle cx="24" cy="28" r="1.4" fill="#E9D5FF"/>
+        <defs>
+          <linearGradient id="stormCloudGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#64748B"/>
+            <stop offset="100%" stop-color="#1E293B"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    `;
+  }
+  return "";
+}
+
+const THEME_STYLES = {
+  dark: { arrowColor: "#38BDF8", ringColor: "#38BDF8", ringOpacity: 0.45, radarCenter: "#38BDF8", impactLine: "#F59E0B" },
+  terrain: { arrowColor: "#EA580C", ringColor: "#0369A1", ringOpacity: 0.75, radarCenter: "#0284C7", impactLine: "#D97706" },
+  satellite: { arrowColor: "#FACC15", ringColor: "#FDE047", ringOpacity: 0.85, radarCenter: "#FDE047", impactLine: "#F59E0B" },
+  light: { arrowColor: "#0F172A", ringColor: "#334155", ringOpacity: 0.55, radarCenter: "#0F172A", impactLine: "#DC2626" }
 };
 
 let currentTheme = "dark";
 
-// Basemaps
 const baseLayers = {
   dark: L.layerGroup([
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
   ]),
-  terrain: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}", {
-    attribution: 'Esri World Topo', maxZoom: 19
-  }),
-  satellite: L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", {
-    attribution: "Google Maps", maxZoom: 19
-  }),
+  terrain: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}", { attribution: 'Esri Topo', maxZoom: 19 }),
+  satellite: L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", { attribution: "Google Maps", maxZoom: 19 }),
   light: L.layerGroup([
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
   ])
 };
 
-const map = L.map("map", {
-  center: [16.77, 100.22],
-  zoom: 8,
-  zoomControl: false,
-  layers: [baseLayers.dark]
-});
-
+const map = L.map("map", { center: [16.77, 100.22], zoom: 8, zoomControl: false, layers: [baseLayers.dark] });
 L.control.zoom({ position: "bottomright" }).addTo(map);
 
-// เลเยอร์ค่าเริ่มต้น
 const layerArrows = L.layerGroup().addTo(map);
 const layerRings = L.layerGroup().addTo(map);
 const layerTrajectory = L.layerGroup().addTo(map);
@@ -618,8 +739,6 @@ let stationMarkerElement = null;
 
 let isAlertEnabled = localStorage.getItem("tanfon_alert_enabled") === "true";
 let lastAlertTimestamp = 0;
-
-// บันทึกข้อมูลแท่งกราฟล่าสุดไว้ขยายใน Modal
 let currentSampledDbzList = [];
 
 const SCAN_RES = 160;
@@ -686,8 +805,8 @@ function triggerRainNotification(etaMin, startStr, durationMin, isHailRisk) {
 
   playAlertChime(isHailRisk);
   const title = isHailRisk 
-    ? `⚡ เตือนภัยพายุรุนแรง/ลูกเห็บ: ฝนจะเข้าใน ${etaMin} นาที!` 
-    : `🌧️ ทันฝน: ฝนจะเริ่มตกในอีก ${etaMin} นาที!`;
+    ? `เตือนภัยพายุรุนแรง/ลูกเห็บ: ฝนจะเข้าใน ${etaMin} นาที!` 
+    : `ทันฝน: ฝนจะเริ่มตกในอีก ${etaMin} นาที!`;
 
   const options = {
     body: `คาดว่าจะเริ่มตกเวลา ${startStr} (ตกต่อเนื่อง ~${durationMin} นาที) ${isHailRisk ? 'ระวังลมกระโชกแรงและลูกเห็บตก' : 'บริเวณตำแหน่งของคุณ'}`,
@@ -717,7 +836,7 @@ function dbzToRainRate(dbz) {
   return Math.pow(z / 200, 1 / 1.6);
 }
 
-// 1. เรนเดอร์กราฟ Meteogram ขนาดเล็กในการ์ด
+// 1. เรนเดอร์กราฟ Meteogram ในการ์ด
 function renderMeteogram(sampledDbzList, peakDbz) {
   currentSampledDbzList = sampledDbzList;
   const svg = document.getElementById("mgChartSvg");
@@ -730,8 +849,7 @@ function renderMeteogram(sampledDbzList, peakDbz) {
   const barWidth = 20;
   const stepGap = w / totalSteps;
 
-  let svgHtml = "";
-  svgHtml += `
+  let svgHtml = `
     <line x1="0" y1="12" x2="${w}" y2="12" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,2"/>
     <line x1="0" y1="30" x2="${w}" y2="30" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,2"/>
     <line x1="0" y1="${h - 10}" x2="${w}" y2="${h - 10}" stroke="rgba(255,255,255,0.15)"/>
@@ -769,7 +887,7 @@ function renderMeteogram(sampledDbzList, peakDbz) {
   svg.innerHTML = svgHtml;
 }
 
-// 2. เรนเดอร์กราฟ Meteogram ใน Modal ขนาดใหญ่ (ขยายเต็มจอ)
+// 2. เรนเดอร์กราฟ Meteogram ใน Modal ขยาย
 function renderModalMeteogram() {
   if (currentSampledDbzList.length === 0) return;
 
@@ -785,8 +903,6 @@ function renderModalMeteogram() {
   const stepGap = w / totalSteps;
 
   let svgHtml = "";
-
-  // ลากเส้นระดับ Thresholds
   const levels = [
     { dbz: 20, label: "20 dBZ (ฝนเบา)", color: "rgba(56, 189, 248, 0.2)" },
     { dbz: 35, label: "35 dBZ (ปานกลาง)", color: "rgba(16, 185, 129, 0.2)" },
@@ -802,7 +918,6 @@ function renderModalMeteogram() {
     `;
   });
 
-  // แกนเวลา "ตอนนี้"
   const nowIdx = manifest ? manifest.frames.findIndex(f => f.offset_min === 0) : 3;
   const nowX = nowIdx * stepGap + stepGap / 2;
   svgHtml += `
@@ -810,7 +925,6 @@ function renderModalMeteogram() {
     <text x="${nowX + 4}" y="${chartTop + 12}" fill="var(--accent)" font-size="10.5" font-weight="600" font-family="IBM Plex Sans Thai">● ปัจจุบัน</text>
   `;
 
-  // วาดแท่งกราฟและตัวเลข dBZ / mm/h กำกับบนหัวแท่ง
   currentSampledDbzList.forEach((item, i) => {
     const x = i * stepGap + (stepGap - barWidth) / 2;
     const dbz = item.dbz;
@@ -830,10 +944,8 @@ function renderModalMeteogram() {
       else fillColor = "rgba(255,255,255,0.06)";
     }
 
-    // แท่งกราฟ
     svgHtml += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barH}" rx="4" fill="${fillColor}"/>`;
 
-    // ค่าตัวเลข dBZ บนหัวแท่ง
     if (dbz > 0) {
       svgHtml += `
         <text x="${x + barWidth / 2}" y="${y - 12}" text-anchor="middle" fill="#FFF" font-size="10" font-weight="700" font-family="IBM Plex Mono">${dbz.toFixed(0)}</text>
@@ -841,7 +953,6 @@ function renderModalMeteogram() {
       `;
     }
 
-    // เวลาจริงใต้แท่ง
     let timeStr = "";
     if (manifest && manifest.frames[i]) {
       const d = new Date(manifest.frames[i].t * 1000);
@@ -855,13 +966,11 @@ function renderModalMeteogram() {
     `;
   });
 
-  // เส้นแกนล่าง
   svgHtml += `<line x1="20" y1="${chartBottom}" x2="${w - 10}" y2="${chartBottom}" stroke="rgba(255,255,255,0.2)"/>`;
-
   svg.innerHTML = svgHtml;
 }
 
-// 3. วิเคราะห์ผลกระทบฝน, ตรวจจับลูกเห็บ, คำนวณฝนสะสม และสร้าง Meteogram
+// 3. วิเคราะห์ผลกระทบฝน และอัปเดตไอคอนสภาพอากาศแบบเคลื่อนไหว
 function analyzeImpactAtPoint(lat, lon) {
   layerTrajectory.clearLayers();
   if (!manifest || !manifest.motion || frameImages.length === 0) return;
@@ -898,8 +1007,7 @@ function analyzeImpactAtPoint(lat, lon) {
     sampledDbzList.push({ offset: frame.offset_min, dbz: dbz });
 
     if (frame.offset_min >= 0 && dbz >= 15) {
-      const rainRate = dbzToRainRate(dbz);
-      accumulatedRainMm += rainRate * (15 / 60);
+      accumulatedRainMm += dbzToRainRate(dbz) * (15 / 60);
     }
   });
 
@@ -948,31 +1056,31 @@ function analyzeImpactAtPoint(lat, lon) {
   const badgeEl = document.getElementById("statusBadge");
   const hailBadge = document.getElementById("hailBadge");
   const headlineEl = document.getElementById("acHeadline");
+  const headlineIconEl = document.getElementById("headlineWeatherIcon");
   const valEta = document.getElementById("valEta");
   const valDur = document.getElementById("valDuration");
   const valRainAccum = document.getElementById("valRainAccum");
   const descEl = document.getElementById("acDesc");
 
-  const pillBadge = document.getElementById("acPillBadge");
+  const pillIconEl = document.getElementById("pillWeatherIcon");
   const pillText = document.getElementById("acPillText");
 
   const nowTime = new Date();
   valRainAccum.textContent = accumulatedRainMm > 0 ? `~${accumulatedRainMm.toFixed(1)} มม.` : "0 มม.";
 
   const isHailRisk = peakDbz >= 52;
-  if (isHailRisk) {
-    hailBadge.style.display = "flex";
-  } else {
-    hailBadge.style.display = "none";
-  }
+  hailBadge.style.display = isHailRisk ? "flex" : "none";
 
-  // 1) กรณีฝนกำลังตก
+  // 1) ฝนกำลังตก
   if (isRainingNow) {
     badgeEl.className = "ac-status-badge badge-raining";
-    badgeEl.textContent = "● ฝนกำลังตก";
+    badgeEl.textContent = "ฝนกำลังตก";
     headlineEl.innerHTML = isHailRisk 
-      ? `⛈️ ฝนตกหนักมาก <span style="color: var(--purple);">(เสี่ยงลูกเห็บ)</span>` 
-      : `☔ ขณะนี้มีกลุ่มฝนในพื้นที่`;
+      ? `ฝนตกหนักมาก <span style="color: var(--purple); font-size:16px;">(เสี่ยงลูกเห็บ)</span>` 
+      : `ขณะนี้มีกลุ่มฝนในพื้นที่`;
+
+    headlineIconEl.innerHTML = createWeatherSvg(isHailRisk ? "hail" : "rain");
+    pillIconEl.innerHTML = createWeatherSvg(isHailRisk ? "hail" : "rain");
 
     let dBack = 5;
     if (spd >= 2) {
@@ -992,12 +1100,12 @@ function analyzeImpactAtPoint(lat, lon) {
     valDur.textContent = `~${remainingMin} นาที`;
     descEl.textContent = `กลุ่มฝนครอบคลุมพื้นที่ คาดว่าจะตกแช่อีกประมาณ ${remainingMin} นาที ปริมาณฝนสะสมคาดการณ์ ${accumulatedRainMm.toFixed(1)} มม.`;
 
-    pillBadge.textContent = isHailRisk ? "⚡" : "☔";
     pillText.textContent = `ฝนตกอยู่ (อีก ~${remainingMin} น.)`;
+    lucide.createIcons();
     return;
   }
 
-  // 2) กรณีฝนกำลังเคลื่อนตัวเข้ามา (Upwind Raycasting)
+  // 2) ฝนกำลังเคลื่อนตัวเข้ามา
   let hitDistFront = -1;
   let hitDistBack = -1;
   let incomingMaxDbz = 0;
@@ -1039,17 +1147,18 @@ function analyzeImpactAtPoint(lat, lon) {
     if (willHail) hailBadge.style.display = "flex";
 
     badgeEl.className = "ac-status-badge badge-rain-incoming";
-    badgeEl.textContent = `● ฝนเข้าใน ${etaMin} นาที`;
+    badgeEl.textContent = `ฝนเข้าใน ${etaMin} นาที`;
     headlineEl.innerHTML = willHail
-      ? `⛈️ ฝนจะเข้าใน <span class="time-highlight">${etaMin}</span> น. <span style="color: var(--purple); font-size:16px;">(ระวังพายุ/ลูกเห็บ)</span>`
-      : `🌧️ ฝนจะเริ่มตกในอีก <span class="time-highlight">${etaMin}</span> นาที`;
+      ? `ฝนจะเข้าใน <span class="time-highlight">${etaMin}</span> น. <span style="color: var(--purple); font-size:16px;">(ระวังพายุ/ลูกเห็บ)</span>`
+      : `ฝนจะเริ่มตกในอีก <span class="time-highlight">${etaMin}</span> นาที`;
+
+    headlineIconEl.innerHTML = createWeatherSvg(willHail ? "hail" : "rain");
+    pillIconEl.innerHTML = createWeatherSvg(willHail ? "hail" : "rain");
 
     valEta.textContent = startStr;
     valDur.textContent = `~${durationMin} นาที`;
-
     descEl.innerHTML = `พบกลุ่มฝนความแรง <b>${incomingMaxDbz.toFixed(0)} dBZ</b> ความเร็ว ${spd.toFixed(1)} กม./ชม. กำลังมุ่งหน้ามายังตำแหน่งของคุณ`;
 
-    pillBadge.textContent = willHail ? "⚡" : "🌧️";
     pillText.textContent = `ฝนเข้าในอีก ${etaMin} นาที`;
 
     const rad = deg * Math.PI / 180;
@@ -1063,33 +1172,36 @@ function analyzeImpactAtPoint(lat, lon) {
       opacity: 0.95
     }).addTo(layerTrajectory);
 
-    impactPolyline.bindTooltip(`${willHail ? '⚡ เสี่ยงลูกเห็บ' : '🌧️ กลุ่มฝน'} (ETA: ~${etaMin} นาที)`, {
+    impactPolyline.bindTooltip(`${willHail ? 'เสี่ยงลูกเห็บ' : 'กลุ่มฝน'} (ETA: ~${etaMin} นาที)`, {
       permanent: true, direction: "center", className: "map-label"
     });
 
     if (etaMin <= 60) {
       triggerRainNotification(etaMin, startStr, durationMin, willHail);
     }
+    lucide.createIcons();
     return;
   }
 
   // 3) ท้องฟ้าโปร่ง
   badgeEl.className = "ac-status-badge badge-clear";
-  badgeEl.textContent = "● ท้องฟ้าโปร่ง";
-  headlineEl.innerHTML = `🌤️ ไม่มีฝนใน 60 นาทีข้างหน้า`;
+  badgeEl.textContent = "ท้องฟ้าโปร่ง";
+  headlineEl.innerHTML = `ไม่มีฝนใน 60 นาทีข้างหน้า`;
+  headlineIconEl.innerHTML = createWeatherSvg("clear");
+  pillIconEl.innerHTML = createWeatherSvg("clear");
 
   valEta.textContent = "ไม่มี";
   valDur.textContent = "0 นาที";
   descEl.textContent = `จากการวิเคราะห์แนวพัดลมและโมเดล Nowcast ไม่พบเซลล์ฝนที่กำลังเคลื่อนตัวเข้าหาจุดนี้ใน 1 ชั่วโมงข้างหน้า`;
 
-  pillBadge.textContent = "🌤️";
   pillText.textContent = "ไม่มีฝนใน 60 นาที";
+  lucide.createIcons();
 }
 
 function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") {
   userPinLatLon = [lat, lon];
-  document.getElementById("pinNameLabel").textContent = `📍 ${label}`;
-  document.getElementById("modalLocationLabel").textContent = `📍 ${label} (Lat: ${lat.toFixed(3)}, Lon: ${lon.toFixed(3)})`;
+  document.getElementById("pinNameLabel").textContent = `${label}`;
+  document.getElementById("modalLocationLabel").textContent = `${label} (Lat: ${lat.toFixed(3)}, Lon: ${lon.toFixed(3)})`;
 
   if (!userPinMarker) {
     userPinMarker = L.marker([lat, lon], { draggable: true, title: "ลากเพื่อย้ายจุดตรวจวัด" }).addTo(map);
@@ -1329,7 +1441,7 @@ async function initRadar() {
     updateFooterStatus();
     autoDetectGPS();
   } catch (err) {
-    document.getElementById("tlFullTitle").textContent = "📡 เชื่อมต่อฐานข้อมูลเรดาร์ล้มเหลว";
+    document.getElementById("tlFullTitle").textContent = "เชื่อมต่อฐานข้อมูลเรดาร์ล้มเหลว";
   }
 }
 
@@ -1347,8 +1459,10 @@ function showFrame(index) {
   const f = manifest.frames[currentIndex];
   const frameDate = new Date(f.t * 1000);
 
-  document.getElementById("tlFullTitle").innerHTML =
-    `📡 ทันฝน เรดาร์พิษณุโลก (Nowcast) — <b>${formatThaiDateTime(frameDate, true)}</b>`;
+  document.getElementById("tlFullTitle").innerHTML = `
+    <i data-lucide="radar" class="icon-xs" style="color: var(--accent);"></i>
+    <span>ทันฝน เรดาร์พิษณุโลก (Nowcast) — <b>${formatThaiDateTime(frameDate, true)}</b></span>
+  `;
 
   document.getElementById("tlPillText").textContent =
     `${formatThaiDateTime(frameDate)} ${f.offset_min > 0 ? '(+' + f.offset_min + 'น.)' : ''}`;
@@ -1364,6 +1478,8 @@ function showFrame(index) {
 
   document.getElementById("tlFrameCount").textContent =
     `เฟรม ${currentIndex + 1}/${manifest.frames.length}`;
+
+  lucide.createIcons();
 }
 
 function updateFooterStatus() {
@@ -1377,21 +1493,22 @@ function updateFooterStatus() {
 
 function togglePlay() {
   isPlaying = !isPlaying;
-  const btn = document.getElementById("btnPlay");
-  const btnPill = document.getElementById("btnPlayPill");
+  const playIcon = document.getElementById("playIcon");
+  const playIconPill = document.getElementById("playIconPill");
 
   if (isPlaying) {
-    btn.textContent = "⏸";
-    btnPill.textContent = "⏸";
+    playIcon.setAttribute("data-lucide", "pause");
+    playIconPill.setAttribute("data-lucide", "pause");
     playTimer = setInterval(() => {
       let next = (currentIndex + 1) % manifest.frames.length;
       showFrame(next);
     }, 800);
   } else {
-    btn.textContent = "▶";
-    btnPill.textContent = "▶";
+    playIcon.setAttribute("data-lucide", "play");
+    playIconPill.setAttribute("data-lucide", "play");
     clearInterval(playTimer);
   }
+  lucide.createIcons();
 }
 
 document.getElementById("btnPlay").addEventListener("click", togglePlay);
@@ -1420,7 +1537,6 @@ document.getElementById("btnExpandAc").addEventListener("click", () => {
   document.getElementById("actionRail").classList.remove("collapsed");
 });
 
-// จัดการ Modal ขยายกราฟ
 document.getElementById("btnOpenModal").addEventListener("click", (e) => {
   e.stopPropagation();
   renderModalMeteogram();
@@ -1441,10 +1557,11 @@ document.getElementById("toggleLayerCard").addEventListener("click", () => {
   const body = document.getElementById("layerBody");
   const isHidden = body.style.display === "none";
   body.style.display = isHidden ? "flex" : "none";
-  document.querySelector(".toggle-icon").textContent = isHidden ? "▼" : "▲";
+  const icon = document.getElementById("layerToggleIcon");
+  icon.setAttribute("data-lucide", isHidden ? "chevron-down" : "chevron-up");
+  lucide.createIcons();
 });
 
-// Checkbox ควบคุมเลเยอร์
 document.getElementById("chkArrows").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerArrows); else map.removeLayer(layerArrows);
 });
@@ -1467,7 +1584,6 @@ document.getElementById("chkTam").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerTambon); else map.removeLayer(layerTambon);
 });
 
-// สลับ Basemap
 document.querySelectorAll(".map-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".map-btn").forEach(b => b.classList.remove("active"));
@@ -1509,14 +1625,20 @@ document.getElementById("btnLoc").addEventListener("click", () => {
 });
 
 const btnAlert = document.getElementById("btnToggleAlert");
+const alertIcon = document.getElementById("alertIcon");
+const alertLabel = document.getElementById("alertLabel");
+
 function syncAlertBtnUI() {
   if (isAlertEnabled) {
     btnAlert.classList.add("active");
-    btnAlert.innerHTML = "🔔 เปิดแจ้งเตือนแล้ว";
+    alertIcon.setAttribute("data-lucide", "bell");
+    alertLabel.textContent = "เปิดแจ้งเตือนแล้ว";
   } else {
     btnAlert.classList.remove("active");
-    btnAlert.innerHTML = "🔕 ปิดแจ้งเตือนอยู่";
+    alertIcon.setAttribute("data-lucide", "bell-off");
+    alertLabel.textContent = "ปิดแจ้งเตือนอยู่";
   }
+  lucide.createIcons();
 }
 syncAlertBtnUI();
 
@@ -1532,7 +1654,7 @@ btnAlert.addEventListener("click", async () => {
       localStorage.setItem("tanfon_alert_enabled", "true");
       syncAlertBtnUI();
       playAlertChime(false);
-      new Notification("🔔 ทันฝน: เปิดระบบแจ้งเตือนสำเร็จ", {
+      new Notification("ทันฝน: เปิดระบบแจ้งเตือนสำเร็จ", {
         body: "ระบบจะแจ้งเตือนอัตโนมัติล่วงหน้า 1 ชั่วโมงเมื่อมีกลุ่มฝนมุ่งหน้ามาหาคุณ",
         icon: "icon-192.png"
       });
@@ -1560,6 +1682,7 @@ setInterval(async () => {
 
 loadBoundaries();
 initRadar();
+lucide.createIcons();
 </script>
 </body>
 </html>
