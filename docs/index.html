@@ -65,10 +65,10 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .map-btn.active { background: var(--accent); color: #070B12; font-weight: 700; }
 
-/* แผงขอบเขตพื้นที่ (Boundary Layer Controls) */
+/* แผงขอบเขตพื้นที่ & เวกเตอร์การเคลื่อนตัว */
 .layer-card {
   position: absolute; top: 62px; right: 12px; z-index: 999;
-  width: 230px; padding: 12px 14px; font-size: 12px;
+  width: 235px; padding: 12px 14px; font-size: 12px;
 }
 .layer-head {
   display: flex; justify-content: space-between; align-items: center;
@@ -82,6 +82,8 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .layer-label-check { display: flex; align-items: center; gap: 4px; color: var(--text-dim); font-size: 11px; cursor: pointer; }
 .custom-checkbox { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .custom-checkbox input, .layer-label-check input { accent-color: var(--accent); cursor: pointer; }
+
+.divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0; }
 
 /* การ์ดซ้าย (ETA & ข้อมูลฝน) */
 .rail {
@@ -162,18 +164,27 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   display: grid; place-items: center; cursor: pointer;
 }
 
-/* ป้ายชื่อพื้นที่บนแผนที่ */
+/* ป้ายชื่อและสไตล์เวกเตอร์ */
 .leaflet-tooltip.map-label {
   background: transparent; border: none; box-shadow: none;
   color: #fff; font-weight: 600; text-shadow: 0 1px 3px #000, 0 0 6px #000;
   padding: 0; font-size: 11.5px;
 }
 .leaflet-tooltip.map-label.amphoe { font-size: 9.5px; color: #FBBF24; text-shadow: 0 1px 3px #000; }
-.leaflet-tooltip.map-label.tambon { font-size: 8.5px; color: #E2E8F0; text-shadow: 0 1px 3px #000; }
+.leaflet-tooltip.map-label.ring-label {
+  font-size: 10px; font-family: "IBM Plex Mono", monospace;
+  background: transparent; border: none; box-shadow: none;
+  font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+.arrow-icon {
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
 
 @media (max-width: 768px) {
   .rail { width: calc(100% - 24px); top: auto; bottom: 85px; }
-  .layer-card { width: 185px; font-size: 11px; }
+  .layer-card { width: 195px; font-size: 11px; }
   .legend { display: none; }
 }
 </style>
@@ -196,14 +207,29 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- แผงเปิดปิดขอบเขตพื้นที่ & ป้ายชื่อ -->
+<!-- แผงขอบเขตพื้นที่ & เวกเตอร์ทิศทางลม -->
 <div class="layer-card glass">
   <div class="layer-head" id="toggleLayerCard">
-    <span>📐 ขอบเขตพื้นที่</span>
+    <span>📐 ชั้นข้อมูล & เวกเตอร์</span>
     <span class="toggle-icon">▼</span>
   </div>
-  <span class="layer-status" id="boundaryStatus">กำลังโหลดข้อมูล...</span>
+  <span class="layer-status" id="boundaryStatus">กำลังเชื่อมต่อข้อมูล...</span>
   <div class="layer-content" id="layerBody">
+    <div class="layer-row">
+      <label class="custom-checkbox">
+        <input type="checkbox" id="chkArrows" checked>
+        <span style="font-weight: 600; color: var(--accent);">เวกเตอร์ทิศทาง (Optical Flow)</span>
+      </label>
+    </div>
+    <div class="layer-row">
+      <label class="custom-checkbox">
+        <input type="checkbox" id="chkRings" checked>
+        <span>วงรัศมีตรวจวัดเรดาร์</span>
+      </label>
+    </div>
+
+    <div class="divider"></div>
+
     <div class="layer-row">
       <label class="custom-checkbox">
         <input type="checkbox" id="chkProv" checked>
@@ -226,7 +252,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
     <div class="layer-row">
       <label class="custom-checkbox">
-        <input type="checkbox" id="chkTam" checked>
+        <input type="checkbox" id="chkTam">
         <span>ขอบเขตตำบล</span>
       </label>
       <label class="layer-label-check">
@@ -298,6 +324,36 @@ const MANIFEST_URL = "nowcast/PHS/latest.json";
 const R_EARTH = 6371.0088;
 const THAI_MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 
+// กำหนดโทนสีที่ตัดกันอย่างเหมาะสมกับแต่ละ Basemap
+const THEME_STYLES = {
+  dark: {
+    arrowColor: "#38BDF8",      // ฟ้าสว่างนีออน
+    ringColor: "#38BDF8",
+    ringOpacity: 0.45,
+    radarCenter: "#38BDF8"
+  },
+  terrain: {
+    arrowColor: "#EA580C",      // สีส้มอิฐ/Amber ตัดกับสีเขียวและน้ำตาลของภูเขา DEM
+    ringColor: "#0369A1",       // น้ำเงินเข้มชัดเจน
+    ringOpacity: 0.75,
+    radarCenter: "#0284C7"
+  },
+  satellite: {
+    arrowColor: "#FACC15",      // สีเหลืองทองสะท้อนแสง ตัดกับภาพถ่ายดาวเทียม
+    ringColor: "#FDE047",
+    ringOpacity: 0.85,
+    radarCenter: "#FDE047"
+  },
+  light: {
+    arrowColor: "#0F172A",      // สีกรมท่าเข้มเกือบดำ
+    ringColor: "#334155",
+    ringOpacity: 0.55,
+    radarCenter: "#0F172A"
+  }
+};
+
+let currentTheme = "dark";
+
 // Basemaps
 const baseLayers = {
   dark: L.layerGroup([
@@ -325,13 +381,14 @@ const map = L.map("map", {
 
 L.control.zoom({ position: "bottomright" }).addTo(map);
 
-// กลุ่มเลเยอร์ขอบเขตพื้นที่
+// กลุ่มเลเยอร์
+const layerArrows = L.layerGroup().addTo(map);
+const layerRings = L.layerGroup().addTo(map);
 const layerProvince = L.layerGroup().addTo(map);
 const layerProvinceLabels = L.layerGroup().addTo(map);
 const layerAmphoe = L.layerGroup().addTo(map);
 const layerAmphoeLabels = L.layerGroup().addTo(map);
-const layerTambon = L.layerGroup().addTo(map);
-const layerTambonLabels = L.layerGroup();
+const layerTambon = L.layerGroup();
 
 let manifest = null;
 let radarOverlays = [];
@@ -339,6 +396,11 @@ let currentIndex = 0;
 let isPlaying = false;
 let playTimer = null;
 let radarBounds = null;
+let radarStationLatLon = [16.77, 100.22];
+
+// ตัวแปรเก็บออบเจกต์ของวงแหวนและมาร์กเกอร์เพื่อเปลี่ยนสี
+let rangeCircleElements = [];
+let stationMarkerElement = null;
 
 function unproject(E, Nn, lat0, lon0) {
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
@@ -361,106 +423,189 @@ function formatThaiDateTime(dateObj, showFull = false) {
   return `${d} ${m} ${y} ${hh}:${mm} น.`;
 }
 
-// ฟังก์ชันดาวน์โหลดพร้อมระบบสำรอง (Fallback Fetcher)
-async function fetchWithFallback(urlList) {
-  for (const url of urlList) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn("ข้ามแหล่งข้อมูล:", url);
+// 1. สร้าง Arrow Grid จำลอง Optical Flow Vector จากพารามิเตอร์ Extrapolation
+function renderArrowGrid() {
+  layerArrows.clearLayers();
+  if (!manifest || !manifest.motion) return;
+
+  const motion = manifest.motion;
+  const spd = motion.speed_kmh || motion.kmh || 0;
+  const deg = motion.direction_deg !== undefined ? motion.direction_deg : (motion.bearing || 0);
+
+  // ถ้าลมสงบ (< 2 กม./ชม.) ไม่ต้องวาดลูกศร
+  if (spd < 2) return;
+
+  const lat0 = radarStationLatLon[0];
+  const lon0 = radarStationLatLon[1];
+  const style = THEME_STYLES[currentTheme];
+
+  // ความยาวและความหนาของลูกศรผันแปรตามความเร็วลม
+  const arrowLength = Math.min(36, Math.max(22, 18 + spd * 0.45));
+  const arrowStroke = Math.min(3.2, Math.max(2.0, 1.8 + spd * 0.04));
+
+  // สร้างกริดระยะห่างทุกๆ 35 กม. ในรัศมี 220 กม. จากสถานีเรดาร์
+  const stepKm = 35;
+  const maxR = 210;
+
+  for (let e = -maxR; e <= maxR; e += stepKm) {
+    for (let n = -maxR; n <= maxR; n += stepKm) {
+      const dist = Math.hypot(e, n);
+      if (dist > maxR) continue;
+
+      const [lat, lon] = unproject(e, n, lat0, lon0);
+
+      // สร้าง SVG Arrow ที่หมุนตามทิศทางลม (degree) พร้อมขอบเงา (drop-shadow)
+      const svgHtml = `
+        <div class="arrow-icon" style="width: ${arrowLength}px; height: ${arrowLength}px;">
+          <svg viewBox="0 0 28 28" width="${arrowLength}" height="${arrowLength}"
+               style="transform: rotate(${deg}deg); filter: drop-shadow(0 1px 3px rgba(0,0,0,0.85));">
+            <line x1="14" y1="23" x2="14" y2="4" stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round"/>
+            <polyline points="8,11 14,4 20,11" fill="none" stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      `;
+
+      const icon = L.divIcon({
+        html: svgHtml,
+        className: "",
+        iconSize: [arrowLength, arrowLength],
+        iconAnchor: [arrowLength / 2, arrowLength / 2]
+      });
+
+      const marker = L.marker([lat, lon], { icon, interactive: true });
+      marker.bindTooltip(`ทิศทาง: ${deg.toFixed(0)}°<br>ความเร็ว: ${spd.toFixed(1)} กม./ชม.`, { direction: "top", offset: [0, -10] });
+      layerArrows.addLayer(marker);
     }
   }
-  throw new Error("ไม่สามารถดาวน์โหลดได้จากทุกแหล่ง");
 }
 
-// โหลดขอบเขตจังหวัด อำเภอ ตำบล
+// 2. สร้างวงแหวนระยะเรดาร์ (Range Rings)
+function renderRangeRings() {
+  layerRings.clearLayers();
+  rangeCircleElements = [];
+
+  const lat0 = radarStationLatLon[0];
+  const lon0 = radarStationLatLon[1];
+  const style = THEME_STYLES[currentTheme];
+
+  // วงแหวน 60, 120, 240 กม.
+  [60, 120, 240].forEach(km => {
+    const circle = L.circle([lat0, lon0], {
+      radius: km * 1000,
+      color: style.ringColor,
+      weight: 1.3,
+      dashArray: "5, 7",
+      fill: false,
+      opacity: style.ringOpacity
+    }).addTo(layerRings);
+    rangeCircleElements.push(circle);
+
+    // ป้ายบอกระยะห่างที่ทิศเหนือของวงแหวน
+    const [labelLat, labelLon] = unproject(0, km, lat0, lon0);
+    const label = L.tooltip({
+      permanent: true,
+      direction: "center",
+      className: "map-label ring-label"
+    })
+    .setContent(`${km} km`)
+    .setLatLng([labelLat, labelLon]);
+    layerRings.addLayer(label);
+  });
+
+  // จุดศูนย์กลางสถานีเรดาร์
+  stationMarkerElement = L.circleMarker([lat0, lon0], {
+    radius: 4.5,
+    color: style.radarCenter,
+    fillColor: "#FFF",
+    fillOpacity: 1,
+    weight: 2
+  }).addTo(layerRings).bindPopup("<b>สถานีเรดาร์ตรวจอากาศพิษณุโลก (PHS)</b>");
+}
+
+// 3. ฟังก์ชันอัปเดตสีตาม Basemap แบบ Real-time
+function updateThemeVisuals(themeKey) {
+  currentTheme = themeKey;
+  const style = THEME_STYLES[themeKey];
+
+  // อัปเดตสีวงแหวน
+  rangeCircleElements.forEach(c => {
+    c.setStyle({
+      color: style.ringColor,
+      opacity: style.ringOpacity
+    });
+  });
+
+  // อัปเดตสีมาร์กเกอร์สถานี
+  if (stationMarkerElement) {
+    stationMarkerElement.setStyle({ color: style.radarCenter });
+  }
+
+  // อัปเดตสีป้ายระยะ
+  document.querySelectorAll(".ring-label").forEach(el => {
+    el.style.color = style.ringColor;
+  });
+
+  // วาดเวกเตอร์ลูกศรใหม่ด้วยชุดสีของธีมนั้น
+  renderArrowGrid();
+}
+
+// 4. โหลดขอบเขตจังหวัด อำเภอ ตำบล
 async function loadBoundaries() {
   const statusEl = document.getElementById("boundaryStatus");
 
-  // 1. ขอบเขตจังหวัด (Province)
   try {
-    const dataProv = await fetchWithFallback([
-      "https://cdn.jsdelivr.net/gh/apisit/thailand.json@master/thailand.json",
-      "https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json"
-    ]);
-
-    L.geoJSON(dataProv, {
-      style: { color: "#38BDF8", weight: 1.6, fill: false, opacity: 0.8 },
-      onEachFeature: (feature, layer) => {
-        const name = feature.properties.name || feature.properties.pro_th || "";
-        if (name) {
-          const center = layer.getBounds().getCenter();
-          const label = L.tooltip({ permanent: true, direction: "center", className: "map-label" })
-                         .setContent(name).setLatLng(center);
-          layerProvinceLabels.addLayer(label);
+    const resProv = await fetch("https://cdn.jsdelivr.net/gh/apisit/thailand.json@master/thailand.json");
+    if (resProv.ok) {
+      const dataProv = await resProv.json();
+      L.geoJSON(dataProv, {
+        style: { color: "#38BDF8", weight: 1.5, fill: false, opacity: 0.75 },
+        onEachFeature: (feature, layer) => {
+          const name = feature.properties.name || feature.properties.pro_th || "";
+          if (name) {
+            const center = layer.getBounds().getCenter();
+            const label = L.tooltip({ permanent: true, direction: "center", className: "map-label" })
+                           .setContent(name).setLatLng(center);
+            layerProvinceLabels.addLayer(label);
+          }
         }
-      }
-    }).addTo(layerProvince);
-  } catch (err) {
-    console.warn("โหลดจังหวัดล้มเหลว:", err);
-  }
+      }).addTo(layerProvince);
+    }
+  } catch (err) {}
 
-  // 2. ขอบเขตอำเภอ (Amphoe / District)
   try {
     statusEl.textContent = "กำลังโหลดขอบเขตอำเภอ...";
-    const dataAmp = await fetchWithFallback([
-      "https://cdn.jsdelivr.net/gh/wmgeolab/geoBoundaries@main/releaseData/gbOpen/THA/ADM2/geoBoundaries-THA-ADM2_simplified.geojson",
-      "https://raw.githubusercontent.com/wmgeolab/geoBoundaries/main/releaseData/gbOpen/THA/ADM2/geoBoundaries-THA-ADM2_simplified.geojson"
-    ]);
-
-    L.geoJSON(dataAmp, {
-      style: { color: "#FBBF24", weight: 1.1, dashArray: "4, 4", fill: false, opacity: 0.65 },
-      onEachFeature: (feature, layer) => {
-        let name = feature.properties.shapeName || feature.properties.name || "";
-        name = name.replace(/^Amphoe\s+/i, ""); // ตัดคำนำหน้าภาษาอังกฤษออกถ้ามี
-        if (name) {
-          const center = layer.getBounds().getCenter();
-          const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
-                         .setContent(name).setLatLng(center);
-          layerAmphoeLabels.addLayer(label);
+    const resAmp = await fetch("https://cdn.jsdelivr.net/gh/wmgeolab/geoBoundaries@main/releaseData/gbOpen/THA/ADM2/geoBoundaries-THA-ADM2_simplified.geojson");
+    if (resAmp.ok) {
+      const dataAmp = await resAmp.json();
+      L.geoJSON(dataAmp, {
+        style: { color: "#FBBF24", weight: 1.1, dashArray: "4, 4", fill: false, opacity: 0.65 },
+        onEachFeature: (feature, layer) => {
+          let name = feature.properties.shapeName || feature.properties.name || "";
+          name = name.replace(/^Amphoe\s+/i, "");
+          if (name) {
+            const center = layer.getBounds().getCenter();
+            const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
+                           .setContent(name).setLatLng(center);
+            layerAmphoeLabels.addLayer(label);
+          }
         }
-      }
-    }).addTo(layerAmphoe);
-  } catch (err) {
-    console.warn("โหลดอำเภอล้มเหลว:", err);
-  }
+      }).addTo(layerAmphoe);
+    }
+  } catch (err) {}
 
-  // 3. ขอบเขตตำบล (Tambon / Subdistrict)
-  // ใช้ชั้นไทล์ WMS มาตรฐานระดับตำบล เพื่อความลื่นไหลและประหยัดแรมบนมือถือ
   try {
-    statusEl.textContent = "กำลังเชื่อมโยงขอบเขตตำบล...";
-    const tambonTile = L.tileLayer.wms("https://wam.onwr.go.th/geoserver/wms", {
-      layers: "onwr:tambon",
-      format: "image/png",
-      transparent: true,
-      opacity: 0.45,
-      maxZoom: 18
-    });
-    layerTambon.addLayer(tambonTile);
-
-    // เลเยอร์เส้นขอบเขตตำบลสำรองความละเอียดสูง
     const fallbackTambon = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
       opacity: 0.4
     });
     layerTambon.addLayer(fallbackTambon);
-
     statusEl.textContent = "● ขอบเขตพื้นที่พร้อมใช้งาน";
     statusEl.style.color = "var(--ok)";
   } catch (err) {
-    statusEl.textContent = "● โหลดขอบเขตบางส่วนไม่สำเร็จ";
-    statusEl.style.color = "var(--warn)";
+    statusEl.textContent = "● โหลดข้อมูลสำเร็จบางส่วน";
   }
-
-  // ซิงก์สถานะเริ่มต้นตาม Checkbox
-  if (!document.getElementById("chkProv").checked) map.removeLayer(layerProvince);
-  if (!document.getElementById("chkProvLabel").checked) map.removeLayer(layerProvinceLabels);
-  if (!document.getElementById("chkAmp").checked) map.removeLayer(layerAmphoe);
-  if (!document.getElementById("chkAmpLabel").checked) map.removeLayer(layerAmphoeLabels);
-  if (!document.getElementById("chkTam").checked) map.removeLayer(layerTambon);
 }
 
-// 4. เริ่มต้นระบบเรดาร์
+// 5. โหลดข้อมูลเรดาร์
 async function initRadar() {
   try {
     const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
@@ -470,25 +615,18 @@ async function initRadar() {
     const m = /lat_0=([-\d.]+).*?lon_0=([-\d.]+)/.exec(manifest.projection) || [];
     const lat0 = parseFloat(m[1]) || 16.77;
     const lon0 = parseFloat(m[2]) || 100.22;
-    const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+    radarStationLatLon = [lat0, lon0];
 
+    const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
     const south = unproject(0, -halfKm, lat0, lon0)[0];
     const north = unproject(0, halfKm, lat0, lon0)[0];
     const west = unproject(-halfKm, 0, lat0, lon0)[1];
     const east = unproject(halfKm, 0, lat0, lon0)[1];
     radarBounds = L.latLngBounds([south, west], [north, east]);
 
-    // วงแหวนระยะตรวจวัด
-    [60000, 120000, 240000].forEach(r => {
-      L.circle([lat0, lon0], {
-        radius: r, color: "#38BDF8", weight: 1, dashArray: "4, 6", fill: false, opacity: 0.35
-      }).addTo(map);
-    });
-
-    // Marker สถานี PHS
-    L.circleMarker([lat0, lon0], {
-      radius: 4, color: "#38BDF8", fillColor: "#FFF", fillOpacity: 1
-    }).addTo(map).bindPopup("สถานีเรดาร์พิษณุโลก (PHS)");
+    // เรนเดอร์วงแหวนและเวกเตอร์ลูกศร
+    renderRangeRings();
+    renderArrowGrid();
 
     radarOverlays = manifest.frames.map((frame) => {
       return L.imageOverlay("nowcast/PHS/" + frame.url, radarBounds, {
@@ -552,8 +690,8 @@ function updateFooterStatus() {
 
 function updateETA() {
   const motion = manifest.motion;
-  const spd = motion.speed_kmh || 0;
-  const deg = motion.direction_deg || 0;
+  const spd = motion.speed_kmh || motion.kmh || 0;
+  const deg = motion.direction_deg !== undefined ? motion.direction_deg : (motion.bearing || 0);
 
   if (spd > 3) {
     document.getElementById("etaMinutes").innerHTML = `${spd.toFixed(0)}<small>กม./ชม.</small>`;
@@ -608,7 +746,14 @@ document.getElementById("toggleLayerCard").addEventListener("click", () => {
   document.querySelector(".toggle-icon").textContent = isHidden ? "▼" : "▲";
 });
 
-// จัดการ Event คลิกเปิดปิดของแต่ละเลเยอร์
+// สวิตช์เปิด-ปิด Arrow Grid & วงแหวน
+document.getElementById("chkArrows").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerArrows); else map.removeLayer(layerArrows);
+});
+document.getElementById("chkRings").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerRings); else map.removeLayer(layerRings);
+});
+
 document.getElementById("chkProv").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerProvince); else map.removeLayer(layerProvince);
 });
@@ -627,7 +772,7 @@ document.getElementById("chkTam").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerTambon); else map.removeLayer(layerTambon);
 });
 
-// สลับ Basemap
+// สลับ Basemap และเปลี่ยนสีเวกเตอร์/วงแหวนทันที
 document.querySelectorAll(".map-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".map-btn").forEach(b => b.classList.remove("active"));
@@ -635,6 +780,9 @@ document.querySelectorAll(".map-btn").forEach(btn => {
     const layerKey = btn.dataset.layer;
     Object.values(baseLayers).forEach(layer => map.removeLayer(layer));
     baseLayers[layerKey].addTo(map);
+
+    // ปรับสีเวกเตอร์และวงแหวนให้เข้ากับแผนที่ฐานที่เพิ่งเลือก
+    updateThemeVisuals(layerKey);
   });
 });
 
