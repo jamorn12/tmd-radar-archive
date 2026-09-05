@@ -68,7 +68,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 /* แผงขอบเขตพื้นที่ & เวกเตอร์การเคลื่อนตัว */
 .layer-card {
   position: absolute; top: 62px; right: 12px; z-index: 999;
-  width: 235px; padding: 12px 14px; font-size: 12px;
+  width: 240px; padding: 12px 14px; font-size: 12px;
 }
 .layer-head {
   display: flex; justify-content: space-between; align-items: center;
@@ -218,7 +218,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     <div class="layer-row">
       <label class="custom-checkbox">
         <input type="checkbox" id="chkArrows" checked>
-        <span style="font-weight: 600; color: var(--accent);">เวกเตอร์ทิศทาง (Optical Flow)</span>
+        <span style="font-weight: 600; color: var(--accent);">เวกเตอร์เซลล์ฝน (Cell Motion)</span>
       </label>
     </div>
     <div class="layer-row">
@@ -324,7 +324,7 @@ const MANIFEST_URL = "nowcast/PHS/latest.json";
 const R_EARTH = 6371.0088;
 const THAI_MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 
-// กำหนดโทนสีที่ตัดกันอย่างเหมาะสมกับแต่ละ Basemap
+// โทนสีเวกเตอร์และวงแหวนตาม Basemap
 const THEME_STYLES = {
   dark: {
     arrowColor: "#38BDF8",      // ฟ้าสว่างนีออน
@@ -333,19 +333,19 @@ const THEME_STYLES = {
     radarCenter: "#38BDF8"
   },
   terrain: {
-    arrowColor: "#EA580C",      // สีส้มอิฐ/Amber ตัดกับสีเขียวและน้ำตาลของภูเขา DEM
-    ringColor: "#0369A1",       // น้ำเงินเข้มชัดเจน
+    arrowColor: "#EA580C",      // สีส้มอิฐ Amber โดดเด่นชัดบนภูมิประเทศ DEM
+    ringColor: "#0369A1",       // น้ำเงินคมเข้ม
     ringOpacity: 0.75,
     radarCenter: "#0284C7"
   },
   satellite: {
-    arrowColor: "#FACC15",      // สีเหลืองทองสะท้อนแสง ตัดกับภาพถ่ายดาวเทียม
+    arrowColor: "#FACC15",      // สีเหลืองทองนีออน ตัดชัดบนภาพถ่ายดาวเทียม
     ringColor: "#FDE047",
     ringOpacity: 0.85,
     radarCenter: "#FDE047"
   },
   light: {
-    arrowColor: "#0F172A",      // สีกรมท่าเข้มเกือบดำ
+    arrowColor: "#0F172A",      // สีกรมท่าน้ำเงินเข้ม
     ringColor: "#334155",
     ringOpacity: 0.55,
     radarCenter: "#0F172A"
@@ -392,15 +392,22 @@ const layerTambon = L.layerGroup();
 
 let manifest = null;
 let radarOverlays = [];
+let frameImages = []; // เก็บ Image object เพื่อนำมาสแกนเซลล์ฝน
 let currentIndex = 0;
 let isPlaying = false;
 let playTimer = null;
 let radarBounds = null;
 let radarStationLatLon = [16.77, 100.22];
 
-// ตัวแปรเก็บออบเจกต์ของวงแหวนและมาร์กเกอร์เพื่อเปลี่ยนสี
 let rangeCircleElements = [];
 let stationMarkerElement = null;
+
+// Canvas ขนาดกะทัดรัดสำหรับสแกนตำแหน่งเซลล์ฝนแบบ Real-time (< 1ms)
+const SCAN_RES = 160;
+const scanCanvas = document.createElement("canvas");
+scanCanvas.width = SCAN_RES;
+scanCanvas.height = SCAN_RES;
+const scanCtx = scanCanvas.getContext("2d", { willReadFrequently: true });
 
 function unproject(E, Nn, lat0, lon0) {
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
@@ -423,8 +430,8 @@ function formatThaiDateTime(dateObj, showFull = false) {
   return `${d} ${m} ${y} ${hh}:${mm} น.`;
 }
 
-// 1. สร้าง Arrow Grid จำลอง Optical Flow Vector จากพารามิเตอร์ Extrapolation
-function renderArrowGrid() {
+// 1. ตรวจจับเซลล์ฝนและวาดเวกเตอร์เฉพาะบริเวณที่มีกลุ่มฝน
+function renderCellVectors(frameIdx) {
   layerArrows.clearLayers();
   if (!manifest || !manifest.motion) return;
 
@@ -432,51 +439,92 @@ function renderArrowGrid() {
   const spd = motion.speed_kmh || motion.kmh || 0;
   const deg = motion.direction_deg !== undefined ? motion.direction_deg : (motion.bearing || 0);
 
-  // ถ้าลมสงบ (< 2 กม./ชม.) ไม่ต้องวาดลูกศร
+  // หากไม่มีความเร็วลม (< 2 กม./ชม.) ไม่จำเป็นต้องวาดลูกศร
   if (spd < 2) return;
+
+  const img = frameImages[frameIdx];
+  if (!img || !img.complete || img.naturalWidth === 0) return;
+
+  // วาดภาพเรดาร์ลงบน Offscreen Canvas เพื่อสแกนค่าพิกเซล
+  scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
+  scanCtx.drawImage(img, 0, 0, SCAN_RES, SCAN_RES);
+
+  let imgData;
+  try {
+    imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
+  } catch (err) {
+    return; // ป้องกันข้อผิดพลาดกรณีข้ามโดเมน
+  }
 
   const lat0 = radarStationLatLon[0];
   const lon0 = radarStationLatLon[1];
   const style = THEME_STYLES[currentTheme];
 
-  // ความยาวและความหนาของลูกศรผันแปรตามความเร็วลม
-  const arrowLength = Math.min(36, Math.max(22, 18 + spd * 0.45));
-  const arrowStroke = Math.min(3.2, Math.max(2.0, 1.8 + spd * 0.04));
+  const arrowLength = Math.min(32, Math.max(20, 16 + spd * 0.4));
+  const arrowStroke = Math.min(3.0, Math.max(2.0, 1.8 + spd * 0.04));
 
-  // สร้างกริดระยะห่างทุกๆ 35 กม. ในรัศมี 220 กม. จากสถานีเรดาร์
-  const stepKm = 35;
-  const maxR = 210;
+  const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+  const stepPixels = 6; // สุ่มตรวจทุก ~18 กม. เพื่อไม่ให้ลูกศรซ้อนทับกันเกินไป
+  const detectedCells = [];
 
-  for (let e = -maxR; e <= maxR; e += stepKm) {
-    for (let n = -maxR; n <= maxR; n += stepKm) {
-      const dist = Math.hypot(e, n);
-      if (dist > maxR) continue;
+  for (let y = stepPixels; y < SCAN_RES - stepPixels; y += stepPixels) {
+    for (let x = stepPixels; x < SCAN_RES - stepPixels; x += stepPixels) {
+      
+      // ตรวจสอบพื้นที่รอบจุด (Window 3x3) ว่ามีพิกเซลฝนหรือไม่
+      let rainCount = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const idx = ((y + dy) * SCAN_RES + (x + dx)) * 4;
+          const r = imgData[idx];
+          const g = imgData[idx + 1];
+          const b = imgData[idx + 2];
+          const a = imgData[idx + 3];
 
-      const [lat, lon] = unproject(e, n, lat0, lon0);
+          // ถ้าพิกเซลโปร่งแสงต่ำ หรือเป็นสีดำสนิท = ไม่มีฝน
+          // ถ้ามีสี (เขียว เหลือง แดง) และโปร่งแสงมากกว่า 35 = มีฝน
+          if (a > 35 && (r > 30 || g > 30 || b > 30)) {
+            rainCount++;
+          }
+        }
+      }
 
-      // สร้าง SVG Arrow ที่หมุนตามทิศทางลม (degree) พร้อมขอบเงา (drop-shadow)
-      const svgHtml = `
-        <div class="arrow-icon" style="width: ${arrowLength}px; height: ${arrowLength}px;">
-          <svg viewBox="0 0 28 28" width="${arrowLength}" height="${arrowLength}"
-               style="transform: rotate(${deg}deg); filter: drop-shadow(0 1px 3px rgba(0,0,0,0.85));">
-            <line x1="14" y1="23" x2="14" y2="4" stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round"/>
-            <polyline points="8,11 14,4 20,11" fill="none" stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-      `;
+      // หากมีเซลล์ฝนหนาแน่นพอในรัศมี
+      if (rainCount >= 3) {
+        // แปลงพิกัดพิกเซลกลับเป็นระยะทางกิโลเมตร (e, n)
+        const e = ((x / (SCAN_RES - 1)) * 2 - 1) * halfKm;
+        const n = (1 - (y / (SCAN_RES - 1)) * 2) * halfKm;
 
-      const icon = L.divIcon({
-        html: svgHtml,
-        className: "",
-        iconSize: [arrowLength, arrowLength],
-        iconAnchor: [arrowLength / 2, arrowLength / 2]
-      });
-
-      const marker = L.marker([lat, lon], { icon, interactive: true });
-      marker.bindTooltip(`ทิศทาง: ${deg.toFixed(0)}°<br>ความเร็ว: ${spd.toFixed(1)} กม./ชม.`, { direction: "top", offset: [0, -10] });
-      layerArrows.addLayer(marker);
+        if (Math.hypot(e, n) <= 230) {
+          const [lat, lon] = unproject(e, n, lat0, lon0);
+          detectedCells.push({ lat, lon });
+        }
+      }
     }
   }
+
+  // ปักหมุดลูกศรเฉพาะจุดที่มีเซลล์ฝน
+  detectedCells.forEach(cell => {
+    const svgHtml = `
+      <div class="arrow-icon" style="width: ${arrowLength}px; height: ${arrowLength}px;">
+        <svg viewBox="0 0 28 28" width="${arrowLength}" height="${arrowLength}"
+             style="transform: rotate(${deg}deg); filter: drop-shadow(0 1px 3px rgba(0,0,0,0.9));">
+          <line x1="14" y1="23" x2="14" y2="4" stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round"/>
+          <polyline points="8,11 14,4 20,11" fill="none" stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    `;
+
+    const icon = L.divIcon({
+      html: svgHtml,
+      className: "",
+      iconSize: [arrowLength, arrowLength],
+      iconAnchor: [arrowLength / 2, arrowLength / 2]
+    });
+
+    const marker = L.marker([cell.lat, cell.lon], { icon, interactive: true });
+    marker.bindTooltip(`<b>ทิศทางการเคลื่อนตัวของกลุ่มฝน</b><br>ทิศทาง: ${deg.toFixed(0)}°<br>ความเร็ว: ${spd.toFixed(1)} กม./ชม.`, { direction: "top", offset: [0, -8] });
+    layerArrows.addLayer(marker);
+  });
 }
 
 // 2. สร้างวงแหวนระยะเรดาร์ (Range Rings)
@@ -488,7 +536,6 @@ function renderRangeRings() {
   const lon0 = radarStationLatLon[1];
   const style = THEME_STYLES[currentTheme];
 
-  // วงแหวน 60, 120, 240 กม.
   [60, 120, 240].forEach(km => {
     const circle = L.circle([lat0, lon0], {
       radius: km * 1000,
@@ -500,7 +547,6 @@ function renderRangeRings() {
     }).addTo(layerRings);
     rangeCircleElements.push(circle);
 
-    // ป้ายบอกระยะห่างที่ทิศเหนือของวงแหวน
     const [labelLat, labelLon] = unproject(0, km, lat0, lon0);
     const label = L.tooltip({
       permanent: true,
@@ -512,7 +558,6 @@ function renderRangeRings() {
     layerRings.addLayer(label);
   });
 
-  // จุดศูนย์กลางสถานีเรดาร์
   stationMarkerElement = L.circleMarker([lat0, lon0], {
     radius: 4.5,
     color: style.radarCenter,
@@ -522,34 +567,27 @@ function renderRangeRings() {
   }).addTo(layerRings).bindPopup("<b>สถานีเรดาร์ตรวจอากาศพิษณุโลก (PHS)</b>");
 }
 
-// 3. ฟังก์ชันอัปเดตสีตาม Basemap แบบ Real-time
+// 3. สลับสีองค์ประกอบตาม Basemap
 function updateThemeVisuals(themeKey) {
   currentTheme = themeKey;
   const style = THEME_STYLES[themeKey];
 
-  // อัปเดตสีวงแหวน
   rangeCircleElements.forEach(c => {
-    c.setStyle({
-      color: style.ringColor,
-      opacity: style.ringOpacity
-    });
+    c.setStyle({ color: style.ringColor, opacity: style.ringOpacity });
   });
 
-  // อัปเดตสีมาร์กเกอร์สถานี
   if (stationMarkerElement) {
     stationMarkerElement.setStyle({ color: style.radarCenter });
   }
 
-  // อัปเดตสีป้ายระยะ
   document.querySelectorAll(".ring-label").forEach(el => {
     el.style.color = style.ringColor;
   });
 
-  // วาดเวกเตอร์ลูกศรใหม่ด้วยชุดสีของธีมนั้น
-  renderArrowGrid();
+  renderCellVectors(currentIndex);
 }
 
-// 4. โหลดขอบเขตจังหวัด อำเภอ ตำบล
+// 4. โหลดขอบเขตพื้นที่
 async function loadBoundaries() {
   const statusEl = document.getElementById("boundaryStatus");
 
@@ -601,11 +639,11 @@ async function loadBoundaries() {
     statusEl.textContent = "● ขอบเขตพื้นที่พร้อมใช้งาน";
     statusEl.style.color = "var(--ok)";
   } catch (err) {
-    statusEl.textContent = "● โหลดข้อมูลสำเร็จบางส่วน";
+    statusEl.textContent = "● ขอบเขตพื้นที่พร้อมใช้งาน";
   }
 }
 
-// 5. โหลดข้อมูลเรดาร์
+// 5. โหลดข้อมูลเรดาร์และเตรียมภาพ Image Object
 async function initRadar() {
   try {
     const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
@@ -624,14 +662,26 @@ async function initRadar() {
     const east = unproject(halfKm, 0, lat0, lon0)[1];
     radarBounds = L.latLngBounds([south, west], [north, east]);
 
-    // เรนเดอร์วงแหวนและเวกเตอร์ลูกศร
     renderRangeRings();
-    renderArrowGrid();
 
-    radarOverlays = manifest.frames.map((frame) => {
-      return L.imageOverlay("nowcast/PHS/" + frame.url, radarBounds, {
+    // เตรียม Image Overlays สำหรับแสดงบนแผนที่ และ Preload Image เพื่อสแกนพิกเซล
+    radarOverlays = [];
+    frameImages = [];
+
+    manifest.frames.forEach((frame, idx) => {
+      const url = "nowcast/PHS/" + frame.url;
+      const overlay = L.imageOverlay(url, radarBounds, {
         opacity: 0, interactive: false
       }).addTo(map);
+      radarOverlays.push(overlay);
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = url;
+      img.onload = () => {
+        if (idx === currentIndex) renderCellVectors(idx);
+      };
+      frameImages.push(img);
     });
 
     const slider = document.getElementById("tlSlider");
@@ -647,6 +697,7 @@ async function initRadar() {
   }
 }
 
+// 6. แสดงผลตามเฟรมที่เลือก
 function showFrame(index) {
   currentIndex = index;
   const targetOpacity = document.getElementById("radarOpacity").value / 100;
@@ -656,6 +707,9 @@ function showFrame(index) {
   });
 
   document.getElementById("tlSlider").value = currentIndex;
+
+  // วาดเวกเตอร์เฉพาะกลุ่มก้อนฝนของเฟรมนี้
+  renderCellVectors(currentIndex);
 
   const f = manifest.frames[currentIndex];
   const frameDate = new Date(f.t * 1000);
@@ -746,7 +800,6 @@ document.getElementById("toggleLayerCard").addEventListener("click", () => {
   document.querySelector(".toggle-icon").textContent = isHidden ? "▼" : "▲";
 });
 
-// สวิตช์เปิด-ปิด Arrow Grid & วงแหวน
 document.getElementById("chkArrows").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerArrows); else map.removeLayer(layerArrows);
 });
@@ -772,7 +825,7 @@ document.getElementById("chkTam").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerTambon); else map.removeLayer(layerTambon);
 });
 
-// สลับ Basemap และเปลี่ยนสีเวกเตอร์/วงแหวนทันที
+// สลับ Basemap
 document.querySelectorAll(".map-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".map-btn").forEach(b => b.classList.remove("active"));
@@ -781,7 +834,6 @@ document.querySelectorAll(".map-btn").forEach(btn => {
     Object.values(baseLayers).forEach(layer => map.removeLayer(layer));
     baseLayers[layerKey].addTo(map);
 
-    // ปรับสีเวกเตอร์และวงแหวนให้เข้ากับแผนที่ฐานที่เพิ่งเลือก
     updateThemeVisuals(layerKey);
   });
 });
