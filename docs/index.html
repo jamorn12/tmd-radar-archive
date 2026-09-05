@@ -85,15 +85,27 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .custom-checkbox input, .layer-label-check input { accent-color: var(--accent); cursor: pointer; }
 .divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0; }
 
-/* Actionable Weather Card */
+/* Actionable Weather Card (รองรับโหมดย่อ-ขยาย) */
 .rail {
   position: absolute; top: 62px; left: 12px; width: 335px; z-index: 999;
   display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.3, 0.8, 0.3, 1);
 }
 .rail > * { pointer-events: auto; }
 
 .action-card { padding: 16px; border-radius: 16px; position: relative; }
-.ac-head { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--text-dim); margin-bottom: 6px; }
+.ac-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11.5px; color: var(--text-dim); margin-bottom: 6px;
+}
+.ac-head-left { display: flex; align-items: center; gap: 6px; }
+
+.ac-collapse-btn {
+  background: transparent; border: none; color: var(--text-dim); cursor: pointer;
+  font-size: 11px; padding: 2px 6px; border-radius: 6px; transition: all 0.2s;
+}
+.ac-collapse-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+
 .ac-status-badge {
   padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
   display: flex; align-items: center; gap: 5px;
@@ -125,7 +137,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 .ac-desc { font-size: 12px; color: var(--text-dim); line-height: 1.45; margin-bottom: 10px; }
 
-/* แถบปุ่มควบคุม GPS & แจ้งเตือนอัตโนมัติ */
 .ac-btn-row { display: flex; gap: 6px; margin-bottom: 8px; }
 .btn-loc-sm {
   flex: 1; padding: 7px 10px; border-radius: 9px;
@@ -148,6 +159,18 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 .opacity-box { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-dim); }
 .opacity-box input { width: 120px; accent-color: var(--accent); }
+
+/* สไตล์เมื่อหน้าต่างถูกย่อ (Collapsed Pill) */
+.rail.collapsed { width: fit-content; }
+.rail.collapsed .action-card { display: none; }
+.ac-pill {
+  display: none; padding: 8px 14px; border-radius: 999px;
+  align-items: center; gap: 8px; cursor: pointer; width: fit-content;
+  pointer-events: auto; user-select: none; transition: transform 0.2s;
+}
+.ac-pill:hover { transform: scale(1.03); }
+.rail.collapsed .ac-pill { display: flex; }
+.ac-pill-text { font-size: 12px; font-weight: 600; color: #fff; }
 
 /* สเกลสีเรดาร์ */
 .legend {
@@ -304,12 +327,16 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- Actionable Weather Card -->
-<div class="rail">
+<!-- Actionable Weather Card (รองรับการย่อ/ขยาย) -->
+<div class="rail" id="actionRail">
+  <!-- โหมดเต็ม -->
   <div class="action-card glass" id="actionCard">
     <div class="ac-head">
-      <span id="pinNameLabel">📍 ตำแหน่งตรวจวัด</span>
-      <span class="ac-status-badge badge-clear" id="statusBadge">● กำลังวิเคราะห์</span>
+      <div class="ac-head-left">
+        <span id="pinNameLabel">📍 ตำแหน่งตรวจวัด</span>
+        <span class="ac-status-badge badge-clear" id="statusBadge">● กำลังวิเคราะห์</span>
+      </div>
+      <button class="ac-collapse-btn" id="btnCollapseAc" title="ย่อหน้าต่าง">◀</button>
     </div>
 
     <div class="ac-headline" id="acHeadline">
@@ -346,7 +373,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
       แตะบนแผนที่เพื่อเลือกจุดตรวจวัด หรือกดปุ่มค้นหาตำแหน่ง GPS ของคุณ
     </div>
 
-    <!-- ปุ่ม GPS และปุ่มเปิดแจ้งเตือนฝนอัตโนมัติ -->
     <div class="ac-btn-row">
       <button class="btn-loc-sm" id="btnLoc">🎯 ตำแหน่งฉัน</button>
       <button class="btn-alert-sm" id="btnToggleAlert">🔔 แจ้งเตือนอัตโนมัติ</button>
@@ -356,6 +382,13 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
       <span>ความทึบเรดาร์:</span>
       <input type="range" id="radarOpacity" min="20" max="100" value="85">
     </div>
+  </div>
+
+  <!-- โหมดย่อ (Collapsed Pill) แสดงสรุปสถานะเมื่อย่อ -->
+  <div class="ac-pill glass" id="btnExpandAc" title="กดเพื่อขยายหน้าต่าง">
+    <span id="acPillBadge">🌤️</span>
+    <span class="ac-pill-text" id="acPillText">กำลังวิเคราะห์...</span>
+    <span style="font-size: 11px; color: var(--accent);">▶</span>
   </div>
 </div>
 
@@ -489,9 +522,8 @@ let userPinMarker = null;
 let rangeCircleElements = [];
 let stationMarkerElement = null;
 
-// ตัวแปรระบบแจ้งเตือนอัตโนมัติ (Auto-Alert System)
 let isAlertEnabled = localStorage.getItem("tanfon_alert_enabled") === "true";
-let lastAlertTimestamp = 0; // ป้องกันการเด้งเตือนซ้ำถี่เกินไป
+let lastAlertTimestamp = 0;
 
 const SCAN_RES = 160;
 const scanCanvas = document.createElement("canvas");
@@ -532,15 +564,14 @@ function formatThaiDateTime(dateObj, showFull = false) {
   return `${d} ${m} ${y} ${hh}:${mm} น.`;
 }
 
-// 1. ระบบเสียงเตือนอัจฉริยะ (Web Audio API Synthesizer)
 function playAlertChime() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine";
-    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-    osc.frequency.exponentialRampToValueAtTime(880.00, ctx.currentTime + 0.15); // A5
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880.00, ctx.currentTime + 0.15);
     gain.gain.setValueAtTime(0.3, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
     osc.connect(gain);
@@ -550,17 +581,13 @@ function playAlertChime() {
   } catch (e) {}
 }
 
-// 2. ส่ง Notification แจ้งเตือนเข้าเครื่องผู้ใช้
 function triggerRainNotification(etaMin, startStr, durationMin) {
   if (!isAlertEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
-
   const now = Date.now();
-  // ป้องกันการแจ้งซ้ำภายใน 30 นาที
   if (now - lastAlertTimestamp < 30 * 60 * 1000) return;
   lastAlertTimestamp = now;
 
   playAlertChime();
-
   const title = `🌧️ ทันฝน: ฝนจะเริ่มตกในอีก ${etaMin} นาที!`;
   const options = {
     body: `คาดว่าจะเริ่มตกเวลา ${startStr} (ตกต่อเนื่อง ~${durationMin} นาที) บริเวณตำแหน่งของคุณ`,
@@ -570,13 +597,10 @@ function triggerRainNotification(etaMin, startStr, durationMin) {
     tag: "tanfon-rain-alert",
     renotify: true
   };
-
-  try {
-    new Notification(title, options);
-  } catch (e) {}
+  try { new Notification(title, options); } catch (e) {}
 }
 
-// 3. วิเคราะห์ผลกระทบฝน (Upwind Raycasting)
+// วิเคราะห์ผลกระทบฝน (Upwind Raycasting)
 function analyzeImpactAtPoint(lat, lon) {
   layerTrajectory.clearLayers();
   if (!manifest || !manifest.motion || frameImages.length === 0) return;
@@ -637,6 +661,9 @@ function analyzeImpactAtPoint(lat, lon) {
   const descEl = document.getElementById("acDesc");
   const tlTrack = document.getElementById("acTlTrack");
 
+  const pillBadge = document.getElementById("acPillBadge");
+  const pillText = document.getElementById("acPillText");
+
   const nowTime = new Date();
 
   // ฝนกำลังตก
@@ -671,6 +698,9 @@ function analyzeImpactAtPoint(lat, lon) {
       <div class="ac-tl-seg-rain" style="width: 60%;"></div>
       <div class="ac-tl-seg-clear" style="width: 40%;"></div>
     `;
+
+    pillBadge.textContent = "☔";
+    pillText.textContent = `ฝนกำลังตก (อีก ~${remainingMin} น.)`;
     return;
   }
 
@@ -731,6 +761,9 @@ function analyzeImpactAtPoint(lat, lon) {
       <div class="ac-tl-seg-clear" style="width: ${endPct}%;"></div>
     `;
 
+    pillBadge.textContent = "🌧️";
+    pillText.textContent = `ฝนจะเข้าในอีก ${etaMin} นาที`;
+
     const rad = deg * Math.PI / 180;
     const [cloudLat, cloudLon] = unproject(pinE - Math.sin(rad) * hitDistFront, pinN - Math.cos(rad) * hitDistFront, lat0, lon0);
     const style = THEME_STYLES[currentTheme];
@@ -746,7 +779,6 @@ function analyzeImpactAtPoint(lat, lon) {
       permanent: true, direction: "center", className: "map-label"
     });
 
-    // ส่งแจ้งเตือนอัตโนมัติหากผู้ใช้เปิดสวิตช์ไว้
     if (etaMin <= 60) {
       triggerRainNotification(etaMin, startStr, durationMin);
     }
@@ -763,6 +795,9 @@ function analyzeImpactAtPoint(lat, lon) {
   valEtd.textContent = "—";
   descEl.textContent = `จากการวิเคราะห์ทิศทางและแนวพัดของลม ไม่พบเซลล์ฝนที่กำลังเคลื่อนตัวเข้าหาจุดนี้ใน 1 ชั่วโมงข้างหน้า`;
   tlTrack.innerHTML = `<div class="ac-tl-seg-clear" style="width: 100%;"></div>`;
+
+  pillBadge.textContent = "🌤️";
+  pillText.textContent = "ไม่มีฝนใน 60 นาที";
 }
 
 function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") {
@@ -1007,11 +1042,8 @@ async function initRadar() {
     const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
     showFrame(nowIdx >= 0 ? nowIdx : manifest.frames.length - 1);
 
-    // ปักหมุดเริ่มต้น
     setInspectionPoint(lat0, lon0, "สถานีเรดาร์ PHS");
     updateFooterStatus();
-
-    // พยายามดึง GPS อัตโนมัติหากผู้ใช้เคยอนุญาตไว้
     autoDetectGPS();
   } catch (err) {
     document.getElementById("tlFullTitle").textContent = "📡 เชื่อมต่อฐานข้อมูลเรดาร์ล้มเหลว";
@@ -1097,6 +1129,15 @@ document.getElementById("btnExpandTl").addEventListener("click", () => {
   document.getElementById("timelineBox").classList.remove("collapsed");
 });
 
+// จัดการย่อ / ขยาย Action Card (ปุ่มย่อหน้าต่าง)
+document.getElementById("btnCollapseAc").addEventListener("click", () => {
+  document.getElementById("actionRail").classList.add("collapsed");
+});
+
+document.getElementById("btnExpandAc").addEventListener("click", () => {
+  document.getElementById("actionRail").classList.remove("collapsed");
+});
+
 document.getElementById("toggleLayerCard").addEventListener("click", () => {
   const body = document.getElementById("layerBody");
   const isHidden = body.style.display === "none";
@@ -1145,12 +1186,12 @@ document.getElementById("radarOpacity").addEventListener("input", (e) => {
   radarOverlays[currentIndex].setOpacity(targetOpacity);
 });
 
-// ดึง GPS ผู้ใช้
 function autoDetectGPS() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition((pos) => {
       const userLat = pos.coords.latitude;
       const userLon = pos.coords.longitude;
+      map.setView([userLat, userLon], 10);
       setInspectionPoint(userLat, userLon, "ตำแหน่งของคุณ (GPS)");
     }, () => {}, { timeout: 4000 });
   }
@@ -1168,7 +1209,6 @@ document.getElementById("btnLoc").addEventListener("click", () => {
   });
 });
 
-// จัดการปุ่มเปิด-ปิดแจ้งเตือนอัตโนมัติ (Auto-Alert Switch)
 const btnAlert = document.getElementById("btnToggleAlert");
 function syncAlertBtnUI() {
   if (isAlertEnabled) {
@@ -1208,7 +1248,6 @@ btnAlert.addEventListener("click", async () => {
   }
 });
 
-// ตั้งเวลาตรวจเช็กข้อมูลเรดาร์และคำนวณฝนใหม่อัตโนมัติทุกๆ 3 นาที (Auto-Polling Loop)
 setInterval(async () => {
   try {
     const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
