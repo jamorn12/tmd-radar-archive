@@ -174,7 +174,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 /* Animated Weather SVGs */
 .weather-anim-svg { width: 36px; height: 36px; display: block; overflow: visible; }
 .ac-weather-icon-box { width: 38px; height: 38px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-.ac-pill-icon { width: 24px; height: 24px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.ac-pill-icon { width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 
 @keyframes cloud-float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-2px); } }
 .anim-cloud { animation: cloud-float 3.5s ease-in-out infinite; }
@@ -189,7 +189,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 @keyframes lightning-strike { 0%, 88%, 100% { opacity: 0; filter: none; } 90%, 94% { opacity: 1; filter: drop-shadow(0 0 6px #FBBF24); } }
 .anim-lightning { animation: lightning-strike 3.2s ease-in-out infinite; }
 
-/* Top Bar */
+/* Top Bar (Desktop Default) */
 .top-bar {
   position: absolute; top: 12px; left: 12px; right: 12px; z-index: 1000;
   display: flex; gap: 8px; align-items: center; pointer-events: none;
@@ -215,7 +215,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .btn-open-telemetry:hover { background: rgba(16, 185, 129, 0.3); }
 
-/* แผงขอบเขตพื้นที่ & เวกเตอร์ (เริ่มต้นในสถานะ Collapsed) */
+/* แผงขอบเขตพื้นที่ & เวกเตอร์ */
 .layer-card {
   position: absolute; top: 62px; right: 12px; z-index: 999;
   width: 235px; padding: 12px 14px; font-size: 12px;
@@ -229,9 +229,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   font-weight: 600; color: var(--accent); cursor: pointer; user-select: none; margin-bottom: 6px;
   gap: 8px;
 }
-.layer-card.collapsed .layer-head {
-  margin-bottom: 0;
-}
+.layer-card.collapsed .layer-head { margin-bottom: 0; }
 .layer-head-title { display: flex; align-items: center; gap: 6px; }
 .layer-status { font-size: 10px; color: var(--ok); margin-bottom: 8px; display: block; }
 .layer-content { display: flex; flex-direction: column; gap: 8px; }
@@ -241,7 +239,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .custom-checkbox input, .layer-label-check input { accent-color: var(--accent); cursor: pointer; }
 .divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0; }
 
-/* Actionable Weather Card & Pill (เริ่มต้นในสถานะ Collapsed) */
+/* Actionable Weather Card & Pill */
 .rail {
   position: absolute; top: 62px; left: 12px; width: 345px; z-index: 999;
   display: flex; flex-direction: column; gap: 10px; pointer-events: none;
@@ -487,14 +485,128 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 .arrow-icon { display: flex; align-items: center; justify-content: center; pointer-events: none; }
 
+/* ==========================================================
+   Mobile Responsive Styles (แก้ปัญหา UI ซ้อนทับกันบนมือถือ 100%)
+   ========================================================== */
 @media (max-width: 768px) {
-  .rail { width: calc(100% - 24px); top: auto; bottom: 85px; }
-  .rail.collapsed { width: fit-content; top: 62px; bottom: auto; }
-  .layer-card { width: 195px; font-size: 11px; }
-  .layer-card.collapsed { width: fit-content; padding: 6px 12px; }
-  .telemetry-panel { width: calc(100% - 24px); left: 12px; right: 12px; top: 62px; bottom: 90px; }
+  /* 1. แถวบนสุด (Row 1): ชื่อแบรนด์ซ้าย + แถบ Basemap ขวา */
+  .top-bar {
+    top: 8px; left: 8px; right: 8px;
+    gap: 6px;
+  }
+  .brand {
+    padding: 4px 10px;
+    height: 32px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .brand span {
+    display: none !important; /* ซ่อน 'พิษณุโลก' เพื่อให้ 'ทันฝน' อยู่บรรทัดเดียวเสมอ */
+  }
+  .brand b { font-size: 13px; }
+
+  .map-switch {
+    margin-left: auto;
+    padding: 2px;
+    height: 32px;
+    max-width: calc(100vw - 110px);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .map-switch::-webkit-scrollbar { display: none; }
+  .map-btn {
+    padding: 4px 9px;
+    font-size: 11px;
+  }
+
+  /* 2. ย้ายปุ่ม 'ตารางน้ำฝน' ลงมาอยู่แถวที่ 2 คู่กับปุ่ม 'ชั้นข้อมูล' */
+  .btn-open-telemetry {
+    position: fixed !important;
+    top: 48px;
+    right: 98px;
+    height: 28px;
+    padding: 0 9px;
+    font-size: 11px;
+    z-index: 1000;
+    white-space: nowrap;
+    border-radius: 999px;
+  }
+
+  /* 3. แถวที่ 2 ฝั่งขวา: ปุ่ม 'ชั้นข้อมูล' */
+  .layer-card {
+    top: 48px; right: 8px;
+  }
+  .layer-card.collapsed {
+    top: 48px; right: 8px;
+    padding: 0 9px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+  }
+  .layer-card.collapsed .layer-head {
+    font-size: 11px;
+    gap: 4px;
+    margin-bottom: 0;
+  }
+
+  /* 4. แถวที่ 2 ฝั่งซ้าย: ป้ายสถานะสภาพอากาศ */
+  .rail {
+    top: 48px; left: 8px;
+    width: calc(100% - 16px);
+  }
+  .rail.collapsed {
+    top: 48px; left: 8px;
+    width: fit-content;
+    max-width: calc(100vw - 200px); /* เว้นที่ให้สองปุ่มฝั่งขวา */
+  }
+  .ac-pill {
+    padding: 0 9px;
+    height: 28px;
+    gap: 5px;
+  }
+  .ac-pill-text {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 105px;
+  }
+  .ac-pill-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* 5. เมื่อกางหน้าต่างใดหน้าต่างหนึ่งออกมาเต็มจอ */
+  .rail:not(.collapsed) {
+    top: 48px; left: 8px; right: 8px;
+    width: calc(100% - 16px);
+    z-index: 1005;
+  }
+  .layer-card:not(.collapsed) {
+    top: 48px; left: 8px; right: 8px;
+    width: calc(100% - 16px);
+    z-index: 1006;
+  }
+  .telemetry-panel {
+    top: 48px; left: 8px; right: 8px;
+    bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+    width: calc(100% - 16px);
+    z-index: 1007;
+  }
+
+  /* 6. แถบเลื่อนเวลาและสเกลสีด้านล่าง */
+  .timeline-container {
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    width: calc(100% - 16px);
+  }
+  .tl-pill {
+    padding: 5px 12px;
+    height: 32px;
+    gap: 8px;
+  }
+  .tl-pill-text { font-size: 11.5px; }
+
   .legend { display: none; }
-  .map-switch { overflow-x: auto; max-width: 45vw; }
 }
 </style>
 </head>
@@ -527,7 +639,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   <div class="layer-head" id="toggleLayerCard">
     <div class="layer-head-title">
       <i data-lucide="layers" class="icon-sm"></i>
-      <span>ชั้นข้อมูล & เวกเตอร์</span>
+      <span>ชั้นข้อมูล</span>
     </div>
     <i data-lucide="chevron-down" id="layerToggleIcon" class="icon-xs"></i>
   </div>
@@ -1030,12 +1142,12 @@ function unproject(E, Nn, lat0, lon0) {
 function project(lat, lon, lat0, lon0) {
   const p = lat * Math.PI / 180, l = lon * Math.PI / 180;
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
-  const cosC = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(p) * Math.cos(l - l0);
+  const cosC = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(l - l0);
   const c = Math.acos(Math.min(1, Math.max(-1, cosC)));
   if (c < 1e-9) return [0, 0];
   const k = c / Math.sin(c);
   const E = R_EARTH * k * Math.cos(p) * Math.sin(l - l0);
-  const Nn = R_EARTH * k * (Math.cos(p0) * Math.sin(p) - Math.sin(p0) * Math.cos(p) * Math.cos(l - l0));
+  const Nn = R_EARTH * k * (Math.cos(p0) * Math.sin(p) - Math.sin(p0) * Math.cos(l - l0));
   return [E, Nn];
 }
 
@@ -1235,7 +1347,7 @@ function updateTelemetryStationValues() {
   renderTelemetryPanelList();
 }
 
-// 3. เรนเดอร์ลิสต์ตารางจัดอันดับน้ำฝน 1h, 3h, 6h, 24h
+// 3. ฟังก์ชันเรนเดอร์ลิสต์ตารางจัดอันดับน้ำฝน 1h, 3h, 6h, 24h
 function renderTelemetryPanelList() {
   const container = document.getElementById("telemetryStationList");
   if (!container) return;
@@ -1825,7 +1937,6 @@ function renderRadarMask() {
   const lon0 = radarStationLatLon[1];
   const radiusKm = 240;
 
-  // กรอบขอบเขตผืนโลกด้านนอก
   const worldOuterCoords = [
     [-85, -180],
     [-85, 180],
@@ -1833,7 +1944,6 @@ function renderRadarMask() {
     [85, -180]
   ];
 
-  // รูเจาะวงกลมรัศมี 240 กม.
   const holeCoords = [];
   const numPoints = 120;
   for (let i = 0; i < numPoints; i++) {
@@ -1848,7 +1958,6 @@ function renderRadarMask() {
   const maskColor = style.maskColor || "#050B14";
   const maskOpacity = style.maskOpacity !== undefined ? style.maskOpacity : 0.75;
 
-  // วาดโพลีกอนคลุมด้านนอกโดยเจาะรูกึ่งกลาง 240 กม.
   radarMaskPolygon = L.polygon([worldOuterCoords, holeCoords], {
     stroke: false,
     fillColor: maskColor,
@@ -1901,7 +2010,6 @@ function renderRangeRings() {
   renderRadarMask();
 }
 
-// อัปเดตสีตาม Basemap อัตโนมัติ ทั้งวงแหวน, ป้ายแคปซูล และ Radar Mask
 function updateThemeVisuals(themeKey) {
   currentTheme = themeKey;
   const style = THEME_STYLES[themeKey];
