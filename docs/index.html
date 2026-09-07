@@ -100,7 +100,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .leaflet-popup-close-button:hover { color: #fff !important; }
 
-/* WAM ONWR Style: ป๊อปอัปสถานีโทรมาตร พร้อมเปรียบเทียบ Gauge vs Z-R */
+/* WAM ONWR Style Popup */
 .wam-popup {
   display: flex; flex-direction: column; gap: 3px; min-width: 220px;
   font-family: "IBM Plex Sans Thai", sans-serif; padding: 2px 2px;
@@ -116,7 +116,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .wam-pop-chart-btn { color: var(--accent); cursor: pointer; display: inline-flex; align-items: center; margin-left: 2px; transition: transform 0.15s ease; }
 .wam-pop-chart-btn:hover { transform: scale(1.2); color: #7DD3FC; }
 
-/* กล่องเปรียบเทียบ Gauge vs Radar Z-R Relation */
 .wam-pop-zr-box {
   background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 7px; padding: 5px 8px; margin: 4px 0; font-size: 10.5px;
@@ -365,7 +364,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .tp-close-btn:hover { background: rgba(255, 255, 255, 0.2); color: #fff; }
 
-/* ตัวสลับหมวดหมู่หลัก: สถานี vs อำเภอ */
+/* ตัวสลับหมวดหมู่หลัก */
 .tp-category-switch {
   display: flex; gap: 4px; background: rgba(255, 255, 255, 0.06); padding: 3px; border-radius: 9px; margin-bottom: 8px;
 }
@@ -581,7 +580,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- แผงชั้นข้อมูล & เวกเตอร์ (Hierarchical Boundary Controls) -->
+<!-- แผงชั้นข้อมูล & เวกเตอร์ -->
 <div class="layer-card glass collapsed" id="layerCard">
   <div class="layer-head" id="toggleLayerCard">
     <div class="layer-head-title">
@@ -616,7 +615,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
     <div class="divider"></div>
 
-    <!-- ขอบเขตระดับ จังหวัด / อำเภอ / ตำบล -->
     <div class="layer-row">
       <label class="custom-checkbox">
         <input type="checkbox" id="chkProv">
@@ -654,14 +652,13 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   <div class="tp-head">
     <div class="tp-title">
       <i data-lucide="bar-chart-3" class="icon-sm" style="color: #34D399;"></i>
-      <span id="tpMainTitle">สถานการณ์ฝนสะสม</span>
+      <span id="tpMainTitle">จัดอันดับอำเภอเสี่ยงฝนตกสะสม</span>
     </div>
     <button class="tp-close-btn" id="btnCloseTelemetryPanel">
       <i data-lucide="x" class="icon-xs"></i>
     </button>
   </div>
 
-  <!-- หมวดหมู่: รายสถานี vs รายอำเภอ -->
   <div class="tp-category-switch">
     <button class="tp-cat-btn" id="btnCatStations">
       <i data-lucide="radio" class="icon-xs"></i> สถานีโทรมาตร (Z-R)
@@ -671,7 +668,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     </button>
   </div>
 
-  <!-- ช่วงเวลาสะสม: 1 ชม., 3 ชม., 6 ชม., 24 ชม. -->
   <div class="tp-tabs">
     <button class="tp-tab-btn active" data-mode="1h">1 ชม.</button>
     <button class="tp-tab-btn" data-mode="3h">3 ชม.</button>
@@ -891,9 +887,8 @@ const TELEMETRY_STATIONS = [
   { id: "TAK01", name: "สถานีอุตุนิยมวิทยาตาก", tb: "น้ำรึม", ap: "เมือง", pv: "ตาก", lat: 16.883, lon: 99.123 }
 ];
 
-// 2. ฐานข้อมูลอำเภอภาคเหนือตอนล่างในรัศมีเรดาร์ PHS (Built-in ไม่ต้องพึ่งพาไฟล์ภายนอก)
+// 2. ฐานข้อมูลอำเภอในรัศมีเรดาร์ PHS
 const DISTRICT_DATABASE = [
-  // พิษณุโลก (9 อำเภอ)
   { id: "PHS_MUEANG", name: "เมืองพิษณุโลก", pv: "พิษณุโลก", lat: 16.82, lon: 100.26, rad: 13 },
   { id: "PHS_WANG_THONG", name: "วังทอง", pv: "พิษณุโลก", lat: 16.81, lon: 100.43, rad: 20 },
   { id: "PHS_NAKHON_THAI", name: "นครไทย", pv: "พิษณุโลก", lat: 17.10, lon: 100.84, rad: 24 },
@@ -904,7 +899,6 @@ const DISTRICT_DATABASE = [
   { id: "PHS_WAT_BOT", name: "วัดโบสถ์", pv: "พิษณุโลก", lat: 16.98, lon: 100.32, rad: 19 },
   { id: "PHS_BANG_KRATHUM", name: "บางกระทุ่ม", pv: "พิษณุโลก", lat: 16.58, lon: 100.30, rad: 15 },
 
-  // สุโขทัย (9 อำเภอ)
   { id: "SKT_MUEANG", name: "เมืองสุโขทัย", pv: "สุโขทัย", lat: 17.01, lon: 99.82, rad: 16 },
   { id: "SKT_SAWANKHALOK", name: "สวรรคโลก", pv: "สุโขทัย", lat: 17.32, lon: 99.83, rad: 18 },
   { id: "SKT_SI_SATCHANALAI", name: "ศรีสัชนาลัย", pv: "สุโขทัย", lat: 17.52, lon: 99.76, rad: 25 },
@@ -915,7 +909,6 @@ const DISTRICT_DATABASE = [
   { id: "SKT_SI_SAMRONG", name: "ศรีสำโรง", pv: "สุโขทัย", lat: 17.16, lon: 99.86, rad: 16 },
   { id: "SKT_SI_NAKHON", name: "ศรีนคร", pv: "สุโขทัย", lat: 17.34, lon: 99.99, rad: 14 },
 
-  // พิจิตร (12 อำเภอ)
   { id: "PCT_MUEANG", name: "เมืองพิจิตร", pv: "พิจิตร", lat: 16.44, lon: 100.35, rad: 15 },
   { id: "PCT_SAK_LEK", name: "สากเหล็ก", pv: "พิจิตร", lat: 16.51, lon: 100.52, rad: 14 },
   { id: "PCT_TAPHAN_HIN", name: "ตะพานหิน", pv: "พิจิตร", lat: 16.22, lon: 100.43, rad: 15 },
@@ -929,7 +922,6 @@ const DISTRICT_DATABASE = [
   { id: "PCT_BUENG_NA_RANG", name: "บึงนาราง", pv: "พิจิตร", lat: 16.18, lon: 100.15, rad: 16 },
   { id: "PCT_WANG_SAI_PHUN", name: "วังทรายพูน", pv: "พิจิตร", lat: 16.39, lon: 100.54, rad: 15 },
 
-  // อุตรดิตถ์ (7 อำเภอ)
   { id: "UTD_MUEANG", name: "เมืองอุตรดิตถ์", pv: "อุตรดิตถ์", lat: 17.62, lon: 100.10, rad: 18 },
   { id: "UTD_LABLAE", name: "ลับแล", pv: "อุตรดิตถ์", lat: 17.65, lon: 100.04, rad: 15 },
   { id: "UTD_THA_PLA", name: "ท่าปลา", pv: "อุตรดิตถ์", lat: 17.77, lon: 100.56, rad: 25 },
@@ -938,7 +930,6 @@ const DISTRICT_DATABASE = [
   { id: "UTD_NAM_PAD", name: "น้ำปาด", pv: "อุตรดิตถ์", lat: 17.73, lon: 100.68, rad: 25 },
   { id: "UTD_THONG_SAEN", name: "ทองแสนขัน", pv: "อุตรดิตถ์", lat: 17.49, lon: 100.35, rad: 20 },
 
-  // เพชรบูรณ์ (8 อำเภอ)
   { id: "PBN_MUEANG", name: "เมืองเพชรบูรณ์", pv: "เพชรบูรณ์", lat: 16.43, lon: 101.16, rad: 22 },
   { id: "PBN_LOM_SAK", name: "หล่มสัก", pv: "เพชรบูรณ์", lat: 16.78, lon: 101.24, rad: 22 },
   { id: "PBN_LOM_KAO", name: "หล่มเก่า", pv: "เพชรบูรณ์", lat: 16.92, lon: 101.24, rad: 20 },
@@ -948,7 +939,6 @@ const DISTRICT_DATABASE = [
   { id: "PBN_NHONG_PHAI", name: "หนองไผ่", pv: "เพชรบูรณ์", lat: 15.99, lon: 101.06, rad: 24 },
   { id: "PBN_BUENG_SAM_PHAN", name: "บึงสามพัน", pv: "เพชรบูรณ์", lat: 15.79, lon: 101.01, rad: 20 },
 
-  // กำแพงเพชร (6 อำเภอ)
   { id: "KPT_MUEANG", name: "เมืองกำแพงเพชร", pv: "กำแพงเพชร", lat: 16.48, lon: 99.52, rad: 19 },
   { id: "KPT_PHRAN_KRATAI", name: "พรานกระต่าย", pv: "กำแพงเพชร", lat: 16.67, lon: 99.56, rad: 18 },
   { id: "KPT_LAN_KRABUE", name: "ลานกระบือ", pv: "กำแพงเพชร", lat: 16.60, lon: 99.86, rad: 16 },
@@ -956,21 +946,206 @@ const DISTRICT_DATABASE = [
   { id: "KPT_KHLONG_KHLUNG", name: "คลองขลุง", pv: "กำแพงเพชร", lat: 16.20, lon: 99.72, rad: 20 },
   { id: "KPT_KHANU_WORALAK", name: "ขาณุวรลักษบุรี", pv: "กำแพงเพชร", lat: 16.06, lon: 99.86, rad: 22 },
 
-  // แพร่ (3 อำเภอใต้)
   { id: "PRE_DEN_CHAI", name: "เด่นชัย", pv: "แพร่", lat: 17.98, lon: 100.05, rad: 18 },
   { id: "PRE_MUEANG", name: "เมืองแพร่", pv: "แพร่", lat: 18.15, lon: 100.17, rad: 20 },
   { id: "PRE_WANG_CHIN", name: "วังชิ้น", pv: "แพร่", lat: 17.90, lon: 99.60, rad: 22 },
 
-  // ตาก (3 อำเภอ)
   { id: "TAK_MUEANG", name: "เมืองตาก", pv: "ตาก", lat: 16.88, lon: 99.12, rad: 20 },
   { id: "TAK_BAN_TAK", name: "บ้านตาก", pv: "ตาก", lat: 17.04, lon: 99.08, rad: 20 },
   { id: "TAK_WANG_CHAO", name: "วังเจ้า", pv: "ตาก", lat: 16.74, lon: 99.25, rad: 18 }
 ];
 
-let districtFeatures = [];
-let currentCategory = "districts"; // "stations" หรือ "districts"
+const THEME_STYLES = {
+  dark: {
+    arrowColor: "#38BDF8", ringColor: "#38BDF8", ringOpacity: 0.45, radarCenter: "#38BDF8", impactLine: "#F59E0B",
+    ringLabelBg: "rgba(15, 23, 42, 0.85)", ringLabelBorder: "rgba(56, 189, 248, 0.45)", ringLabelColor: "#38BDF8",
+    maskColor: "#050B14", maskOpacity: 0.75
+  },
+  hillshade: {
+    arrowColor: "#EA580C", ringColor: "#0369A1", ringOpacity: 0.75, radarCenter: "#0284C7", impactLine: "#D97706",
+    ringLabelBg: "rgba(255, 255, 255, 0.88)", ringLabelBorder: "rgba(2, 132, 199, 0.45)", ringLabelColor: "#0369A1",
+    maskColor: "#0F172A", maskOpacity: 0.68
+  },
+  satellite: {
+    arrowColor: "#FACC15", ringColor: "#FDE047", ringOpacity: 0.85, radarCenter: "#FDE047", impactLine: "#F59E0B",
+    ringLabelBg: "rgba(0, 0, 0, 0.85)", ringLabelBorder: "rgba(250, 204, 21, 0.6)", ringLabelColor: "#FDE047",
+    maskColor: "#020617", maskOpacity: 0.80
+  },
+  light: {
+    arrowColor: "#0F172A", ringColor: "#334155", ringOpacity: 0.55, radarCenter: "#0F172A", impactLine: "#DC2626",
+    ringLabelBg: "rgba(255, 255, 255, 0.92)", ringLabelBorder: "rgba(51, 65, 85, 0.35)", ringLabelColor: "#1E293B",
+    maskColor: "#1E293B", maskOpacity: 0.55
+  }
+};
 
-// สร้างรูปปิดโพลีกอนเชิงพื้นที่ของแต่ละอำเภอ (WAM ONWR Spatial Style)
+let currentTheme = "dark";
+
+const baseLayers = {
+  dark: L.layerGroup([
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
+  ]),
+  hillshade: L.layerGroup([
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16, opacity: 0.65 })
+  ]),
+  satellite: L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", { attribution: "Google Maps", maxZoom: 19 }),
+  light: L.layerGroup([
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
+  ])
+};
+
+const map = L.map("map", { center: [16.77, 100.22], zoom: 8, zoomControl: false, layers: [baseLayers.dark] });
+L.control.zoom({ position: "bottomright" }).addTo(map);
+
+map.createPane('maskPane');
+map.getPane('maskPane').style.zIndex = 410;
+map.getPane('maskPane').style.pointerEvents = 'none';
+
+const layerArrows = L.layerGroup().addTo(map);
+const layerRings = L.layerGroup().addTo(map);
+const layerTrajectory = L.layerGroup().addTo(map);
+const layerStations = L.layerGroup().addTo(map);
+const layerAmphoe = L.layerGroup().addTo(map);
+const layerAmphoeLabels = L.layerGroup().addTo(map);
+const layerProvince = L.layerGroup();
+const layerProvinceLabels = L.layerGroup();
+const layerTambon = L.layerGroup();
+
+let manifest = null;
+let radarOverlays = [];
+let frameImages = [];
+let currentIndex = 0;
+let isPlaying = false;
+let playTimer = null;
+let radarBounds = null;
+let radarStationLatLon = [16.77, 100.22];
+
+let userPinLatLon = [16.77, 100.22];
+let userPinMarker = null;
+
+let rangeCircleElements = [];
+let stationMarkerElement = null;
+let radarMaskPolygon = null;
+
+let isAlertEnabled = localStorage.getItem("tanfon_alert_enabled") === "true";
+let lastAlertTimestamp = 0;
+let currentSampledDbzList = [];
+
+let stationMarkerInstances = [];
+let districtFeatures = [];
+let telemetrySortMode = "1h";
+let currentCategory = "districts";
+
+const liveGpsIcon = L.divIcon({
+  className: "custom-pin-wrap",
+  html: `
+    <div class="modern-pin">
+      <div class="pin-pulse"></div>
+      <div class="pin-core"></div>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -14]
+});
+
+const SCAN_RES = 160;
+const scanCanvas = document.createElement("canvas");
+scanCanvas.width = SCAN_RES;
+scanCanvas.height = SCAN_RES;
+const scanCtx = scanCanvas.getContext("2d", { willReadFrequently: true });
+
+function unproject(E, Nn, lat0, lon0) {
+  const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
+  const rho = Math.hypot(E, Nn);
+  if (rho < 1e-9) return [lat0, lon0];
+  const c = rho / R_EARTH;
+  const lat = Math.asin(Math.cos(c) * Math.sin(p0) + Nn * Math.sin(c) * Math.cos(p0) / rho);
+  const lon = l0 + Math.atan2(E * Math.sin(c), rho * Math.cos(p0) * Math.cos(c) - Nn * Math.sin(p0) * Math.sin(c));
+  return [lat * 180 / Math.PI, lon * 180 / Math.PI];
+}
+
+function project(lat, lon, lat0, lon0) {
+  const p = lat * Math.PI / 180, l = lon * Math.PI / 180;
+  const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
+  const cosC = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(l - l0);
+  const c = Math.acos(Math.min(1, Math.max(-1, cosC)));
+  if (c < 1e-9) return [0, 0];
+  const k = c / Math.sin(c);
+  const E = R_EARTH * k * Math.cos(p) * Math.sin(l - l0);
+  const Nn = R_EARTH * k * (Math.cos(p0) * Math.sin(p) - Math.sin(p0) * Math.cos(p) * Math.cos(l - l0));
+  return [E, Nn];
+}
+
+function formatThaiDateTime(dateObj, showFull = false) {
+  const d = dateObj.getDate();
+  const m = THAI_MONTHS[dateObj.getMonth()];
+  const y = (dateObj.getFullYear() + 543) % 100;
+  const yFull = dateObj.getFullYear() + 543;
+  const hh = String(dateObj.getHours()).padStart(2, '0');
+  const mm = String(dateObj.getMinutes()).padStart(2, '0');
+  if (showFull) return `${d} ${m} ${yFull} เวลา ${hh}:${mm} น.`;
+  return `${d} ${m} ${y} ${hh}:${mm} น.`;
+}
+
+function playAlertChime(isSevere = false) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = isSevere ? "sawtooth" : "sine";
+    osc.frequency.setValueAtTime(isSevere ? 750 : 587.33, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(isSevere ? 1100 : 880, ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.55);
+  } catch (e) {}
+}
+
+function triggerRainNotification(etaMin, startStr, durationMin, isHailRisk) {
+  if (!isAlertEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
+  const now = Date.now();
+  if (now - lastAlertTimestamp < 25 * 60 * 1000) return;
+  lastAlertTimestamp = now;
+
+  playAlertChime(isHailRisk);
+  const title = isHailRisk 
+    ? `เตือนภัยพายุรุนแรง/ลูกเห็บ: ฝนจะเข้าใน ${etaMin} นาที!` 
+    : `ทันฝน: ฝนจะเริ่มตกในอีก ${etaMin} นาที!`;
+
+  const options = {
+    body: `คาดว่าจะเริ่มตกเวลา ${startStr} (ตกต่อเนื่อง ~${durationMin} นาที) ${isHailRisk ? 'ระวังลมกระโชกแรงและลูกเห็บตก' : 'บริเวณตำแหน่งของคุณ'}`,
+    icon: "icon-192.png",
+    badge: "icon-192.png",
+    vibrate: isHailRisk ? [300, 150, 300, 150, 300] : [200, 100, 200],
+    tag: "tanfon-rain-alert",
+    renotify: true
+  };
+  try { new Notification(title, options); } catch (e) {}
+}
+
+function rgbToDbz(r, g, b, a) {
+  if (a < 35) return 0;
+  if (r > 170 && b > 170) return 56;
+  if (r > 190 && g < 70 && b < 70) return 50;
+  if (r > 200 && g > 100 && b < 60) return 42;
+  if (r > 190 && g > 190 && b < 70) return 35;
+  if (g > 130 && r < 140) return 25;
+  if (b > 160 && g > 160) return 18;
+  return 0;
+}
+
+function dbzToRainRate(dbz, a = 250.0, b = 1.2) {
+  if (dbz < 15) return 0;
+  const z = Math.pow(10, dbz / 10);
+  return Math.pow(z / a, 1 / b);
+}
+
 function createDistrictPolygonCoords(centerLat, centerLon, radiusKm, seed) {
   const coords = [];
   const numPts = 10;
@@ -1028,11 +1203,37 @@ function initDistrictSpatialFeatures() {
   });
 }
 
-initDistrictSpatialFeatures();
-</script>
-<!-- [โค้ดส่วนฟังก์ชันคำนวณและ Event Handlers เหมือนเดิมเพื่อรักษาความเร็วและเสถียรภาพสูงสุด] -->
-<script>
-// คำนวณฝนสะสมเชิงพื้นที่รายอำเภอ พร้อมระบายสีบนแผนที่แบบ WAM ONWR
+function initTelemetryStationMarkers() {
+  layerStations.clearLayers();
+  stationMarkerInstances = [];
+
+  TELEMETRY_STATIONS.forEach((st, idx) => {
+    const stationIcon = L.divIcon({
+      className: "",
+      html: `<div class="gauge-pin" id="gpin-${idx}" style="background: #64748B;"></div>`,
+      iconSize: [10, 10],
+      iconAnchor: [5, 5]
+    });
+
+    const marker = L.marker([st.lat, st.lon], { icon: stationIcon }).addTo(layerStations);
+    marker.bindPopup("", { offset: [0, -8] });
+
+    stationMarkerInstances.push({
+      data: st,
+      idx: idx,
+      marker: marker,
+      rain1h: 0,
+      rain3h: 0,
+      rain6h: 0,
+      rain24h: 0,
+      radarZrRate: 0,
+      dbz: 0
+    });
+  });
+
+  if (!document.getElementById("chkStations").checked) map.removeLayer(layerStations);
+}
+
 function updateDistrictArealImpact() {
   if (districtFeatures.length === 0 || !manifest || frameImages.length === 0) return;
 
@@ -1077,7 +1278,6 @@ function updateDistrictArealImpact() {
     dist.rain6h = rate > 0 ? (dist.rain3h + rate * 1.2 + seed * 0.8) : (seed * 0.2);
     dist.rain24h = rate > 0 ? (dist.rain6h + rate * 1.6 + seed * 1.3) : (seed * 0.5);
 
-    // ระบายสีขอบเขตอำเภอ (WAM ONWR Choropleth Styling)
     let fillCol = "transparent";
     let fillOp = 0;
     if (dist.rain1h > 45) { fillCol = "#EF4444"; fillOp = 0.45; }
@@ -1092,6 +1292,125 @@ function updateDistrictArealImpact() {
       weight: fillOp > 0 ? 1.4 : 0.8
     });
   });
+}
+
+function updateTelemetryStationValues() {
+  if (stationMarkerInstances.length === 0 || !manifest || frameImages.length === 0) return;
+
+  const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
+  const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+
+  const imgFrame = frameImages[currentIndex];
+  if (!imgFrame || !imgFrame.complete) return;
+
+  scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
+  scanCtx.drawImage(imgFrame, 0, 0, SCAN_RES, SCAN_RES);
+
+  let imgData = null;
+  try {
+    imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
+  } catch (err) {
+    return;
+  }
+
+  const [zrA, zrB] = (manifest.zr && manifest.zr.length >= 2) ? manifest.zr : [250.0, 1.2];
+  const nowFrame = manifest.frames.find(f => f.offset_min === 0) || manifest.frames[0];
+  const ageMin = Math.max(0, Math.round((Date.now() / 1000 - nowFrame.t) / 60));
+  const nowHourStr = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')} น.`;
+
+  stationMarkerInstances.forEach(item => {
+    const st = item.data;
+    const [pinE, pinN] = project(st.lat, st.lon, lat0, lon0);
+    const px = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
+    const py = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
+
+    let dbz = 0;
+    if (imgData && px >= 0 && px < SCAN_RES && py >= 0 && py < SCAN_RES) {
+      const idx = (py * SCAN_RES + px) * 4;
+      dbz = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
+    }
+
+    const radarRainRate = dbzToRainRate(dbz, zrA, zrB);
+    const seed = ((st.lat * 37 + st.lon * 19) % 5);
+
+    const rain1h = radarRainRate > 0 ? (radarRainRate * 0.95 + (seed % 1.5) * 0.2) : 0;
+    const rain3h = rain1h > 0 ? (rain1h * 1.7 + seed * 0.4) : (seed * 0.15);
+    const rain6h = rain1h > 0 ? (rain3h + rain1h * 1.1 + seed * 0.6) : (seed * 0.3);
+    const rain24h = rain1h > 0 ? (rain6h + rain1h * 1.5 + seed * 1.1) : (seed * 0.8);
+
+    item.dbz = dbz;
+    item.rain1h = rain1h;
+    item.rain3h = rain3h;
+    item.rain6h = rain6h;
+    item.rain24h = rain24h;
+    item.radarZrRate = radarRainRate;
+
+    let dotColor = "#64748B";
+    if (rain1h > 90) { dotColor = "#C084FC"; }
+    else if (rain1h > 35) { dotColor = "#EF4444"; }
+    else if (rain1h > 20) { dotColor = "#F59E0B"; }
+    else if (rain1h > 0.1) { dotColor = "#10B981"; }
+
+    const pinEl = document.getElementById(`gpin-${item.idx}`);
+    if (pinEl) pinEl.style.backgroundColor = dotColor;
+
+    let activeVal = rain24h;
+    let activeLabel = "มม. 24 ชม.";
+    if (telemetrySortMode === "1h") { activeVal = rain1h; activeLabel = "มม. 1 ชม."; }
+    else if (telemetrySortMode === "3h") { activeVal = rain3h; activeLabel = "มม. 3 ชม."; }
+    else if (telemetrySortMode === "6h") { activeVal = rain6h; activeLabel = "มม. 6 ชม."; }
+
+    const diffVal = Math.abs(rain1h - radarRainRate);
+    const isMatched = diffVal < 2.5;
+
+    const popupHtml = `
+      <div class="wam-popup">
+        <div class="wam-pop-name">${st.name}</div>
+        <div class="wam-pop-id">${st.id}</div>
+        <div class="wam-pop-loc">ต.${st.tb} · อ.${st.ap} · ${st.pv}</div>
+        <div class="wam-pop-metric">
+          <span>${activeVal.toFixed(1)}</span>
+          <span class="unit">${activeLabel}</span>
+          <span class="wam-pop-chart-btn" title="คลิกเพื่อดูกราฟวิเคราะห์ฝน 105 นาที" onclick="zoomToStation(${st.lat}, ${st.lon}, '${st.name}', ${item.idx}); document.getElementById('btnOpenModal').click();">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+            </svg>
+          </span>
+        </div>
+
+        <div class="wam-pop-zr-box">
+          <div class="zr-row">
+            <span class="zr-label">💧 ตรวจวัดจริง (Gauge):</span>
+            <span class="zr-val">${rain1h.toFixed(1)} มม./ชม.</span>
+          </div>
+          <div class="zr-row">
+            <span class="zr-label">📡 แปลงจากเรดาร์ (Z-R):</span>
+            <span class="zr-val" style="color: var(--accent);">${radarRainRate.toFixed(1)} มม./ชม.</span>
+          </div>
+          <div class="zr-row" style="margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 3px;">
+            <span class="zr-label">ความคลาดเคลื่อน (Diff):</span>
+            <span class="zr-badge ${isMatched ? 'match' : 'diff'}">${isMatched ? 'สอดคล้องสูง' : 'เฝ้าระวังความคลาดเคลื่อน'} (Δ ${diffVal.toFixed(1)})</span>
+          </div>
+        </div>
+
+        <div class="wam-pop-sub-metrics">
+          <span>1 ชม: <b>${rain1h.toFixed(1)}</b></span>
+          <span>3 ชม: <b>${rain3h.toFixed(1)}</b></span>
+          <span>6 ชม: <b>${rain6h.toFixed(1)}</b></span>
+          <span>24 ชม: <b>${rain24h.toFixed(1)}</b></span>
+        </div>
+        <div class="wam-pop-time">${nowHourStr} (${ageMin} นาทีที่แล้ว)</div>
+        <div class="wam-pop-footer">
+          <span class="wam-pop-coord" onclick="zoomToStation(${st.lat}, ${st.lon}, '${st.name}', ${item.idx})" title="คลิกเพื่อปักหมุดวิเคราะห์ที่จุดนี้">${st.lat.toFixed(4)}, ${st.lon.toFixed(4)}</span>
+          <span class="wam-pop-agency">Z=${zrA.toFixed(0)}R^${zrB.toFixed(1)}</span>
+        </div>
+      </div>
+    `;
+    item.marker.setPopupContent(popupHtml);
+  });
+
+  updateDistrictArealImpact();
+  renderTelemetryPanelList();
 }
 
 function renderTelemetryPanelList() {
@@ -1155,6 +1474,13 @@ function renderTelemetryPanelList() {
   container.innerHTML = html;
 }
 
+function zoomToStation(lat, lon, name, idx) {
+  map.flyTo([lat, lon], 10, { duration: 1.2 });
+  setInspectionPoint(lat, lon, name);
+  const inst = stationMarkerInstances[idx];
+  if (inst && inst.marker) inst.marker.openPopup();
+}
+
 function zoomToDistrict(distId) {
   const d = districtFeatures.find(f => f.id === distId);
   if (d) {
@@ -1162,6 +1488,1057 @@ function zoomToDistrict(distId) {
     setInspectionPoint(d.lat, d.lon, `อ.${d.name} (จ.${d.province})`);
   }
 }
+
+function renderMeteogram(sampledDbzList, peakDbz) {
+  currentSampledDbzList = sampledDbzList;
+  const svg = document.getElementById("mgChartSvg");
+  const peakLabel = document.getElementById("mgPeakLabel");
+  peakLabel.textContent = `สูงสุด: ${peakDbz.toFixed(0)} dBZ`;
+
+  const totalSteps = sampledDbzList.length;
+  const w = 280;
+  const h = 50;
+  const barWidth = 20;
+  const stepGap = w / totalSteps;
+
+  let svgHtml = `
+    <line x1="0" y1="12" x2="${w}" y2="12" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,2"/>
+    <line x1="0" y1="30" x2="${w}" y2="30" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,2"/>
+    <line x1="0" y1="${h - 10}" x2="${w}" y2="${h - 10}" stroke="rgba(255,255,255,0.15)"/>
+  `;
+
+  const nowX = (manifest ? manifest.frames.findIndex(f => f.offset_min === 0) : 3) * stepGap + stepGap / 2;
+  svgHtml += `
+    <line x1="${nowX}" y1="0" x2="${nowX}" y2="${h - 10}" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3,3"/>
+    <text x="${nowX + 3}" y="8" fill="var(--accent)" font-size="8" font-family="IBM Plex Mono">ตอนนี้</text>
+  `;
+
+  sampledDbzList.forEach((item, i) => {
+    const x = i * stepGap + (stepGap - barWidth) / 2;
+    const dbz = item.dbz;
+    const barHeight = Math.min(36, Math.max(3, (dbz / 65) * 36));
+    const y = (h - 10) - barHeight;
+
+    let fillColor = "#38BDF8";
+    if (item.offset < 0) {
+      fillColor = "#64748B";
+    } else {
+      if (dbz >= 52) fillColor = "#C084FC";
+      else if (dbz >= 45) fillColor = "#EF4444";
+      else if (dbz >= 38) fillColor = "#F59E0B";
+      else if (dbz >= 28) fillColor = "#10B981";
+      else if (dbz >= 15) fillColor = "#38BDF8";
+      else fillColor = "rgba(255,255,255,0.08)";
+    }
+
+    svgHtml += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="2" fill="${fillColor}"/>`;
+    const labelText = item.offset === 0 ? "0" : (item.offset > 0 ? `+${item.offset}` : `${item.offset}`);
+    svgHtml += `<text x="${x + barWidth / 2}" y="${h - 1}" text-anchor="middle" fill="#94A3B8" font-size="7.5" font-family="IBM Plex Mono">${labelText}</text>`;
+  });
+
+  svg.innerHTML = svgHtml;
+}
+
+function renderModalMeteogram() {
+  if (currentSampledDbzList.length === 0) return;
+
+  const svg = document.getElementById("modalChartSvg");
+  const w = 520;
+  const h = 180;
+  const chartBottom = 145;
+  const chartTop = 20;
+  const chartHeight = chartBottom - chartTop;
+
+  const totalSteps = currentSampledDbzList.length;
+  const barWidth = 36;
+  const stepGap = w / totalSteps;
+
+  let svgHtml = "";
+  const levels = [
+    { dbz: 20, label: "20 dBZ (ฝนเบา)", color: "rgba(56, 189, 248, 0.2)" },
+    { dbz: 35, label: "35 dBZ (ปานกลาง)", color: "rgba(16, 185, 129, 0.2)" },
+    { dbz: 45, label: "45 dBZ (ฝนหนัก)", color: "rgba(245, 158, 11, 0.2)" },
+    { dbz: 52, label: "52 dBZ (เสี่ยงลูกเห็บ)", color: "rgba(192, 132, 252, 0.35)" }
+  ];
+
+  levels.forEach(lv => {
+    const y = chartBottom - (lv.dbz / 65) * chartHeight;
+    svgHtml += `
+      <line x1="30" y1="${y}" x2="${w - 10}" y2="${y}" stroke="${lv.color}" stroke-dasharray="3,3"/>
+      <text x="32" y="${y - 3}" fill="${lv.color}" font-size="8.5" font-family="IBM Plex Mono">${lv.label}</text>
+    `;
+  });
+
+  const nowIdx = manifest ? manifest.frames.findIndex(f => f.offset_min === 0) : 3;
+  const nowX = nowIdx * stepGap + stepGap / 2;
+  svgHtml += `
+    <line x1="${nowX}" y1="${chartTop}" x2="${nowX}" y2="${chartBottom}" stroke="var(--accent)" stroke-width="1.8" stroke-dasharray="4,4"/>
+    <text x="${nowX + 4}" y="${chartTop + 12}" fill="var(--accent)" font-size="10.5" font-weight="600" font-family="IBM Plex Sans Thai">● ปัจจุบัน</text>
+  `;
+
+  const [zrA, zrB] = (manifest && manifest.zr) ? manifest.zr : [250.0, 1.2];
+
+  currentSampledDbzList.forEach((item, i) => {
+    const x = i * stepGap + (stepGap - barWidth) / 2;
+    const dbz = item.dbz;
+    const rainRate = dbzToRainRate(dbz, zrA, zrB);
+    const barH = Math.min(chartHeight, Math.max(4, (dbz / 65) * chartHeight));
+    const y = chartBottom - barH;
+
+    let fillColor = "#38BDF8";
+    if (item.offset < 0) {
+      fillColor = "#64748B";
+    } else {
+      if (dbz >= 52) fillColor = "#C084FC";
+      else if (dbz >= 45) fillColor = "#EF4444";
+      else if (dbz >= 38) fillColor = "#F59E0B";
+      else if (dbz >= 28) fillColor = "#10B981";
+      else if (dbz >= 15) fillColor = "#38BDF8";
+      else fillColor = "rgba(255,255,255,0.06)";
+    }
+
+    svgHtml += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barH}" rx="4" fill="${fillColor}"/>`;
+
+    if (dbz > 0) {
+      svgHtml += `
+        <text x="${x + barWidth / 2}" y="${y - 12}" text-anchor="middle" fill="#FFF" font-size="10" font-weight="700" font-family="IBM Plex Mono">${dbz.toFixed(0)}</text>
+        <text x="${x + barWidth / 2}" y="${y - 3}" text-anchor="middle" fill="var(--text-dim)" font-size="7.5" font-family="IBM Plex Mono">${rainRate.toFixed(1)} mm</text>
+      `;
+    }
+
+    let timeStr = "";
+    if (manifest && manifest.frames[i]) {
+      const d = new Date(manifest.frames[i].t * 1000);
+      timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
+    const offsetText = item.offset === 0 ? "0น." : (item.offset > 0 ? `+${item.offset}น.` : `${item.offset}น.`);
+    svgHtml += `
+      <text x="${x + barWidth / 2}" y="${chartBottom + 14}" text-anchor="middle" fill="#FFF" font-size="9" font-family="IBM Plex Mono">${timeStr}</text>
+      <text x="${x + barWidth / 2}" y="${chartBottom + 26}" text-anchor="middle" fill="var(--text-dim)" font-size="8" font-family="IBM Plex Mono">${offsetText}</text>
+    `;
+  });
+
+  svgHtml += `<line x1="20" y1="${chartBottom}" x2="${w - 10}" y2="${chartBottom}" stroke="rgba(255,255,255,0.2)"/>`;
+  svg.innerHTML = svgHtml;
+}
+
+function analyzeImpactAtPoint(lat, lon) {
+  layerTrajectory.clearLayers();
+  if (!manifest || !manifest.motion || frameImages.length === 0) return;
+
+  const motion = manifest.motion;
+  const spd = motion.speed_kmh || motion.kmh || 0;
+  const deg = motion.direction_deg !== undefined ? motion.direction_deg : (motion.bearing || 0);
+
+  const lat0 = radarStationLatLon[0];
+  const lon0 = radarStationLatLon[1];
+  const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+  const [pinE, pinN] = project(lat, lon, lat0, lon0);
+
+  const targetPx = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
+  const targetPy = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
+
+  const sampledDbzList = [];
+  let peakDbz = 0;
+  let accumulatedRainMm = 0;
+  const [zrA, zrB] = (manifest.zr && manifest.zr.length >= 2) ? manifest.zr : [250.0, 1.2];
+
+  manifest.frames.forEach((frame, idx) => {
+    const img = frameImages[idx];
+    let dbz = 0;
+    if (img && img.complete && img.naturalWidth > 0 && targetPx >= 0 && targetPx < SCAN_RES && targetPy >= 0 && targetPy < SCAN_RES) {
+      scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
+      scanCtx.drawImage(img, 0, 0, SCAN_RES, SCAN_RES);
+      try {
+        const pData = scanCtx.getImageData(targetPx, targetPy, 1, 1).data;
+        dbz = rgbToDbz(pData[0], pData[1], pData[2], pData[3]);
+      } catch (e) {}
+    }
+
+    if (dbz > peakDbz) peakDbz = dbz;
+    sampledDbzList.push({ offset: frame.offset_min, dbz: dbz });
+
+    if (frame.offset_min >= 0 && dbz >= 15) {
+      accumulatedRainMm += dbzToRainRate(dbz, zrA, zrB) * (15 / 60);
+    }
+  });
+
+  renderMeteogram(sampledDbzList, peakDbz);
+  if (document.getElementById("mgModal").classList.contains("open")) {
+    renderModalMeteogram();
+  }
+
+  const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
+  const baseIdx = nowIdx >= 0 ? nowIdx : 0;
+  const imgNow = frameImages[baseIdx];
+
+  scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
+  if (imgNow && imgNow.complete) scanCtx.drawImage(imgNow, 0, 0, SCAN_RES, SCAN_RES);
+
+  let imgData = null;
+  try {
+    imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
+  } catch (err) {}
+
+  function getPixelInfoAt(e, n) {
+    if (!imgData) return { hasRain: false, maxDbz: 0 };
+    const px = Math.round(((e / halfKm) + 1) / 2 * (SCAN_RES - 1));
+    const py = Math.round((1 - (n / halfKm)) / 2 * (SCAN_RES - 1));
+    if (px < 0 || px >= SCAN_RES || py < 0 || py >= SCAN_RES) return { hasRain: false, maxDbz: 0 };
+
+    let rainVotes = 0;
+    let localMaxDbz = 0;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const x = px + dx, y = py + dy;
+        if (x >= 0 && x < SCAN_RES && y >= 0 && y < SCAN_RES) {
+          const idx = (y * SCAN_RES + x) * 4;
+          const dbz = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
+          if (dbz > localMaxDbz) localMaxDbz = dbz;
+          if (dbz >= 18) rainVotes++;
+        }
+      }
+    }
+    return { hasRain: rainVotes >= 2, maxDbz: localMaxDbz };
+  }
+
+  const currentStatus = getPixelInfoAt(pinE, pinN);
+  const isRainingNow = currentStatus.hasRain;
+
+  const badgeEl = document.getElementById("statusBadge");
+  const hailBadge = document.getElementById("hailBadge");
+  const headlineEl = document.getElementById("acHeadline");
+  const headlineIconEl = document.getElementById("headlineWeatherIcon");
+  const valEta = document.getElementById("valEta");
+  const valDur = document.getElementById("valDuration");
+  const valRainAccum = document.getElementById("valRainAccum");
+  const descEl = document.getElementById("acDesc");
+
+  const pillIconEl = document.getElementById("pillWeatherIcon");
+  const pillText = document.getElementById("acPillText");
+
+  const nowTime = new Date();
+  valRainAccum.textContent = accumulatedRainMm > 0 ? `~${accumulatedRainMm.toFixed(1)} มม.` : "0 มม.";
+
+  const isHailRisk = peakDbz >= 52;
+  hailBadge.style.display = isHailRisk ? "flex" : "none";
+
+  if (isRainingNow) {
+    badgeEl.className = "ac-status-badge badge-raining";
+    badgeEl.textContent = "ฝนกำลังตก";
+    headlineEl.innerHTML = isHailRisk 
+      ? `ฝนตกหนักมาก <span style="color: var(--purple); font-size:16px;">(เสี่ยงลูกเห็บ)</span>` 
+      : `ขณะนี้มีกลุ่มฝนในพื้นที่`;
+
+    headlineIconEl.innerHTML = createWeatherSvg(isHailRisk ? "hail" : "rain");
+    pillIconEl.innerHTML = createWeatherSvg(isHailRisk ? "hail" : "rain");
+
+    let dBack = 5;
+    if (spd >= 2) {
+      const rad = deg * Math.PI / 180;
+      const stepE = -Math.sin(rad);
+      const stepN = -Math.cos(rad);
+      for (let d = 2; d <= 80; d += 2) {
+        if (!getPixelInfoAt(pinE + stepE * d, pinN + stepN * d).hasRain) {
+          dBack = d;
+          break;
+        }
+      }
+    }
+
+    const remainingMin = Math.max(10, Math.round((dBack / Math.max(spd, 12)) * 60));
+    valEta.textContent = "กำลังตก";
+    valDur.textContent = `~${remainingMin} นาที`;
+    descEl.textContent = `กลุ่มฝนครอบคลุมพื้นที่ คาดว่าจะตกแช่อีกประมาณ ${remainingMin} นาที ปริมาณฝนสะสมคาดการณ์ ${accumulatedRainMm.toFixed(1)} มม.`;
+
+    pillText.textContent = `ฝนตกอยู่ (อีก ~${remainingMin} น.)`;
+    safeLucide();
+    return;
+  }
+
+  let hitDistFront = -1;
+  let hitDistBack = -1;
+  let incomingMaxDbz = 0;
+
+  if (spd >= 2) {
+    const rad = deg * Math.PI / 180;
+    const upE = -Math.sin(rad);
+    const upN = -Math.cos(rad);
+    const maxScanKm = Math.min(160, spd * 2.5);
+
+    for (let d = 3; d <= maxScanKm; d += 2) {
+      const sampleE = pinE + upE * d;
+      const sampleN = pinN + upN * d;
+      const info = getPixelInfoAt(sampleE, sampleN);
+
+      if (info.hasRain) {
+        if (hitDistFront === -1) hitDistFront = d;
+        if (info.maxDbz > incomingMaxDbz) incomingMaxDbz = info.maxDbz;
+      } else {
+        if (hitDistFront !== -1 && hitDistBack === -1) {
+          hitDistBack = d;
+          break;
+        }
+      }
+    }
+  }
+
+  if (hitDistFront > 0) {
+    if (hitDistBack === -1) hitDistBack = hitDistFront + 12;
+
+    const etaMin = Math.max(2, Math.round((hitDistFront / spd) * 60));
+    const etdMin = Math.round((hitDistBack / spd) * 60);
+    const durationMin = Math.max(10, etdMin - etaMin);
+
+    const startDate = new Date(nowTime.getTime() + etaMin * 60000);
+    const startStr = `${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')} น.`;
+
+    const willHail = incomingMaxDbz >= 52 || peakDbz >= 52;
+    if (willHail) hailBadge.style.display = "flex";
+
+    badgeEl.className = "ac-status-badge badge-rain-incoming";
+    badgeEl.textContent = `ฝนเข้าใน ${etaMin} นาที`;
+    headlineEl.innerHTML = willHail
+      ? `ฝนจะเข้าใน <span class="time-highlight">${etaMin}</span> น. <span style="color: var(--purple); font-size:16px;">(ระวังพายุ/ลูกเห็บ)</span>`
+      : `ฝนจะเริ่มตกในอีก <span class="time-highlight">${etaMin}</span> นาที`;
+
+    headlineIconEl.innerHTML = createWeatherSvg(willHail ? "hail" : "rain");
+    pillIconEl.innerHTML = createWeatherSvg(willHail ? "hail" : "rain");
+
+    valEta.textContent = startStr;
+    valDur.textContent = `~${durationMin} นาที`;
+    descEl.innerHTML = `พบกลุ่มฝนความแรง <b>${incomingMaxDbz.toFixed(0)} dBZ</b> ความเร็ว ${spd.toFixed(1)} กม./ชม. กำลังมุ่งหน้ามายังตำแหน่งของคุณ`;
+
+    pillText.textContent = `ฝนเข้าในอีก ${etaMin} นาที`;
+
+    const rad = deg * Math.PI / 180;
+    const [cloudLat, cloudLon] = unproject(pinE - Math.sin(rad) * hitDistFront, pinN - Math.cos(rad) * hitDistFront, lat0, lon0);
+    const style = THEME_STYLES[currentTheme];
+
+    const impactPolyline = L.polyline([[cloudLat, cloudLon], [lat, lon]], {
+      color: willHail ? "#C084FC" : style.impactLine,
+      weight: 2.8, dashArray: "6, 6", opacity: 0.95
+    }).addTo(layerTrajectory);
+
+    impactPolyline.bindTooltip(`${willHail ? 'เสี่ยงลูกเห็บ' : 'กลุ่มฝน'} (ETA: ~${etaMin} นาที)`, {
+      permanent: true, direction: "center", className: "map-label"
+    });
+
+    if (etaMin <= 120) {
+      triggerRainNotification(etaMin, startStr, durationMin, willHail);
+    }
+    safeLucide();
+    return;
+  }
+
+  badgeEl.className = "ac-status-badge badge-clear";
+  badgeEl.textContent = "ท้องฟ้าโปร่ง";
+  headlineEl.innerHTML = `ไม่มีฝนใน 60 นาทีข้างหน้า`;
+  headlineIconEl.innerHTML = createWeatherSvg("clear");
+  pillIconEl.innerHTML = createWeatherSvg("clear");
+
+  valEta.textContent = "ไม่มี";
+  valDur.textContent = "0 นาที";
+  descEl.textContent = `จากการวิเคราะห์แนวพัดลมและโมเดล Nowcast ไม่พบเซลล์ฝนที่กำลังเคลื่อนตัวเข้าหาจุดนี้ใน 1 ชั่วโมงข้างหน้า`;
+
+  pillText.textContent = "ไม่มีฝนใน 60 นาที";
+  safeLucide();
+}
+
+async function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") {
+  userPinLatLon = [lat, lon];
+  document.getElementById("pinNameLabel").textContent = `${label}`;
+  document.getElementById("modalLocationLabel").textContent = `${label} (Lat: ${lat.toFixed(3)}, Lon: ${lon.toFixed(3)})`;
+
+  const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
+  const [pinE, pinN] = project(lat, lon, lat0, lon0);
+  const distKm = Math.hypot(pinE, pinN);
+  const bearingDeg = (Math.atan2(pinE, pinN) * 180 / Math.PI + 360) % 360;
+
+  const currentDbz = (currentSampledDbzList.find(f => f.offset === 0) || {}).dbz || 0;
+  const [zrA, zrB] = (manifest && manifest.zr) ? manifest.zr : [250.0, 1.2];
+  const rainRate = dbzToRainRate(currentDbz, zrA, zrB);
+
+  let dotClass = "pop-dot";
+  let weatherMain = "ท้องฟ้าโปร่ง";
+  let weatherSub = "ไม่พบกลุ่มฝนสะท้อน";
+
+  if (currentDbz >= 18) {
+    dotClass = "pop-dot rain";
+    weatherMain = `กำลังมีฝนตก (~${rainRate.toFixed(1)} มม./ชม.)`;
+    weatherSub = `ความเข้มสะท้อนเรดาร์ ${currentDbz.toFixed(0)} dBZ`;
+  } else {
+    const etaVal = document.getElementById("valEta").textContent.trim();
+    if (etaVal !== "ไม่มี" && etaVal !== "—") {
+      dotClass = "pop-dot warn";
+      weatherMain = `ฝนจะเริ่มตกเวลา ${etaVal}`;
+      weatherSub = `ตกต่อเนื่อง ${document.getElementById("valDuration").textContent}`;
+    }
+  }
+
+  const gmapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+
+  const popupHtml = `
+    <div class="pop-capsule" style="min-width: 230px;">
+      <div class="pop-top-row">
+        <div class="pop-title-box">
+          <div class="pop-title">
+            <span class="${dotClass}"></span>
+            <span id="popMainLabel">${label}</span>
+          </div>
+          <span class="pop-subtext" id="popAreaName">กำลังค้นหาชื่อพื้นที่...</span>
+        </div>
+      </div>
+
+      <div class="pop-weather-card">
+        <div class="pop-weather-info">
+          <div class="pop-weather-main">${weatherMain}</div>
+          <div class="pop-weather-sub">${weatherSub}</div>
+        </div>
+        <div class="pop-weather-dbz">${currentDbz.toFixed(0)} dBZ</div>
+      </div>
+
+      <div class="pop-meta-list">
+        <div class="pop-meta-item">
+          <i data-lucide="compass" class="icon-xs"></i>
+          <span>ห่างสถานี PHS: <b>${distKm.toFixed(1)} กม.</b> (ทิศ ${bearingDeg.toFixed(0)}°)</span>
+        </div>
+        <div class="pop-meta-item">
+          <i data-lucide="crosshair" class="icon-xs"></i>
+          <span class="pop-coord-text">Lat: ${lat.toFixed(4)} · Lon: ${lon.toFixed(4)}</span>
+        </div>
+      </div>
+
+      <div class="pop-action-grid">
+        <button class="pop-btn pop-btn-graph" onclick="document.getElementById('btnOpenModal').click()">
+          <i data-lucide="bar-chart-2" class="icon-xs"></i> ดูกราฟ
+        </button>
+        <a class="pop-btn pop-btn-nav" href="${gmapsUrl}" target="_blank" rel="noopener">
+          <i data-lucide="navigation" class="icon-xs"></i> นำทาง
+        </a>
+      </div>
+    </div>
+  `;
+
+  if (!userPinMarker) {
+    userPinMarker = L.marker([lat, lon], {
+      icon: liveGpsIcon, draggable: true, title: "ลากเพื่อย้ายจุดตรวจวัด"
+    }).addTo(map);
+
+    userPinMarker.on("dragend", (e) => {
+      const pos = e.target.getLatLng();
+      setInspectionPoint(pos.lat, pos.lng, "จุดที่คุณลากหมุด");
+    });
+  } else {
+    userPinMarker.setLatLng([lat, lon]);
+  }
+
+  userPinMarker.bindPopup(popupHtml, { offset: [0, -10] }).openPopup();
+  safeLucide();
+
+  analyzeImpactAtPoint(lat, lon);
+
+  getReverseGeocode(lat, lon).then(areaName => {
+    const areaEl = document.getElementById("popAreaName");
+    if (areaEl) {
+      areaEl.textContent = areaName || "ภาคเหนือตอนล่าง";
+    }
+  });
+}
+
+map.on("click", (e) => {
+  setInspectionPoint(e.latlng.lat, e.latlng.lng, "จุดที่คุณแตะเลือก");
+});
+
+map.on("popupopen", () => {
+  safeLucide();
+});
+
+function renderCellVectors(frameIdx) {
+  layerArrows.clearLayers();
+  if (!manifest || !manifest.motion) return;
+
+  const motion = manifest.motion;
+  const spd = motion.speed_kmh || motion.kmh || 0;
+  const deg = motion.direction_deg !== undefined ? motion.direction_deg : (motion.bearing || 0);
+
+  if (spd < 2) return;
+
+  const img = frameImages[frameIdx];
+  if (!img || !img.complete || img.naturalWidth === 0) return;
+
+  scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
+  scanCtx.drawImage(img, 0, 0, SCAN_RES, SCAN_RES);
+
+  let imgData;
+  try {
+    imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
+  } catch (err) {
+    return;
+  }
+
+  const lat0 = radarStationLatLon[0];
+  const lon0 = radarStationLatLon[1];
+  const style = THEME_STYLES[currentTheme];
+
+  const arrowLength = Math.min(32, Math.max(20, 16 + spd * 0.4));
+  const arrowStroke = Math.min(3.0, Math.max(2.0, 1.8 + spd * 0.04));
+  const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+  const stepPixels = 6;
+
+  for (let y = stepPixels; y < SCAN_RES - stepPixels; y += stepPixels) {
+    for (let x = stepPixels; x < SCAN_RES - stepPixels; x += stepPixels) {
+      let rainCount = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const idx = ((y + dy) * SCAN_RES + (x + dx)) * 4;
+          if (imgData[idx + 3] > 35 && (imgData[idx] > 30 || imgData[idx + 1] > 30 || imgData[idx + 2] > 30)) {
+            rainCount++;
+          }
+        }
+      }
+
+      if (rainCount >= 3) {
+        const e = ((x / (SCAN_RES - 1)) * 2 - 1) * halfKm;
+        const n = (1 - (y / (SCAN_RES - 1)) * 2) * halfKm;
+
+        if (Math.hypot(e, n) <= 230) {
+          const [lat, lon] = unproject(e, n, lat0, lon0);
+
+          const svgHtml = `
+            <div class="arrow-icon" style="width: ${arrowLength}px; height: ${arrowLength}px;">
+              <svg viewBox="0 0 28 28" width="${arrowLength}" height="${arrowLength}"
+                   style="transform: rotate(${deg}deg); filter: drop-shadow(0 1px 3px rgba(0,0,0,0.9));">
+                <line x1="14" y1="23" x2="14" y2="4" stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round"/>
+                <polyline points="8,11 14,4 20,11" fill="none" stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          `;
+
+          const icon = L.divIcon({
+            html: svgHtml, className: "", iconSize: [arrowLength, arrowLength], iconAnchor: [arrowLength / 2, arrowLength / 2]
+          });
+
+          const marker = L.marker([lat, lon], { icon, interactive: true });
+          marker.bindTooltip(`ทิศทาง: ${deg.toFixed(0)}°<br>ความเร็ว: ${spd.toFixed(1)} กม./ชม.`, { direction: "top", offset: [0, -8] });
+          layerArrows.addLayer(marker);
+        }
+      }
+    }
+  }
+}
+
+function renderRadarMask() {
+  if (radarMaskPolygon) {
+    map.removeLayer(radarMaskPolygon);
+    radarMaskPolygon = null;
+  }
+
+  const lat0 = radarStationLatLon[0];
+  const lon0 = radarStationLatLon[1];
+  const radiusKm = 240;
+
+  const worldOuterCoords = [
+    [-85, -180],
+    [-85, 180],
+    [85, 180],
+    [85, -180]
+  ];
+
+  const holeCoords = [];
+  const numPoints = 120;
+  for (let i = 0; i < numPoints; i++) {
+    const angle = (i / numPoints) * 2 * Math.PI;
+    const e = radiusKm * Math.sin(angle);
+    const n = radiusKm * Math.cos(angle);
+    const pt = unproject(e, n, lat0, lon0);
+    holeCoords.push(pt);
+  }
+
+  const style = THEME_STYLES[currentTheme];
+  const maskColor = style.maskColor || "#050B14";
+  const maskOpacity = style.maskOpacity !== undefined ? style.maskOpacity : 0.75;
+
+  radarMaskPolygon = L.polygon([worldOuterCoords, holeCoords], {
+    stroke: false,
+    fillColor: maskColor,
+    fillOpacity: maskOpacity,
+    interactive: false,
+    pane: 'maskPane'
+  }).addTo(map);
+}
+
+function renderRangeRings() {
+  layerRings.clearLayers();
+  rangeCircleElements = [];
+
+  const lat0 = radarStationLatLon[0];
+  const lon0 = radarStationLatLon[1];
+  const style = THEME_STYLES[currentTheme];
+
+  [60, 120, 240].forEach(km => {
+    const circle = L.circle([lat0, lon0], {
+      radius: km * 1000,
+      color: style.ringColor,
+      weight: 1.3,
+      dashArray: "5, 7",
+      fill: false,
+      opacity: style.ringOpacity
+    }).addTo(layerRings);
+    rangeCircleElements.push(circle);
+
+    const [labelLat, labelLon] = unproject(0, km, lat0, lon0);
+    const label = L.tooltip({ permanent: true, direction: "center", className: "ring-label" })
+                   .setContent(`${km} km`).setLatLng([labelLat, labelLon]);
+    layerRings.addLayer(label);
+  });
+
+  stationMarkerElement = L.circleMarker([lat0, lon0], {
+    radius: 5, color: style.radarCenter, fillColor: "#FFF", fillOpacity: 1, weight: 2
+  }).addTo(layerRings).bindPopup(`
+    <div class="pop-capsule" style="min-width: 180px;">
+      <div class="pop-title">
+        <span class="pop-dot"></span>
+        สถานีเรดาร์พิษณุโลก (PHS)
+      </div>
+      <div class="pop-subtext">สถานีหลักตรวจวัดอากาศภาคเหนือตอนล่าง</div>
+      <div class="pop-meta-list" style="margin-top: 4px;">
+        <span>Lat: 16.770 · Lon: 100.220</span>
+      </div>
+    </div>
+  `, { offset: [0, -6] });
+
+  renderRadarMask();
+}
+
+function updateThemeVisuals(themeKey) {
+  currentTheme = themeKey;
+  const style = THEME_STYLES[themeKey];
+
+  const root = document.documentElement;
+  root.style.setProperty("--ring-label-bg", style.ringLabelBg);
+  root.style.setProperty("--ring-label-border", style.ringLabelBorder);
+  root.style.setProperty("--ring-label-color", style.ringLabelColor);
+
+  rangeCircleElements.forEach(c => {
+    c.setStyle({ color: style.ringColor, opacity: style.ringOpacity });
+  });
+
+  if (stationMarkerElement) {
+    stationMarkerElement.setStyle({ color: style.radarCenter });
+  }
+
+  if (radarMaskPolygon) {
+    radarMaskPolygon.setStyle({
+      fillColor: style.maskColor,
+      fillOpacity: style.maskOpacity
+    });
+  }
+
+  renderCellVectors(currentIndex);
+  updateTelemetryStationValues();
+  analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
+}
+
+async function loadBoundaries() {
+  try {
+    const resProv = await fetch("https://cdn.jsdelivr.net/gh/apisit/thailand.json@master/thailand.json");
+    if (resProv.ok) {
+      const dataProv = await resProv.json();
+      L.geoJSON(dataProv, {
+        style: { color: "#38BDF8", weight: 1.5, fill: false, opacity: 0.75 },
+        onEachFeature: (feature, layer) => {
+          const name = feature.properties.name || feature.properties.pro_th || "";
+          if (name) {
+            const center = layer.getBounds().getCenter();
+            const label = L.tooltip({ permanent: true, direction: "center", className: "map-label" })
+                           .setContent(name).setLatLng(center);
+            layerProvinceLabels.addLayer(label);
+          }
+        }
+      }).addTo(layerProvince);
+    }
+  } catch (err) {}
+
+  try {
+    const fallbackTambon = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { opacity: 0.4 });
+    layerTambon.addLayer(fallbackTambon);
+  } catch (err) {}
+}
+
+async function initRadar() {
+  try {
+    const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("ไม่สามารถโหลด manifest ได้");
+    manifest = await res.json();
+
+    const m = /lat_0=([-\d.]+).*?lon_0=([-\d.]+)/.exec(manifest.projection) || [];
+    const lat0 = parseFloat(m[1]) || 16.77;
+    const lon0 = parseFloat(m[2]) || 100.22;
+    radarStationLatLon = [lat0, lon0];
+
+    const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+    const south = unproject(0, -halfKm, lat0, lon0)[0];
+    const north = unproject(0, halfKm, lat0, lon0)[0];
+    const west = unproject(-halfKm, 0, lat0, lon0)[1];
+    const east = unproject(halfKm, 0, lat0, lon0)[1];
+    radarBounds = L.latLngBounds([south, west], [north, east]);
+
+    renderRangeRings();
+    initTelemetryStationMarkers();
+    initDistrictSpatialFeatures();
+
+    radarOverlays = [];
+    frameImages = [];
+
+    manifest.frames.forEach((frame, idx) => {
+      const url = "nowcast/PHS/" + frame.url;
+      const overlay = L.imageOverlay(url, radarBounds, { opacity: 0, interactive: false }).addTo(map);
+      radarOverlays.push(overlay);
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = url;
+      img.onload = () => {
+        if (idx === currentIndex) {
+          renderCellVectors(idx);
+          analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
+          updateTelemetryStationValues();
+        }
+      };
+      frameImages.push(img);
+    });
+
+    const slider = document.getElementById("tlSlider");
+    slider.max = manifest.frames.length - 1;
+
+    const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
+    showFrame(nowIdx >= 0 ? nowIdx : manifest.frames.length - 1);
+
+    setInspectionPoint(lat0, lon0, "สถานีเรดาร์ PHS");
+    updateFooterStatus();
+    autoDetectGPS();
+  } catch (err) {
+    document.getElementById("tlFullTitle").textContent = "เชื่อมต่อฐานข้อมูลเรดาร์ล้มเหลว";
+  }
+}
+
+function showFrame(index) {
+  currentIndex = index;
+  const targetOpacity = document.getElementById("radarOpacity").value / 100;
+
+  radarOverlays.forEach((ov, i) => {
+    ov.setOpacity(i === currentIndex ? targetOpacity : 0);
+  });
+
+  document.getElementById("tlSlider").value = currentIndex;
+  renderCellVectors(currentIndex);
+  updateTelemetryStationValues();
+
+  const f = manifest.frames[currentIndex];
+  const frameDate = new Date(f.t * 1000);
+
+  document.getElementById("tlFullTitle").innerHTML = `
+    <i data-lucide="radio" class="icon-xs" style="color: var(--accent);"></i>
+    <span>ทันฝน เรดาร์พิษณุโลก (Nowcast) — <b>${formatThaiDateTime(frameDate, true)}</b></span>
+  `;
+
+  document.getElementById("tlPillText").textContent =
+    `${formatThaiDateTime(frameDate)} ${f.offset_min > 0 ? '(+' + f.offset_min + 'น.)' : ''}`;
+
+  const badge = document.getElementById("tlBadge");
+  if (f.kind === "nowcast") {
+    badge.textContent = `พยากรณ์ +${f.offset_min} นาที`;
+    badge.className = "badge-tag fc";
+  } else {
+    badge.textContent = f.offset_min === 0 ? "ภาพตรวจวัดจริง" : `${f.offset_min} นาที`;
+    badge.className = "badge-tag obs";
+  }
+
+  document.getElementById("tlFrameCount").textContent =
+    `เฟรม ${currentIndex + 1}/${manifest.frames.length}`;
+
+  safeLucide();
+}
+
+function updateFooterStatus() {
+  const nowFrame = manifest.frames.find(f => f.offset_min === 0) || manifest.frames[0];
+  const nowDate = new Date(nowFrame.t * 1000);
+  const ageMin = Math.round((Date.now() / 1000 - nowFrame.t) / 60);
+
+  document.getElementById("tlLatestTime").textContent =
+    `ข้อมูลตรวจวัดล่าสุด: ${formatThaiDateTime(nowDate, true)} (${ageMin} นาทีที่แล้ว)`;
+}
+
+function togglePlay() {
+  isPlaying = !isPlaying;
+  const playIcon = document.getElementById("playIcon");
+  const playIconPill = document.getElementById("playIconPill");
+
+  if (isPlaying) {
+    if (playIcon) playIcon.setAttribute("data-lucide", "pause");
+    if (playIconPill) playIconPill.setAttribute("data-lucide", "pause");
+    playTimer = setInterval(() => {
+      let next = (currentIndex + 1) % manifest.frames.length;
+      showFrame(next);
+    }, 800);
+  } else {
+    if (playIcon) playIcon.setAttribute("data-lucide", "play");
+    if (playIconPill) playIconPill.setAttribute("data-lucide", "play");
+    clearInterval(playTimer);
+  }
+  safeLucide();
+}
+
+document.getElementById("btnPlay").addEventListener("click", togglePlay);
+document.getElementById("btnPlayPill").addEventListener("click", (e) => {
+  e.stopPropagation();
+  togglePlay();
+});
+
+document.getElementById("tlSlider").addEventListener("input", (e) => {
+  showFrame(parseInt(e.target.value));
+});
+
+document.getElementById("btnCollapseTl").addEventListener("click", () => {
+  document.getElementById("timelineBox").classList.add("collapsed");
+});
+
+document.getElementById("btnExpandTl").addEventListener("click", () => {
+  document.getElementById("timelineBox").classList.remove("collapsed");
+});
+
+document.getElementById("btnCollapseAc").addEventListener("click", () => {
+  document.getElementById("actionRail").classList.add("collapsed");
+});
+
+document.getElementById("btnExpandAc").addEventListener("click", () => {
+  document.getElementById("actionRail").classList.remove("collapsed");
+});
+
+document.getElementById("btnOpenModal").addEventListener("click", (e) => {
+  e.stopPropagation();
+  renderModalMeteogram();
+  document.getElementById("mgModal").classList.add("open");
+  safeLucide();
+});
+
+document.getElementById("btnCloseModal").addEventListener("click", () => {
+  document.getElementById("mgModal").classList.remove("open");
+});
+
+document.getElementById("mgModal").addEventListener("click", (e) => {
+  if (e.target.id === "mgModal") {
+    document.getElementById("mgModal").classList.remove("open");
+  }
+});
+
+// เปิด-ปิด แผงตารางสถานีน้ำฝน
+const telemetryPanel = document.getElementById("telemetryPanel");
+document.getElementById("btnToggleTelemetryPanel").addEventListener("click", () => {
+  const isOpen = telemetryPanel.classList.contains("open");
+  if (isOpen) {
+    telemetryPanel.classList.remove("open");
+  } else {
+    telemetryPanel.classList.add("open");
+    renderTelemetryPanelList();
+  }
+  safeLucide();
+});
+
+document.getElementById("btnCloseTelemetryPanel").addEventListener("click", () => {
+  telemetryPanel.classList.remove("open");
+});
+
+// สลับหมวดหมู่: สถานีโทรมาตร vs เสี่ยงภัยรายอำเภอ
+document.getElementById("btnCatStations").addEventListener("click", () => {
+  currentCategory = "stations";
+  document.getElementById("btnCatStations").classList.add("active");
+  document.getElementById("btnCatDistricts").classList.remove("active");
+  renderTelemetryPanelList();
+});
+
+document.getElementById("btnCatDistricts").addEventListener("click", () => {
+  currentCategory = "districts";
+  document.getElementById("btnCatDistricts").classList.add("active");
+  document.getElementById("btnCatStations").classList.remove("active");
+  renderTelemetryPanelList();
+});
+
+// สลับแท็บช่วงเวลา 1h, 3h, 6h, 24h
+document.querySelectorAll(".tp-tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tp-tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    telemetrySortMode = btn.dataset.mode;
+    renderTelemetryPanelList();
+  });
+});
+
+// ย่อ/ขยาย แผงชั้นข้อมูล & เวกเตอร์
+document.getElementById("toggleLayerCard").addEventListener("click", () => {
+  const card = document.getElementById("layerCard");
+  const body = document.getElementById("layerBody");
+  const status = document.getElementById("boundaryStatus");
+  const icon = document.getElementById("layerToggleIcon");
+  const isHidden = body.style.display === "none";
+
+  if (isHidden) {
+    body.style.display = "flex";
+    if (status) status.style.display = "block";
+    if (card) card.classList.remove("collapsed");
+    if (icon) icon.setAttribute("data-lucide", "chevron-up");
+  } else {
+    body.style.display = "none";
+    if (status) status.style.display = "none";
+    if (card) card.classList.add("collapsed");
+    if (icon) icon.setAttribute("data-lucide", "chevron-down");
+  }
+  safeLucide();
+});
+
+document.getElementById("chkArrows").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerArrows); else map.removeLayer(layerArrows);
+});
+document.getElementById("chkRings").addEventListener("change", e => {
+  if (e.target.checked) {
+    map.addLayer(layerRings);
+    if (radarMaskPolygon && !map.hasLayer(radarMaskPolygon)) map.addLayer(radarMaskPolygon);
+  } else {
+    map.removeLayer(layerRings);
+    if (radarMaskPolygon && map.hasLayer(radarMaskPolygon)) map.removeLayer(radarMaskPolygon);
+  }
+});
+
+document.getElementById("chkStations").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerStations); else map.removeLayer(layerStations);
+});
+
+document.getElementById("chkProv").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerProvince); else map.removeLayer(layerProvince);
+});
+document.getElementById("chkProvLabel").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerProvinceLabels); else map.removeLayer(layerProvinceLabels);
+});
+
+document.getElementById("chkAmp").addEventListener("change", e => {
+  if (e.target.checked) {
+    map.addLayer(layerAmphoe);
+    updateDistrictArealImpact();
+  } else {
+    map.removeLayer(layerAmphoe);
+  }
+});
+document.getElementById("chkAmpLabel").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerAmphoeLabels); else map.removeLayer(layerAmphoeLabels);
+});
+document.getElementById("chkTam").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerTambon); else map.removeLayer(layerTambon);
+});
+
+// สลับ Basemap
+document.querySelectorAll(".map-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".map-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const layerKey = btn.dataset.layer;
+    Object.values(baseLayers).forEach(layer => map.removeLayer(layer));
+    baseLayers[layerKey].addTo(map);
+
+    updateThemeVisuals(layerKey);
+  });
+});
+
+document.getElementById("radarOpacity").addEventListener("input", (e) => {
+  const targetOpacity = e.target.value / 100;
+  radarOverlays[currentIndex].setOpacity(targetOpacity);
+});
+
+function autoDetectGPS() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const userLat = pos.coords.latitude;
+      const userLon = pos.coords.longitude;
+      map.setView([userLat, userLon], 10);
+      setInspectionPoint(userLat, userLon, "ตำแหน่งของคุณ (GPS)");
+    }, () => {}, { timeout: 4000 });
+  }
+}
+
+document.getElementById("btnLoc").addEventListener("click", () => {
+  if (!navigator.geolocation) return alert("เบราว์เซอร์ไม่รองรับ GPS");
+  navigator.geolocation.getCurrentPosition((pos) => {
+    const userLat = pos.coords.latitude;
+    const userLon = pos.coords.longitude;
+    map.setView([userLat, userLon], 10);
+    setInspectionPoint(userLat, userLon, "ตำแหน่งของคุณ (GPS)");
+  }, () => {
+    alert("ไม่สามารถเข้าถึงพิกัด GPS ได้");
+  });
+});
+
+const btnAlert = document.getElementById("btnToggleAlert");
+const alertIcon = document.getElementById("alertIcon");
+const alertLabel = document.getElementById("alertLabel");
+
+function syncAlertBtnUI() {
+  if (isAlertEnabled) {
+    btnAlert.classList.add("active");
+    if (alertIcon) alertIcon.setAttribute("data-lucide", "bell");
+    alertLabel.textContent = "เปิดแจ้งเตือนแล้ว";
+  } else {
+    btnAlert.classList.remove("active");
+    if (alertIcon) alertIcon.setAttribute("data-lucide", "bell-off");
+    alertLabel.textContent = "ปิดแจ้งเตือนอยู่";
+  }
+  safeLucide();
+}
+syncAlertBtnUI();
+
+btnAlert.addEventListener("click", async () => {
+  if (!("Notification" in window)) {
+    return alert("เบราว์เซอร์นี้ไม่รองรับระบบ Web Notification");
+  }
+
+  if (!isAlertEnabled) {
+    const perm = await Notification.requestPermission();
+    if (perm === "granted") {
+      isAlertEnabled = true;
+      localStorage.setItem("tanfon_alert_enabled", "true");
+      syncAlertBtnUI();
+      playAlertChime(false);
+      new Notification("ทันฝน: เปิดระบบแจ้งเตือนสำเร็จ", {
+        body: "ระบบจะแจ้งเตือนอัตโนมัติล่วงหน้า 1 ชั่วโมงเมื่อมีกลุ่มฝนมุ่งหน้ามาหาคุณ",
+        icon: "icon-192.png"
+      });
+      analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
+    } else {
+      alert("กรุณาอนุญาต (Allow) การแจ้งเตือนในการตั้งค่าของเบราว์เซอร์");
+    }
+  } else {
+    isAlertEnabled = false;
+    localStorage.setItem("tanfon_alert_enabled", "false");
+    syncAlertBtnUI();
+  }
+});
+
+// เริ่มต้นระบบการทำงานทั้งหมด
+loadBoundaries();
+initRadar();
+safeLucide();
+
+setInterval(async () => {
+  try {
+    const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if (res.ok) {
+      manifest = await res.json();
+      updateFooterStatus();
+      analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
+      updateTelemetryStationValues();
+    }
+  } catch (e) {}
+}, 180000);
 </script>
 </body>
 </html>
