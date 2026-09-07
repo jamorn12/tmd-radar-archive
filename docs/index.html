@@ -972,7 +972,6 @@ const layerRings = L.layerGroup().addTo(map);
 const layerTrajectory = L.layerGroup().addTo(map);
 const layerStations = L.layerGroup().addTo(map);
 
-// 📌 ประกาศเลเยอร์ขอบเขตพื้นที่พร้อมผูกเข้ากับ map ทันที
 const layerProvince = L.layerGroup().addTo(map);
 const layerProvinceLabels = L.layerGroup().addTo(map);
 const layerAmphoe = L.layerGroup().addTo(map);
@@ -1110,7 +1109,6 @@ function dbzToRainRate(dbz) {
   return Math.pow(z / 200, 1 / 1.6);
 }
 
-// 📌 ฟังก์ชันคำนวณเวกเตอร์การเคลื่อนที่แบบเฉพาะจุด (Spatial Motion Field / Optical Flow)
 function getLocalMotionAtPoint(pinE, pinN) {
   if (!manifest || !manifest.motion) return { spd: 15.0, deg: 270 };
   const motion = manifest.motion;
@@ -1934,8 +1932,10 @@ function updateThemeVisuals(themeKey) {
   analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
 }
 
-// 📌 โหลดขอบเขตจังหวัด, อำเภอ (districts_240km.geojson) และตำบล (subdistricts_240km.geojson) ในรัศมี 240 กม.
+// 📌 โหลดขอบเขตจังหวัด, อำเภอ และตำบลจากโฟลเดอร์ปัจจุบันด้วย Relative Path (./)
 async function loadBoundaries() {
+  console.log("📍 กำลังโหลดขอบเขตพื้นที่...");
+
   try {
     const resProv = await fetch("https://cdn.jsdelivr.net/gh/apisit/thailand.json@master/thailand.json");
     if (resProv.ok) {
@@ -1953,41 +1953,43 @@ async function loadBoundaries() {
         }
       }).addTo(layerProvince);
     }
-  } catch (err) {}
-
-  // ขอบเขตอำเภอ (240 กม.)
-  try {
-    const resAmp = await fetch("districts_240km.geojson");
-    if (resAmp.ok) {
-      const dataAmp = await resAmp.json();
-      L.geoJSON(dataAmp, {
-        style: { color: "#FBBF24", weight: 1.2, dashArray: "3, 3", fill: false, opacity: 0.85 },
-        onEachFeature: (feature, layer) => {
-          const name = feature.properties.name || "";
-          if (name) {
-            const center = layer.getBounds().getCenter();
-            const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
-                           .setContent(name).setLatLng(center);
-            layerAmphoeLabels.addLayer(label);
-          }
-        }
-      }).addTo(layerAmphoe);
-    }
   } catch (err) {
-    console.error("❌ โหลดไฟล์ districts_240km.geojson ไม่สำเร็จ (ตรวจสอบว่าไฟล์อยู่ในโฟลเดอร์ docs/ หรือยัง):", err);
+    console.warn("⚠️ โหลดขอบเขตจังหวัดไม่สำเร็จ:", err);
   }
 
-  // ขอบเขตตำบล (240 กม.)
+  // โหลดขอบเขตอำเภอ
   try {
-    const resTam = await fetch("subdistricts_240km.geojson");
-    if (resTam.ok) {
-      const dataTam = await resTam.json();
-      L.geoJSON(dataTam, {
-        style: { color: "#38BDF8", weight: 0.9, fill: false, opacity: 0.7 }
-      }).addTo(layerTambon);
-    }
+    const resAmp = await fetch("./districts_240km.geojson");
+    if (!resAmp.ok) throw new Error(`HTTP ${resAmp.status} Not Found`);
+    const dataAmp = await resAmp.json();
+    L.geoJSON(dataAmp, {
+      style: { color: "#FBBF24", weight: 1.2, dashArray: "3, 3", fill: false, opacity: 0.85 },
+      onEachFeature: (feature, layer) => {
+        const name = feature.properties.name || "";
+        if (name) {
+          const center = layer.getBounds().getCenter();
+          const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
+                         .setContent(name).setLatLng(center);
+          layerAmphoeLabels.addLayer(label);
+        }
+      }
+    }).addTo(layerAmphoe);
+    console.log("✅ โหลดขอบเขตอำเภอสำเร็จ");
   } catch (err) {
-    console.error("❌ โหลดไฟล์ subdistricts_240km.geojson ไม่สำเร็จ (ตรวจสอบว่าไฟล์อยู่ในโฟลเดอร์ docs/ หรือยัง):", err);
+    console.error("❌ หาไฟล์ districts_240km.geojson ไม่พบในโฟลเดอร์ docs/:", err);
+  }
+
+  // โหลดขอบเขตตำบล
+  try {
+    const resTam = await fetch("./subdistricts_240km.geojson");
+    if (!resTam.ok) throw new Error(`HTTP ${resTam.status} Not Found`);
+    const dataTam = await resTam.json();
+    L.geoJSON(dataTam, {
+      style: { color: "#38BDF8", weight: 0.9, fill: false, opacity: 0.7 }
+    }).addTo(layerTambon);
+    console.log("✅ โหลดขอบเขตตำบลสำเร็จ");
+  } catch (err) {
+    console.error("❌ หาไฟล์ subdistricts_240km.geojson ไม่พบในโฟลเดอร์ docs/:", err);
   }
 }
 
