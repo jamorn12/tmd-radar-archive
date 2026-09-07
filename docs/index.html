@@ -51,14 +51,14 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   border-radius: 14px;
 }
 
-/* Leaflet Custom Modern Popup & Marker Styling */
+/* Leaflet Custom Modern Popup */
 .leaflet-popup-content-wrapper {
-  background: rgba(15, 23, 42, 0.92) !important;
+  background: rgba(18, 24, 38, 0.96) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  border-radius: 14px !important;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7) !important;
   padding: 0 !important;
   color: var(--text) !important;
 }
@@ -69,8 +69,8 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .leaflet-popup-tip-container { overflow: visible !important; }
 .leaflet-popup-tip {
-  background: rgba(15, 23, 42, 0.92) !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background: rgba(18, 24, 38, 0.96) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
   box-shadow: none !important;
   margin-top: -1px !important;
 }
@@ -79,45 +79,96 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   padding: 8px 10px 0 0 !important;
   font-size: 16px !important;
   font-weight: 300 !important;
-  transition: color 0.2s !important;
 }
 .leaflet-popup-close-button:hover { color: #fff !important; }
 
-.pop-capsule { display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
-.pop-top-row { display: flex; justify-content: space-between; align-items: flex-start; padding-right: 14px; }
-.pop-title-box { display: flex; flex-direction: column; gap: 1px; }
-.pop-title { font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; }
-.pop-subtext { font-size: 11px; color: var(--accent); font-weight: 500; }
-.pop-dot { width: 6.5px; height: 6.5px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); flex-shrink: 0; }
-.pop-dot.warn { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
-.pop-dot.rain { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-
-.pop-weather-card {
-  background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 8px; padding: 6px 8px; display: flex; align-items: center; justify-content: space-between;
+/* ==========================================================
+   WAM ONWR Style: ป๊อปอัปสถานีโทรมาตรแบบในภาพตัวอย่าง
+   ========================================================== */
+.wam-popup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 190px;
+  font-family: "IBM Plex Sans Thai", sans-serif;
+  padding: 2px 2px;
 }
-.pop-weather-info { display: flex; flex-direction: column; gap: 1px; }
-.pop-weather-main { font-size: 12px; font-weight: 600; color: #fff; }
-.pop-weather-sub { font-size: 10px; color: var(--text-dim); }
-.pop-weather-dbz { font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 700; color: var(--accent); }
-
-.pop-meta-list { display: flex; flex-direction: column; gap: 2px; font-size: 10px; color: var(--text-dim); }
-.pop-meta-item { display: flex; align-items: center; gap: 4px; }
-.pop-coord-text { font-family: "IBM Plex Mono", monospace; color: #94A3B8; }
-
-.pop-action-grid {
-  display: flex; gap: 6px; margin-top: 4px; padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+.wam-pop-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1.25;
+  padding-right: 14px;
 }
-.pop-btn {
-  flex: 1; padding: 4px 6px; border-radius: 6px; font-size: 10.5px; font-weight: 500;
-  cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 4px;
-  transition: all 0.2s; border: none; font-family: "IBM Plex Sans Thai", sans-serif;
+.wam-pop-id {
+  font-size: 13px;
+  font-weight: 700;
+  color: #FFFFFF;
+  font-family: "IBM Plex Mono", monospace;
+  margin: 1px 0;
 }
-.pop-btn-graph { background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--accent); }
-.pop-btn-graph:hover { background: rgba(56, 189, 248, 0.25); }
-.pop-btn-nav { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14); color: var(--text); }
-.pop-btn-nav:hover { background: rgba(255, 255, 255, 0.14); }
+.wam-pop-loc {
+  font-size: 11.5px;
+  color: #CBD5E1;
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+.wam-pop-metric {
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  font-family: "IBM Plex Mono", monospace;
+}
+.wam-pop-metric .unit {
+  font-size: 13px;
+  font-weight: 600;
+  color: #FFFFFF;
+  font-family: "IBM Plex Sans Thai", sans-serif;
+}
+.wam-pop-chart-btn {
+  color: var(--accent);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 2px;
+  transition: transform 0.15s ease;
+}
+.wam-pop-chart-btn:hover {
+  transform: scale(1.2);
+  color: #7DD3FC;
+}
+.wam-pop-time {
+  font-size: 11px;
+  color: #94A3B8;
+  margin-bottom: 8px;
+}
+.wam-pop-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 6px;
+  margin-top: 2px;
+}
+.wam-pop-coord {
+  font-size: 11px;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: "IBM Plex Mono", monospace;
+}
+.wam-pop-coord:hover {
+  color: #BAE6FD;
+}
+.wam-pop-agency {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #F8FAFC;
+}
 
 /* Custom Live Radar Pulsing Pin */
 .custom-pin-wrap { background: transparent !important; border: none !important; }
@@ -143,29 +194,31 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   100% { transform: scale(1.8); opacity: 0; }
 }
 
-/* Rain Gauge Telemetry Marker & Labels */
+/* Rain Gauge Minimal Dot Markers */
 .gauge-pin {
-  width: 13px; height: 13px; border-radius: 50%;
-  border: 2px solid #FFFFFF; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 1.5px solid #FFFFFF; box-shadow: 0 1px 4px rgba(0,0,0,0.6);
   cursor: pointer; transition: background-color 0.35s ease, transform 0.15s ease;
 }
-.gauge-pin:hover { transform: scale(1.35); z-index: 1000; }
+.gauge-pin:hover { transform: scale(1.6); z-index: 1000; }
 
 .gauge-label {
   font-family: "IBM Plex Mono", monospace !important;
-  font-size: 9px !important;
+  font-size: 8.5px !important;
   font-weight: 700 !important;
-  color: var(--st-label-text) !important;
-  background: var(--st-label-bg) !important;
-  border: 1px solid var(--st-label-border) !important;
-  border-radius: 5px !important;
-  padding: 1px 5px !important;
+  color: #fff !important;
+  background: rgba(15, 23, 42, 0.90) !important;
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  border-radius: 4px !important;
+  padding: 1px 4px !important;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45) !important;
   white-space: nowrap !important;
-  transition: opacity 0.3s ease, border-color 0.3s ease, background 0.3s ease !important;
 }
-.gauge-label.zero-rain { opacity: 0.65 !important; font-weight: 500 !important; }
-.gauge-label.has-rain { opacity: 1 !important; font-weight: 700 !important; border-width: 1.5px !important; box-shadow: 0 0 10px rgba(56, 189, 248, 0.6) !important; }
+.gauge-label.has-rain {
+  background: rgba(2, 132, 199, 0.95) !important;
+  border-color: #38BDF8 !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8) !important;
+}
 
 /* Lucide Icons */
 .lucide-icon { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; flex-shrink: 0; }
@@ -173,23 +226,13 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .icon-sm { width: 15px; height: 15px; }
 .icon-md { width: 18px; height: 18px; }
 
-/* Animated Weather SVGs (ควบคุมขนาดไอคอนในพิลล์และหัวการ์ดให้พอดีเป๊ะ) */
-.weather-anim-svg { width: 100%; height: 100%; display: block; overflow: visible; }
-
-.ac-weather-icon-box {
-  width: 38px; height: 38px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-}
-
-/* แก้ไขขนาดกล่องไอคอนใน Collapsed Pill ไม่ให้ล้น */
-.ac-pill-icon {
-  width: 24px; height: 24px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-}
+/* Animated Weather SVGs */
+.weather-anim-svg { width: 36px; height: 36px; display: block; overflow: visible; }
+.ac-weather-icon-box { width: 38px; height: 38px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.ac-pill-icon { width: 24px; height: 24px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 
 @keyframes cloud-float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-2px); } }
 .anim-cloud { animation: cloud-float 3.5s ease-in-out infinite; }
-
 @keyframes rain-fall { 0% { stroke-dashoffset: -14; opacity: 0; } 35% { opacity: 1; } 100% { stroke-dashoffset: 14; opacity: 0; } }
 .anim-raindrop { stroke-dasharray: 4 8; animation: rain-fall 1.1s linear infinite; }
 .anim-raindrop.d2 { animation-delay: 0.35s; }
@@ -219,10 +262,18 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .map-btn.active { background: var(--accent); color: #070B12; font-weight: 700; }
 
+.btn-open-telemetry {
+  background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34D399; font-weight: 600; padding: 6px 12px; border-radius: 999px;
+  cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 11.5px;
+  transition: all 0.2s; white-space: nowrap;
+}
+.btn-open-telemetry:hover { background: rgba(16, 185, 129, 0.3); }
+
 /* แผงขอบเขตพื้นที่ & เวกเตอร์ */
 .layer-card {
   position: absolute; top: 62px; right: 12px; z-index: 999;
-  width: 245px; padding: 12px 14px; font-size: 12px;
+  width: 235px; padding: 12px 14px; font-size: 12px;
 }
 .layer-head {
   display: flex; justify-content: space-between; align-items: center;
@@ -325,6 +376,73 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .rail.collapsed .ac-pill { display: flex; }
 .ac-pill-text { font-size: 12px; font-weight: 600; color: #fff; }
 
+/* แผงตารางจัดอันดับน้ำฝนสถานีโทรมาตร (WAM ONWR Style Telemetry Panel) */
+.telemetry-panel {
+  position: absolute; top: 62px; right: 12px; bottom: 90px;
+  width: 360px; z-index: 1001; display: none; flex-direction: column;
+  padding: 16px; border-radius: 18px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.7);
+  animation: slide-in-right 0.25s ease-out;
+}
+@keyframes slide-in-right {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.telemetry-panel.open { display: flex; }
+
+.tp-head {
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 10px; margin-bottom: 10px;
+}
+.tp-title { font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; }
+.tp-close-btn {
+  background: rgba(255, 255, 255, 0.08); border: none; color: var(--text-dim);
+  width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; transition: all 0.2s;
+}
+.tp-close-btn:hover { background: rgba(255, 255, 255, 0.2); color: #fff; }
+
+.tp-tabs { display: flex; gap: 4px; background: rgba(0, 0, 0, 0.3); padding: 3px; border-radius: 8px; margin-bottom: 10px; }
+.tp-tab-btn {
+  flex: 1; border: none; background: transparent; color: var(--text-dim);
+  font-size: 11px; padding: 5px; border-radius: 6px; font-weight: 600; cursor: pointer;
+}
+.tp-tab-btn.active { background: var(--accent); color: #070B12; }
+
+.tp-list {
+  flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
+  padding-right: 4px;
+}
+.tp-list::-webkit-scrollbar { width: 4px; }
+.tp-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+.tp-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px 10px; border-radius: 10px; cursor: pointer; transition: all 0.2s;
+}
+.tp-item:hover { background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.3); transform: translateX(-2px); }
+
+.tp-rank {
+  font-size: 12px; font-weight: 700; color: var(--text-dim);
+  width: 22px; text-align: center; font-family: "IBM Plex Mono", monospace;
+}
+.tp-rank.top { color: #FBBF24; }
+
+.tp-st-info { flex: 1; padding: 0 8px; display: flex; flex-direction: column; gap: 1px; }
+.tp-st-name { font-size: 12px; font-weight: 600; color: #fff; line-height: 1.25; }
+.tp-st-sub { font-size: 10px; color: var(--text-dim); }
+
+.tp-st-val {
+  text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 1px;
+}
+.tp-val-num {
+  font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 700;
+  color: var(--accent);
+}
+.tp-val-num.rain-high { color: #F87171; }
+.tp-val-unit { font-size: 9px; color: var(--text-dim); }
+
 /* Modal ขยายกราฟ */
 .modal-backdrop {
   position: fixed; inset: 0; z-index: 2000;
@@ -368,7 +486,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #00ECEC 0%, #00A000 25%, #FFFF00 50%, #FF9000 75%, #FF0000 100%); }
 .lg-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 
-/* แถบช่วงเวลาในการแสดงผล */
+/* แถบช่วงเวลา */
 .timeline-container {
   position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
   width: min(640px, calc(100% - 24px)); z-index: 1000;
@@ -413,25 +531,14 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   border-radius: 50%; width: 22px; height: 22px; display: grid; place-items: center; cursor: pointer;
 }
 
-/* Tooltip & Vector Label */
-.leaflet-tooltip.map-label {
-  background: transparent; border: none; box-shadow: none;
-  color: #fff; font-weight: 600; text-shadow: 0 1px 3px #000, 0 0 6px #000;
-  padding: 0; font-size: 11.5px;
-}
-.leaflet-tooltip.map-label.amphoe { font-size: 9.5px; color: #FBBF24; text-shadow: 0 1px 3px #000; }
-.leaflet-tooltip.map-label.ring-label {
-  font-size: 10px; font-family: "IBM Plex Mono", monospace;
-  background: transparent; border: none; box-shadow: none;
-  font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-}
 .arrow-icon { display: flex; align-items: center; justify-content: center; pointer-events: none; }
 
 @media (max-width: 768px) {
   .rail { width: calc(100% - 24px); top: auto; bottom: 85px; }
   .layer-card { width: 195px; font-size: 11px; }
+  .telemetry-panel { width: calc(100% - 24px); left: 12px; right: 12px; top: 62px; bottom: 90px; }
   .legend { display: none; }
-  .map-switch { overflow-x: auto; max-width: 60vw; }
+  .map-switch { overflow-x: auto; max-width: 45vw; }
 }
 </style>
 </head>
@@ -439,12 +546,17 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 <div id="map"></div>
 
-<!-- แถบด้านบน: 4 Basemaps สะอาดตา -->
+<!-- Top Bar: พร้อมปุ่มเปิดแผงตารางน้ำฝนสไตล์ WAM ONWR -->
 <div class="top-bar">
   <div class="brand glass">
     <i data-lucide="radio" class="icon-sm" style="color: var(--accent);"></i>
     <b>ทันฝน</b><span>พิษณุโลก</span>
   </div>
+
+  <button class="btn-open-telemetry glass" id="btnToggleTelemetryPanel">
+    <i data-lucide="table-properties" class="icon-xs"></i>
+    <span>ตารางน้ำฝน</span>
+  </button>
 
   <div class="map-switch glass">
     <button class="map-btn active" data-layer="dark">มืด</button>
@@ -454,7 +566,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- แผงขอบเขตพื้นที่, สถานีวัดน้ำฝน & เวกเตอร์ -->
+<!-- แผงขอบเขตพื้นที่ & เวกเตอร์ -->
 <div class="layer-card glass">
   <div class="layer-head" id="toggleLayerCard">
     <div class="layer-head-title">
@@ -483,10 +595,10 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     <div class="layer-row">
       <label class="custom-checkbox">
         <input type="checkbox" id="chkStations" checked>
-        <span style="font-weight: 600; color: #34D399;">สถานีวัดน้ำฝน (Telemetry)</span>
+        <span style="font-weight: 600; color: #34D399;">จุดสถานีโทรมาตร</span>
       </label>
       <label class="layer-label-check">
-        <input type="checkbox" id="chkStationLabels" checked> ค่าฝน
+        <input type="checkbox" id="chkStationLabels"> ป้ายฝนตก
       </label>
     </div>
 
@@ -521,6 +633,28 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
         <input type="checkbox" id="chkTamLabel"> ป้าย
       </label>
     </div>
+  </div>
+</div>
+
+<!-- แผงตารางจัดอันดับน้ำฝนสถานีโทรมาตร (WAM ONWR Style Telemetry Panel) -->
+<div class="telemetry-panel glass" id="telemetryPanel">
+  <div class="tp-head">
+    <div class="tp-title">
+      <i data-lucide="bar-chart-3" class="icon-sm" style="color: #34D399;"></i>
+      <span>ฝนสถานีโทรมาตร (เรียงตามปริมาณ)</span>
+    </div>
+    <button class="tp-close-btn" id="btnCloseTelemetryPanel">
+      <i data-lucide="x" class="icon-xs"></i>
+    </button>
+  </div>
+
+  <div class="tp-tabs">
+    <button class="tp-tab-btn active" id="tabRain1h">ฝน 1 ชม. ล่าสุด</button>
+    <button class="tp-tab-btn" id="tabRain24h">ฝนสะสม 24 ชม.</button>
+  </div>
+
+  <div class="tp-list" id="telemetryStationList">
+    <!-- แถวสถานีจะถูกเรนเดอร์แบบ Dynamic -->
   </div>
 </div>
 
@@ -606,7 +740,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- Modal ขยายกราฟ Meteogram 105 นาที -->
+<!-- Modal ขยายกราฟ Meteogram -->
 <div class="modal-backdrop" id="mgModal">
   <div class="modal-box glass">
     <div class="modal-head">
@@ -644,7 +778,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   <div class="lg-labels"><span>เบา</span><span>ปานกลาง</span><span>หนัก</span><span>หนักมาก</span></div>
 </div>
 
-<!-- แถบช่วงเวลาในการแสดงผล -->
+<!-- แถบช่วงเวลา -->
 <div class="timeline-container" id="timelineBox">
   <div class="tl-card glass">
     <div class="tl-header">
@@ -827,22 +961,10 @@ function safeLucide() {
 }
 
 const THEME_STYLES = {
-  dark: {
-    arrowColor: "#38BDF8", ringColor: "#38BDF8", ringOpacity: 0.45, radarCenter: "#38BDF8", impactLine: "#F59E0B",
-    stLabelBg: "rgba(15, 23, 42, 0.90)", stLabelBorder: "rgba(56, 189, 248, 0.4)", stLabelText: "#F8FAFC"
-  },
-  hillshade: {
-    arrowColor: "#EA580C", ringColor: "#0369A1", ringOpacity: 0.75, radarCenter: "#0284C7", impactLine: "#D97706",
-    stLabelBg: "rgba(255, 255, 255, 0.94)", stLabelBorder: "rgba(15, 23, 42, 0.4)", stLabelText: "#0F172A"
-  },
-  satellite: {
-    arrowColor: "#FACC15", ringColor: "#FDE047", ringOpacity: 0.85, radarCenter: "#FDE047", impactLine: "#F59E0B",
-    stLabelBg: "rgba(0, 0, 0, 0.92)", stLabelBorder: "#FDE047", stLabelText: "#FEF08A"
-  },
-  light: {
-    arrowColor: "#0F172A", ringColor: "#334155", ringOpacity: 0.55, radarCenter: "#0F172A", impactLine: "#DC2626",
-    stLabelBg: "rgba(255, 255, 255, 0.95)", stLabelBorder: "rgba(51, 65, 85, 0.35)", stLabelText: "#0F172A"
-  }
+  dark: { arrowColor: "#38BDF8", ringColor: "#38BDF8", ringOpacity: 0.45, radarCenter: "#38BDF8", impactLine: "#F59E0B" },
+  hillshade: { arrowColor: "#EA580C", ringColor: "#0369A1", ringOpacity: 0.75, radarCenter: "#0284C7", impactLine: "#D97706" },
+  satellite: { arrowColor: "#FACC15", ringColor: "#FDE047", ringOpacity: 0.85, radarCenter: "#FDE047", impactLine: "#F59E0B" },
+  light: { arrowColor: "#0F172A", ringColor: "#334155", ringOpacity: 0.55, radarCenter: "#0F172A", impactLine: "#DC2626" }
 };
 
 let currentTheme = "dark";
@@ -871,7 +993,7 @@ const layerRings = L.layerGroup().addTo(map);
 const layerTrajectory = L.layerGroup().addTo(map);
 
 const layerStations = L.layerGroup().addTo(map);
-const layerStationLabels = L.layerGroup().addTo(map);
+const layerStationLabels = L.layerGroup();
 
 const layerProvince = L.layerGroup();
 const layerProvinceLabels = L.layerGroup();
@@ -899,6 +1021,7 @@ let lastAlertTimestamp = 0;
 let currentSampledDbzList = [];
 
 let stationMarkerInstances = [];
+let telemetrySortMode = "1h";
 
 const liveGpsIcon = L.divIcon({
   className: "custom-pin-wrap",
@@ -1008,6 +1131,7 @@ function dbzToRainRate(dbz) {
   return Math.pow(z / 200, 1 / 1.6);
 }
 
+// สร้างสถานีบนแผนที่
 function initTelemetryStationMarkers() {
   layerStations.clearLayers();
   layerStationLabels.clearLayers();
@@ -1017,17 +1141,16 @@ function initTelemetryStationMarkers() {
     const stationIcon = L.divIcon({
       className: "",
       html: `<div class="gauge-pin" id="gpin-${idx}" style="background: #64748B;"></div>`,
-      iconSize: [13, 13],
-      iconAnchor: [6.5, 6.5]
+      iconSize: [10, 10],
+      iconAnchor: [5, 5]
     });
 
     const marker = L.marker([st.lat, st.lon], { icon: stationIcon }).addTo(layerStations);
 
     const labelTooltip = L.tooltip({
       permanent: true, direction: "right", offset: [6, 0],
-      className: "gauge-label zero-rain"
-    }).setContent("0.0 มม.").setLatLng([st.lat, st.lon]);
-    layerStationLabels.addLayer(labelTooltip);
+      className: "gauge-label"
+    }).setContent("").setLatLng([st.lat, st.lon]);
 
     marker.bindPopup("", { offset: [0, -8] });
 
@@ -1035,14 +1158,17 @@ function initTelemetryStationMarkers() {
       data: st,
       idx: idx,
       marker: marker,
-      tooltip: labelTooltip
+      tooltip: labelTooltip,
+      rain1h: 0,
+      rain24h: 0,
+      dbz: 0
     });
   });
 
   if (!document.getElementById("chkStations").checked) map.removeLayer(layerStations);
-  if (!document.getElementById("chkStationLabels").checked) map.removeLayer(layerStationLabels);
 }
 
+// อัปเดตข้อมูลสถานี และสร้าง Popup สไตล์ WAM ONWR
 function updateTelemetryStationValues() {
   if (stationMarkerInstances.length === 0 || !manifest || frameImages.length === 0) return;
 
@@ -1062,7 +1188,10 @@ function updateTelemetryStationValues() {
     return;
   }
 
-  const showAllLabels = document.getElementById("chkStationLabels").checked;
+  const showStationLabels = document.getElementById("chkStationLabels").checked;
+  const nowFrame = manifest.frames.find(f => f.offset_min === 0) || manifest.frames[0];
+  const ageMin = Math.max(0, Math.round((Date.now() / 1000 - nowFrame.t) / 60));
+  const nowHourStr = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')} น.`;
 
   stationMarkerInstances.forEach(item => {
     const st = item.data;
@@ -1077,74 +1206,101 @@ function updateTelemetryStationValues() {
     }
 
     const rain1h = dbzToRainRate(dbz);
-    const rain24h = rain1h > 0 ? (rain1h * 2.8 + (st.lat * 10) % 15).toFixed(1) : ((st.lon * 7) % 8).toFixed(1);
-    const rain1hText = rain1h > 0 ? rain1h.toFixed(1) : "0.0";
+    const rain24h = rain1h > 0 ? (rain1h * 2.8 + (st.lat * 10) % 15) : ((st.lon * 7) % 8);
+
+    item.dbz = dbz;
+    item.rain1h = rain1h;
+    item.rain24h = rain24h;
 
     let dotColor = "#64748B";
-    let statusDesc = "ไม่มีฝน";
-    let hasRain = false;
+    let hasRain = rain1h > 0.1;
 
-    if (rain1h > 90) { dotColor = "#C084FC"; statusDesc = "ฝนหนักมาก (เสี่ยงลูกเห็บ)"; hasRain = true; }
-    else if (rain1h > 35) { dotColor = "#EF4444"; statusDesc = "ฝนตกหนัก"; hasRain = true; }
-    else if (rain1h > 20) { dotColor = "#F59E0B"; statusDesc = "ฝนปานกลาง"; hasRain = true; }
-    else if (rain1h > 0.1) { dotColor = "#10B981"; statusDesc = "ฝนเล็กน้อย"; hasRain = true; }
+    if (rain1h > 90) { dotColor = "#C084FC"; }
+    else if (rain1h > 35) { dotColor = "#EF4444"; }
+    else if (rain1h > 20) { dotColor = "#F59E0B"; }
+    else if (rain1h > 0.1) { dotColor = "#10B981"; }
 
     const pinEl = document.getElementById(`gpin-${item.idx}`);
     if (pinEl) pinEl.style.backgroundColor = dotColor;
 
-    item.tooltip.setContent(`${rain1hText} มม.`);
-
-    const tooltipEl = item.tooltip.getElement();
-    if (tooltipEl) {
-      if (hasRain) {
-        tooltipEl.className = "leaflet-tooltip gauge-label has-rain leaflet-zoom-animated";
-        tooltipEl.style.display = "block";
-      } else {
-        tooltipEl.className = "leaflet-tooltip gauge-label zero-rain leaflet-zoom-animated";
-        tooltipEl.style.display = showAllLabels ? "block" : "none";
-      }
+    if (hasRain && showStationLabels) {
+      item.tooltip.setContent(`${rain1h.toFixed(1)} มม.`);
+      if (!map.hasLayer(item.tooltip)) layerStationLabels.addLayer(item.tooltip);
+      const tel = item.tooltip.getElement();
+      if (tel) tel.className = "leaflet-tooltip gauge-label has-rain leaflet-zoom-animated";
+    } else {
+      if (map.hasLayer(item.tooltip)) layerStationLabels.removeLayer(item.tooltip);
     }
 
+    // ==========================================
+    // ป๊อปอัปสถานีสไตล์ WAM ONWR ตามภาพต้นฉบับ
+    // ==========================================
     const popupHtml = `
-      <div class="pop-capsule" style="min-width: 230px;">
-        <div class="pop-top-row">
-          <div class="pop-title-box">
-            <div class="pop-title">
-              <span class="pop-dot" style="background: ${dotColor}; box-shadow: 0 0 8px ${dotColor};"></span>
-              ${st.name}
-            </div>
-            <span class="pop-subtext">ต.${st.tb} อ.${st.ap} จ.${st.pv} (${st.id})</span>
-          </div>
+      <div class="wam-popup">
+        <div class="wam-pop-name">${st.name}</div>
+        <div class="wam-pop-id">${st.id}</div>
+        <div class="wam-pop-loc">ต.${st.tb} · อ.${st.ap} · ${st.pv}</div>
+        <div class="wam-pop-metric">
+          <span>${rain24h.toFixed(1)}</span>
+          <span class="unit">มม. 24 ชม.</span>
+          <span class="wam-pop-chart-btn" title="คลิกเพื่อดูกราฟวิเคราะห์ฝน 105 นาที" onclick="zoomToStation(${st.lat}, ${st.lon}, '${st.name}', ${item.idx}); document.getElementById('btnOpenModal').click();">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+            </svg>
+          </span>
         </div>
-
-        <div class="pop-weather-card" style="margin: 4px 0;">
-          <div class="pop-weather-info">
-            <div class="pop-weather-main">${statusDesc}</div>
-            <div class="pop-weather-sub">ฝน 1 ชม.: <b>${rain1hText} มม.</b> · สะสม 24 ชม.: <b>${rain24h} มม.</b></div>
-          </div>
-          <div class="pop-weather-dbz">${dbz > 0 ? dbz.toFixed(0) + ' dBZ' : '0 dBZ'}</div>
-        </div>
-
-        <div class="pop-meta-list">
-          <div class="pop-meta-item">
-            <i data-lucide="clock" class="icon-xs"></i>
-            <span>เวลาตรวจวัด: ${formatThaiDateTime(new Date())}</span>
-          </div>
-          <div class="pop-meta-item">
-            <i data-lucide="crosshair" class="icon-xs"></i>
-            <span class="pop-coord-text">Lat: ${st.lat.toFixed(3)} · Lon: ${st.lon.toFixed(3)}</span>
-          </div>
-        </div>
-
-        <div class="pop-action-grid">
-          <button class="pop-btn pop-btn-graph" onclick="setInspectionPoint(${st.lat}, ${st.lon}, '${st.name}')">
-            <i data-lucide="activity" class="icon-xs"></i> ตั้งเป็นจุดตรวจวัด
-          </button>
+        <div class="wam-pop-time">${nowHourStr} (${ageMin} นาทีที่แล้ว)</div>
+        <div class="wam-pop-footer">
+          <span class="wam-pop-coord" onclick="zoomToStation(${st.lat}, ${st.lon}, '${st.name}', ${item.idx})" title="คลิกเพื่อปักหมุดวิเคราะห์ที่จุดนี้">${st.lat.toFixed(4)}, ${st.lon.toFixed(4)}</span>
+          <span class="wam-pop-agency">ทันฝน · TMD</span>
         </div>
       </div>
     `;
     item.marker.setPopupContent(popupHtml);
   });
+
+  renderTelemetryPanelList();
+}
+
+function renderTelemetryPanelList() {
+  const container = document.getElementById("telemetryStationList");
+  if (!container) return;
+
+  const sorted = [...stationMarkerInstances].sort((a, b) => {
+    return telemetrySortMode === "1h" ? (b.rain1h - a.rain1h) : (b.rain24h - a.rain24h);
+  });
+
+  let html = "";
+  sorted.forEach((item, index) => {
+    const val = telemetrySortMode === "1h" ? item.rain1h.toFixed(1) : item.rain24h.toFixed(1);
+    const isTop = index < 3 && parseFloat(val) > 0;
+    const isHeavy = parseFloat(val) > 35;
+
+    html += `
+      <div class="tp-item" onclick="zoomToStation(${item.data.lat}, ${item.data.lon}, '${item.data.name}', ${item.idx})">
+        <div class="tp-rank ${isTop ? 'top' : ''}">${index + 1}</div>
+        <div class="tp-st-info">
+          <div class="tp-st-name">${item.data.name}</div>
+          <div class="tp-st-sub">ต.${item.data.tb} · อ.${item.data.ap} · จ.${item.data.pv}</div>
+        </div>
+        <div class="tp-st-val">
+          <div class="tp-val-num ${isHeavy ? 'rain-high' : ''}">${val}</div>
+          <div class="tp-val-unit">มม.</div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function zoomToStation(lat, lon, name, idx) {
+  map.flyTo([lat, lon], 10, { duration: 1.2 });
+  setInspectionPoint(lat, lon, name);
+  const inst = stationMarkerInstances[idx];
+  if (inst && inst.marker) {
+    inst.marker.openPopup();
+  }
 }
 
 function renderMeteogram(sampledDbzList, peakDbz) {
@@ -1416,7 +1572,6 @@ function analyzeImpactAtPoint(lat, lon) {
   let hitDistBack = -1;
   let incomingMaxDbz = 0;
 
-  // ปรับ maxScanKm ให้รองรับการพยากรณ์ 120 นาที (เพิ่มเป็น 160 กม.)
   if (spd >= 2) {
     const rad = deg * Math.PI / 180;
     const upE = -Math.sin(rad);
@@ -1729,11 +1884,6 @@ function updateThemeVisuals(themeKey) {
   currentTheme = themeKey;
   const style = THEME_STYLES[themeKey];
 
-  const root = document.documentElement;
-  root.style.setProperty("--st-label-bg", style.stLabelBg);
-  root.style.setProperty("--st-label-border", style.stLabelBorder);
-  root.style.setProperty("--st-label-text", style.stLabelText);
-
   rangeCircleElements.forEach(c => {
     c.setStyle({ color: style.ringColor, opacity: style.ringOpacity });
   });
@@ -1963,6 +2113,37 @@ document.getElementById("mgModal").addEventListener("click", (e) => {
   }
 });
 
+// เปิด-ปิด แผงตารางสถานีน้ำฝน
+const telemetryPanel = document.getElementById("telemetryPanel");
+document.getElementById("btnToggleTelemetryPanel").addEventListener("click", () => {
+  const isOpen = telemetryPanel.classList.contains("open");
+  if (isOpen) {
+    telemetryPanel.classList.remove("open");
+  } else {
+    telemetryPanel.classList.add("open");
+    renderTelemetryPanelList();
+  }
+  safeLucide();
+});
+
+document.getElementById("btnCloseTelemetryPanel").addEventListener("click", () => {
+  telemetryPanel.classList.remove("open");
+});
+
+document.getElementById("tabRain1h").addEventListener("click", () => {
+  telemetrySortMode = "1h";
+  document.getElementById("tabRain1h").classList.add("active");
+  document.getElementById("tabRain24h").classList.remove("active");
+  renderTelemetryPanelList();
+});
+
+document.getElementById("tabRain24h").addEventListener("click", () => {
+  telemetrySortMode = "24h";
+  document.getElementById("tabRain24h").classList.add("active");
+  document.getElementById("tabRain1h").classList.remove("active");
+  renderTelemetryPanelList();
+});
+
 document.getElementById("toggleLayerCard").addEventListener("click", () => {
   const body = document.getElementById("layerBody");
   const isHidden = body.style.display === "none";
@@ -1982,18 +2163,11 @@ document.getElementById("chkRings").addEventListener("change", e => {
 document.getElementById("chkStations").addEventListener("change", e => {
   if (e.target.checked) {
     map.addLayer(layerStations);
-    map.addLayer(layerStationLabels);
   } else {
     map.removeLayer(layerStations);
-    map.removeLayer(layerStationLabels);
   }
 });
 document.getElementById("chkStationLabels").addEventListener("change", e => {
-  if (e.target.checked) {
-    map.addLayer(layerStationLabels);
-  } else {
-    map.removeLayer(layerStationLabels);
-  }
   updateTelemetryStationValues();
 });
 
@@ -2013,6 +2187,7 @@ document.getElementById("chkTam").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerTambon); else map.removeLayer(layerTambon);
 });
 
+// สลับ Basemap
 document.querySelectorAll(".map-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".map-btn").forEach(b => b.classList.remove("active"));
@@ -2104,7 +2279,7 @@ setInterval(async () => {
     if (res.ok) {
       manifest = await res.json();
       updateFooterStatus();
-      analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon,1);
+      analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
       updateTelemetryStationValues();
     }
   } catch (e) {}
