@@ -157,7 +157,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   100% { transform: scale(1.8); opacity: 0; }
 }
 
-/* Rain Gauge Minimal Dot Markers (แสดงเฉพาะจุดสี ไม่รกสายตา) */
+/* Rain Gauge Minimal Dot Markers */
 .gauge-pin {
   width: 10px; height: 10px; border-radius: 50%;
   border: 1.5px solid #FFFFFF; box-shadow: 0 1px 4px rgba(0,0,0,0.6);
@@ -215,14 +215,22 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .btn-open-telemetry:hover { background: rgba(16, 185, 129, 0.3); }
 
-/* แผงขอบเขตพื้นที่ & เวกเตอร์ (ตัดป้ายฝนตกออกแล้ว) */
+/* แผงขอบเขตพื้นที่ & เวกเตอร์ (รองรับการย่อเป็น Collapsed Badge) */
 .layer-card {
   position: absolute; top: 62px; right: 12px; z-index: 999;
   width: 235px; padding: 12px 14px; font-size: 12px;
+  transition: all 0.25s cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+.layer-card.collapsed {
+  width: fit-content; padding: 7px 12px; border-radius: 999px;
 }
 .layer-head {
   display: flex; justify-content: space-between; align-items: center;
   font-weight: 600; color: var(--accent); cursor: pointer; user-select: none; margin-bottom: 6px;
+  gap: 8px;
+}
+.layer-card.collapsed .layer-head {
+  margin-bottom: 0;
 }
 .layer-head-title { display: flex; align-items: center; gap: 6px; }
 .layer-status { font-size: 10px; color: var(--ok); margin-bottom: 8px; display: block; }
@@ -233,7 +241,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .custom-checkbox input, .layer-label-check input { accent-color: var(--accent); cursor: pointer; }
 .divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0; }
 
-/* Actionable Weather Card */
+/* Actionable Weather Card & Pill */
 .rail {
   position: absolute; top: 62px; left: 12px; width: 345px; z-index: 999;
   display: flex; flex-direction: column; gap: 10px; pointer-events: none;
@@ -313,7 +321,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .rail.collapsed { width: fit-content; }
 .rail.collapsed .action-card { display: none; }
 .ac-pill {
-  display: none; padding: 8px 14px; border-radius: 999px;
+  display: none; padding: 7px 14px; border-radius: 999px;
   align-items: center; gap: 10px; cursor: pointer; width: fit-content;
   pointer-events: auto; user-select: none; transition: transform 0.2s;
 }
@@ -426,13 +434,13 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 /* สเกลสีเรดาร์ */
 .legend {
-  position: absolute; left: 12px; bottom: 85px; z-index: 998;
+  position: absolute; left: 12px; bottom: 65px; z-index: 998;
   padding: 8px 12px; border-radius: 12px; width: 210px;
 }
 .lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #00ECEC 0%, #00A000 25%, #FFFF00 50%, #FF9000 75%, #FF0000 100%); }
 .lg-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 
-/* แถบช่วงเวลา */
+/* แถบช่วงเวลา (รองรับสถานะ Collapsed) */
 .timeline-container {
   position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
   width: min(640px, calc(100% - 24px)); z-index: 1000;
@@ -481,7 +489,9 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 @media (max-width: 768px) {
   .rail { width: calc(100% - 24px); top: auto; bottom: 85px; }
+  .rail.collapsed { width: fit-content; top: 62px; bottom: auto; }
   .layer-card { width: 195px; font-size: 11px; }
+  .layer-card.collapsed { width: fit-content; padding: 6px 12px; }
   .telemetry-panel { width: calc(100% - 24px); left: 12px; right: 12px; top: 62px; bottom: 90px; }
   .legend { display: none; }
   .map-switch { overflow-x: auto; max-width: 45vw; }
@@ -512,8 +522,8 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- แผงขอบเขตพื้นที่ & เวกเตอร์ (ตัดป้ายฝนตกออกแล้ว) -->
-<div class="layer-card glass">
+<!-- แผงขอบเขตพื้นที่ & เวกเตอร์ (เริ่มต้นในสถานะ Collapsed) -->
+<div class="layer-card glass collapsed" id="layerCard">
   <div class="layer-head" id="toggleLayerCard">
     <div class="layer-head-title">
       <i data-lucide="layers" class="icon-sm"></i>
@@ -521,8 +531,8 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     </div>
     <i data-lucide="chevron-down" id="layerToggleIcon" class="icon-xs"></i>
   </div>
-  <span class="layer-status" id="boundaryStatus">● ขอบเขตพื้นที่พร้อมใช้งาน</span>
-  <div class="layer-content" id="layerBody">
+  <span class="layer-status" id="boundaryStatus" style="display: none;">● ขอบเขตพื้นที่พร้อมใช้งาน</span>
+  <div class="layer-content" id="layerBody" style="display: none;">
     <div class="layer-row">
       <label class="custom-checkbox">
         <input type="checkbox" id="chkArrows" checked>
@@ -579,7 +589,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- แผงตารางจัดอันดับน้ำฝนสถานีโทรมาตร (พร้อมแท็บ 1h, 3h, 6h, 24h) -->
+<!-- แผงตารางจัดอันดับน้ำฝนสถานีโทรมาตร -->
 <div class="telemetry-panel glass" id="telemetryPanel">
   <div class="tp-head">
     <div class="tp-title">
@@ -603,8 +613,8 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- Actionable Weather Card -->
-<div class="rail" id="actionRail">
+<!-- Actionable Weather Card (เริ่มต้นในสถานะ Collapsed) -->
+<div class="rail collapsed" id="actionRail">
   <div class="action-card glass" id="actionCard">
     <div class="ac-head">
       <div class="ac-head-left">
@@ -723,8 +733,8 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   <div class="lg-labels"><span>เบา</span><span>ปานกลาง</span><span>หนัก</span><span>หนักมาก</span></div>
 </div>
 
-<!-- แถบช่วงเวลา -->
-<div class="timeline-container" id="timelineBox">
+<!-- แถบช่วงเวลา (เริ่มต้นในสถานะ Collapsed) -->
+<div class="timeline-container collapsed" id="timelineBox">
   <div class="tl-card glass">
     <div class="tl-header">
       <div class="tl-title" id="tlFullTitle">
@@ -1216,7 +1226,7 @@ function updateTelemetryStationValues() {
   renderTelemetryPanelList();
 }
 
-// 3. ฟังก์ชันเรนเดอร์ลิสต์ตารางจัดอันดับน้ำฝน 1h, 3h, 6h, 24h
+// ฟังก์ชันเรนเดอร์ลิสต์ตารางจัดอันดับน้ำฝน 1h, 3h, 6h, 24h
 function renderTelemetryPanelList() {
   const container = document.getElementById("telemetryStationList");
   if (!container) return;
@@ -2097,12 +2107,25 @@ document.querySelectorAll(".tp-tab-btn").forEach(btn => {
   });
 });
 
+// ย่อ/ขยาย แผงชั้นข้อมูล & เวกเตอร์
 document.getElementById("toggleLayerCard").addEventListener("click", () => {
+  const card = document.getElementById("layerCard");
   const body = document.getElementById("layerBody");
-  const isHidden = body.style.display === "none";
-  body.style.display = isHidden ? "flex" : "none";
+  const status = document.getElementById("boundaryStatus");
   const icon = document.getElementById("layerToggleIcon");
-  if (icon) icon.setAttribute("data-lucide", isHidden ? "chevron-down" : "chevron-up");
+  const isHidden = body.style.display === "none";
+
+  if (isHidden) {
+    body.style.display = "flex";
+    if (status) status.style.display = "block";
+    if (card) card.classList.remove("collapsed");
+    if (icon) icon.setAttribute("data-lucide", "chevron-up");
+  } else {
+    body.style.display = "none";
+    if (status) status.style.display = "none";
+    if (card) card.classList.add("collapsed");
+    if (icon) icon.setAttribute("data-lucide", "chevron-down");
+  }
   safeLucide();
 });
 
