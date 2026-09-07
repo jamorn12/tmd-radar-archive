@@ -572,10 +572,11 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
     <div class="divider"></div>
 
+    <!-- 📌 ตั้งค่าเริ่มต้น: ปิดขอบเขตจังหวัด อำเภอ ตำบล และป้ายชื่อทั้งหมดเพื่อป้องกันเว็บแลคตอนเปิด -->
     <div class="layer-row">
       <label class="custom-checkbox">
         <input type="checkbox" id="chkProv">
-        <span>ขอบเขตจังหวัด</span>
+        <span>ขอบเขตจังหวัด (240 กม.)</span>
       </label>
       <label class="layer-label-check">
         <input type="checkbox" id="chkProvLabel"> ป้าย
@@ -972,11 +973,12 @@ const layerRings = L.layerGroup().addTo(map);
 const layerTrajectory = L.layerGroup().addTo(map);
 const layerStations = L.layerGroup().addTo(map);
 
-const layerProvince = L.layerGroup().addTo(map);
-const layerProvinceLabels = L.layerGroup().addTo(map);
-const layerAmphoe = L.layerGroup().addTo(map);
-const layerAmphoeLabels = L.layerGroup().addTo(map);
-const layerTambon = L.layerGroup().addTo(map);
+// 📌 สร้างเลเยอร์ขอบเขต แต่ไม่สั่ง addTo(map) ตอนเริ่มต้น เพื่อป้องกันเว็บแลค
+const layerProvince = L.layerGroup();
+const layerProvinceLabels = L.layerGroup();
+const layerAmphoe = L.layerGroup();
+const layerAmphoeLabels = L.layerGroup();
+const layerTambon = L.layerGroup();
 
 let manifest = null;
 let radarOverlays = [];
@@ -1932,18 +1934,19 @@ function updateThemeVisuals(themeKey) {
   analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
 }
 
-// 📌 โหลดขอบเขตจังหวัด, อำเภอ และตำบลจากโฟลเดอร์ปัจจุบันด้วย Relative Path (./)
+// 📌 โหลดขอบเขตจังหวัด อำเภอ และตำบล (รองรับไฟล์ใหม่ provinces_240km.geojson)
 async function loadBoundaries() {
   console.log("📍 กำลังโหลดขอบเขตพื้นที่...");
 
+  // 1. โหลดขอบเขตจังหวัด (240 กม.) จากไฟล์โลคอล
   try {
-    const resProv = await fetch("https://cdn.jsdelivr.net/gh/apisit/thailand.json@master/thailand.json");
+    const resProv = await fetch("./provinces_240km.geojson");
     if (resProv.ok) {
       const dataProv = await resProv.json();
       L.geoJSON(dataProv, {
         style: { color: "#38BDF8", weight: 1.5, fill: false, opacity: 0.75 },
         onEachFeature: (feature, layer) => {
-          const name = feature.properties.name || feature.properties.pro_th || "";
+          const name = feature.properties.name || "";
           if (name) {
             const center = layer.getBounds().getCenter();
             const label = L.tooltip({ permanent: true, direction: "center", className: "map-label" })
@@ -1952,44 +1955,47 @@ async function loadBoundaries() {
           }
         }
       }).addTo(layerProvince);
+      console.log("✅ โหลดขอบเขตจังหวัดสำเร็จ");
     }
   } catch (err) {
-    console.warn("⚠️ โหลดขอบเขตจังหวัดไม่สำเร็จ:", err);
+    console.warn("⚠️ โหลดไฟล์ provinces_240km.geojson ไม่สำเร็จ:", err);
   }
 
-  // โหลดขอบเขตอำเภอ
+  // 2. โหลดขอบเขตอำเภอ (240 กม.)
   try {
     const resAmp = await fetch("./districts_240km.geojson");
-    if (!resAmp.ok) throw new Error(`HTTP ${resAmp.status} Not Found`);
-    const dataAmp = await resAmp.json();
-    L.geoJSON(dataAmp, {
-      style: { color: "#FBBF24", weight: 1.2, dashArray: "3, 3", fill: false, opacity: 0.85 },
-      onEachFeature: (feature, layer) => {
-        const name = feature.properties.name || "";
-        if (name) {
-          const center = layer.getBounds().getCenter();
-          const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
-                         .setContent(name).setLatLng(center);
-          layerAmphoeLabels.addLayer(label);
+    if (resAmp.ok) {
+      const dataAmp = await resAmp.json();
+      L.geoJSON(dataAmp, {
+        style: { color: "#FBBF24", weight: 1.2, dashArray: "3, 3", fill: false, opacity: 0.85 },
+        onEachFeature: (feature, layer) => {
+          const name = feature.properties.name || "";
+          if (name) {
+            const center = layer.getBounds().getCenter();
+            const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
+                           .setContent(name).setLatLng(center);
+            layerAmphoeLabels.addLayer(label);
+          }
         }
-      }
-    }).addTo(layerAmphoe);
-    console.log("✅ โหลดขอบเขตอำเภอสำเร็จ");
+      }).addTo(layerAmphoe);
+      console.log("✅ โหลดขอบเขตอำเภอสำเร็จ");
+    }
   } catch (err) {
-    console.error("❌ หาไฟล์ districts_240km.geojson ไม่พบในโฟลเดอร์ docs/:", err);
+    console.warn("⚠️ โหลดไฟล์ districts_240km.geojson ไม่สำเร็จ:", err);
   }
 
-  // โหลดขอบเขตตำบล
+  // 3. โหลดขอบเขตตำบล (240 กม.)
   try {
     const resTam = await fetch("./subdistricts_240km.geojson");
-    if (!resTam.ok) throw new Error(`HTTP ${resTam.status} Not Found`);
-    const dataTam = await resTam.json();
-    L.geoJSON(dataTam, {
-      style: { color: "#38BDF8", weight: 0.9, fill: false, opacity: 0.7 }
-    }).addTo(layerTambon);
-    console.log("✅ โหลดขอบเขตตำบลสำเร็จ");
+    if (resTam.ok) {
+      const dataTam = await resTam.json();
+      L.geoJSON(dataTam, {
+        style: { color: "#38BDF8", weight: 0.9, fill: false, opacity: 0.7 }
+      }).addTo(layerTambon);
+      console.log("✅ โหลดขอบเขตตำบลสำเร็จ");
+    }
   } catch (err) {
-    console.error("❌ หาไฟล์ subdistricts_240km.geojson ไม่พบในโฟลเดอร์ docs/:", err);
+    console.warn("⚠️ โหลดไฟล์ subdistricts_240km.geojson ไม่สำเร็จ:", err);
   }
 }
 
@@ -2222,6 +2228,7 @@ document.getElementById("chkStations").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerStations); else map.removeLayer(layerStations);
 });
 
+// 📌 ควบคุมการเปิด/ปิดเลเยอร์และป้ายชื่อขอบเขตจาก Checkbox
 document.getElementById("chkProv").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerProvince); else map.removeLayer(layerProvince);
 });
