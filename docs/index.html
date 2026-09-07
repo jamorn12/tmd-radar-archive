@@ -972,11 +972,12 @@ const layerRings = L.layerGroup().addTo(map);
 const layerTrajectory = L.layerGroup().addTo(map);
 const layerStations = L.layerGroup().addTo(map);
 
-const layerProvince = L.layerGroup();
-const layerProvinceLabels = L.layerGroup();
-const layerAmphoe = L.layerGroup();
-const layerAmphoeLabels = L.layerGroup();
-const layerTambon = L.layerGroup();
+// 📌 ประกาศเลเยอร์ขอบเขตพื้นที่พร้อมผูกเข้ากับ map ทันที
+const layerProvince = L.layerGroup().addTo(map);
+const layerProvinceLabels = L.layerGroup().addTo(map);
+const layerAmphoe = L.layerGroup().addTo(map);
+const layerAmphoeLabels = L.layerGroup().addTo(map);
+const layerTambon = L.layerGroup().addTo(map);
 
 let manifest = null;
 let radarOverlays = [];
@@ -1954,13 +1955,13 @@ async function loadBoundaries() {
     }
   } catch (err) {}
 
-  // ขอบเขตอำเภอ (ปรับสไตล์ให้เส้นหนาและชัดขึ้น)
+  // ขอบเขตอำเภอ (240 กม.)
   try {
     const resAmp = await fetch("districts_240km.geojson");
     if (resAmp.ok) {
       const dataAmp = await resAmp.json();
       L.geoJSON(dataAmp, {
-        style: { color: "#FBBF24", weight: 1.2, dashArray: "3, 3", fill: false, opacity: 0.8 },
+        style: { color: "#FBBF24", weight: 1.2, dashArray: "3, 3", fill: false, opacity: 0.85 },
         onEachFeature: (feature, layer) => {
           const name = feature.properties.name || "";
           if (name) {
@@ -1973,20 +1974,20 @@ async function loadBoundaries() {
       }).addTo(layerAmphoe);
     }
   } catch (err) {
-    console.error("ไม่พบไฟล์ districts_240km.geojson ในโฟลเดอร์ docs/");
+    console.error("❌ โหลดไฟล์ districts_240km.geojson ไม่สำเร็จ (ตรวจสอบว่าไฟล์อยู่ในโฟลเดอร์ docs/ หรือยัง):", err);
   }
 
-  // ขอบเขตตำบลภายในรัศมี 240 กม. (ปรับสีและน้ำหนักเส้นให้มองเห็นชัดเจน)
+  // ขอบเขตตำบล (240 กม.)
   try {
     const resTam = await fetch("subdistricts_240km.geojson");
     if (resTam.ok) {
       const dataTam = await resTam.json();
       L.geoJSON(dataTam, {
-        style: { color: "#94A3B8", weight: 0.8, fill: false, opacity: 0.6 }
+        style: { color: "#38BDF8", weight: 0.9, fill: false, opacity: 0.7 }
       }).addTo(layerTambon);
     }
   } catch (err) {
-    console.error("ไม่พบไฟล์ subdistricts_240km.geojson ในโฟลเดอร์ docs/");
+    console.error("❌ โหลดไฟล์ subdistricts_240km.geojson ไม่สำเร็จ (ตรวจสอบว่าไฟล์อยู่ในโฟลเดอร์ docs/ หรือยัง):", err);
   }
 }
 
