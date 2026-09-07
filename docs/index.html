@@ -32,7 +32,6 @@
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
   --blur: blur(16px);
 
-  /* ตัวแปรสีปรับตาม Basemap สำหรับป้ายบอกระยะทางเรดาร์ */
   --ring-label-bg: rgba(15, 23, 42, 0.82);
   --ring-label-border: rgba(56, 189, 248, 0.45);
   --ring-label-color: #38BDF8;
@@ -52,9 +51,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   border-radius: 14px;
 }
 
-/* ==========================================================
-   Leaflet Custom Ring Labels: ดีไซน์แคปซูลมนกึ่งโปร่งแสง
-   ========================================================== */
+/* Leaflet Custom Ring Labels */
 .leaflet-tooltip.ring-label {
   background: var(--ring-label-bg) !important;
   border: 1px solid var(--ring-label-border) !important;
@@ -160,25 +157,13 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   100% { transform: scale(1.8); opacity: 0; }
 }
 
-/* Rain Gauge Minimal Dot Markers */
+/* Rain Gauge Minimal Dot Markers (แสดงเฉพาะจุดสี ไม่รกสายตา) */
 .gauge-pin {
   width: 10px; height: 10px; border-radius: 50%;
   border: 1.5px solid #FFFFFF; box-shadow: 0 1px 4px rgba(0,0,0,0.6);
   cursor: pointer; transition: background-color 0.35s ease, transform 0.15s ease;
 }
 .gauge-pin:hover { transform: scale(1.6); z-index: 1000; }
-
-.gauge-label {
-  font-family: "IBM Plex Mono", monospace !important;
-  font-size: 8.5px !important; font-weight: 700 !important; color: #fff !important;
-  background: rgba(15, 23, 42, 0.90) !important; border: 1px solid rgba(56, 189, 248, 0.4) !important;
-  border-radius: 4px !important; padding: 1px 4px !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45) !important; white-space: nowrap !important;
-}
-.gauge-label.has-rain {
-  background: rgba(2, 132, 199, 0.95) !important; border-color: #38BDF8 !important;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8) !important;
-}
 
 /* Lucide Icons */
 .lucide-icon { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; flex-shrink: 0; }
@@ -230,7 +215,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .btn-open-telemetry:hover { background: rgba(16, 185, 129, 0.3); }
 
-/* แผงขอบเขตพื้นที่ & เวกเตอร์ */
+/* แผงขอบเขตพื้นที่ & เวกเตอร์ (ตัดป้ายฝนตกออกแล้ว) */
 .layer-card {
   position: absolute; top: 62px; right: 12px; z-index: 999;
   width: 235px; padding: 12px 14px; font-size: 12px;
@@ -336,9 +321,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .rail.collapsed .ac-pill { display: flex; }
 .ac-pill-text { font-size: 12px; font-weight: 600; color: #fff; }
 
-/* ==========================================================
-   WAM ONWR Style: แผงตารางจัดอันดับฝนสะสม 1, 3, 6, 24 ชม.
-   ========================================================== */
+/* แผงตารางจัดอันดับน้ำฝนสถานีโทรมาตร */
 .telemetry-panel {
   position: absolute; top: 62px; right: 12px; bottom: 90px;
   width: 360px; z-index: 1001; display: none; flex-direction: column;
@@ -364,7 +347,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .tp-close-btn:hover { background: rgba(255, 255, 255, 0.2); color: #fff; }
 
-/* แท็บ 4 ช่วงเวลา: 1h, 3h, 6h, 24h */
 .tp-tabs { display: flex; gap: 4px; background: rgba(0, 0, 0, 0.35); padding: 3px; border-radius: 8px; margin-bottom: 10px; }
 .tp-tab-btn {
   flex: 1; border: none; background: transparent; color: var(--text-dim);
@@ -530,7 +512,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- แผงขอบเขตพื้นที่ & เวกเตอร์ -->
+<!-- แผงขอบเขตพื้นที่ & เวกเตอร์ (ตัดป้ายฝนตกออกแล้ว) -->
 <div class="layer-card glass">
   <div class="layer-head" id="toggleLayerCard">
     <div class="layer-head-title">
@@ -560,9 +542,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
       <label class="custom-checkbox">
         <input type="checkbox" id="chkStations" checked>
         <span style="font-weight: 600; color: #34D399;">จุดสถานีโทรมาตร</span>
-      </label>
-      <label class="layer-label-check">
-        <input type="checkbox" id="chkStationLabels"> ป้ายฝนตก
       </label>
     </div>
 
@@ -971,7 +950,6 @@ const layerRings = L.layerGroup().addTo(map);
 const layerTrajectory = L.layerGroup().addTo(map);
 
 const layerStations = L.layerGroup().addTo(map);
-const layerStationLabels = L.layerGroup();
 
 const layerProvince = L.layerGroup();
 const layerProvinceLabels = L.layerGroup();
@@ -999,7 +977,7 @@ let lastAlertTimestamp = 0;
 let currentSampledDbzList = [];
 
 let stationMarkerInstances = [];
-let telemetrySortMode = "1h"; // โหมดสะสม: "1h", "3h", "6h", "24h"
+let telemetrySortMode = "1h";
 
 const liveGpsIcon = L.divIcon({
   className: "custom-pin-wrap",
@@ -1109,10 +1087,9 @@ function dbzToRainRate(dbz) {
   return Math.pow(z / 200, 1 / 1.6);
 }
 
-// 1. สร้างสถานีบนแผนที่
+// สร้างสถานีบนแผนที่
 function initTelemetryStationMarkers() {
   layerStations.clearLayers();
-  layerStationLabels.clearLayers();
   stationMarkerInstances = [];
 
   TELEMETRY_STATIONS.forEach((st, idx) => {
@@ -1124,19 +1101,12 @@ function initTelemetryStationMarkers() {
     });
 
     const marker = L.marker([st.lat, st.lon], { icon: stationIcon }).addTo(layerStations);
-
-    const labelTooltip = L.tooltip({
-      permanent: true, direction: "right", offset: [6, 0],
-      className: "gauge-label"
-    }).setContent("").setLatLng([st.lat, st.lon]);
-
     marker.bindPopup("", { offset: [0, -8] });
 
     stationMarkerInstances.push({
       data: st,
       idx: idx,
       marker: marker,
-      tooltip: labelTooltip,
       rain1h: 0,
       rain3h: 0,
       rain6h: 0,
@@ -1148,7 +1118,7 @@ function initTelemetryStationMarkers() {
   if (!document.getElementById("chkStations").checked) map.removeLayer(layerStations);
 }
 
-// 2. คำนวณฝนสะสม 1 ชม., 3 ชม., 6 ชม., 24 ชม. และอัปเดต Popup
+// คำนวณฝนสะสม 1 ชม., 3 ชม., 6 ชม., 24 ชม. และอัปเดต Popup
 function updateTelemetryStationValues() {
   if (stationMarkerInstances.length === 0 || !manifest || frameImages.length === 0) return;
 
@@ -1168,7 +1138,6 @@ function updateTelemetryStationValues() {
     return;
   }
 
-  const showStationLabels = document.getElementById("chkStationLabels").checked;
   const nowFrame = manifest.frames.find(f => f.offset_min === 0) || manifest.frames[0];
   const ageMin = Math.max(0, Math.round((Date.now() / 1000 - nowFrame.t) / 60));
   const nowHourStr = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')} น.`;
@@ -1188,7 +1157,6 @@ function updateTelemetryStationValues() {
     const rain1h = dbzToRainRate(dbz);
     const seed = ((st.lat * 37 + st.lon * 19) % 5);
 
-    // คำนวณปริมาณฝนสะสมแบบสอดคล้องตามฟิสิกส์บรรยากาศ
     const rain3h = rain1h > 0 ? (rain1h * 1.7 + seed * 0.4) : (seed * 0.15);
     const rain6h = rain1h > 0 ? (rain3h + rain1h * 1.1 + seed * 0.6) : (seed * 0.3);
     const rain24h = rain1h > 0 ? (rain6h + rain1h * 1.5 + seed * 1.1) : (seed * 0.8);
@@ -1200,7 +1168,6 @@ function updateTelemetryStationValues() {
     item.rain24h = rain24h;
 
     let dotColor = "#64748B";
-    let hasRain = rain1h > 0.1;
 
     if (rain1h > 90) { dotColor = "#C084FC"; }
     else if (rain1h > 35) { dotColor = "#EF4444"; }
@@ -1210,23 +1177,12 @@ function updateTelemetryStationValues() {
     const pinEl = document.getElementById(`gpin-${item.idx}`);
     if (pinEl) pinEl.style.backgroundColor = dotColor;
 
-    if (hasRain && showStationLabels) {
-      item.tooltip.setContent(`${rain1h.toFixed(1)} มม.`);
-      if (!map.hasLayer(item.tooltip)) layerStationLabels.addLayer(item.tooltip);
-      const tel = item.tooltip.getElement();
-      if (tel) tel.className = "leaflet-tooltip gauge-label has-rain leaflet-zoom-animated";
-    } else {
-      if (map.hasLayer(item.tooltip)) layerStationLabels.removeLayer(item.tooltip);
-    }
-
-    // กำหนดค่าตัวเลขหลักที่จะแสดงใน Popup ตามโหมดที่เลือกอยู่
     let activeVal = rain24h;
     let activeLabel = "มม. 24 ชม.";
     if (telemetrySortMode === "1h") { activeVal = rain1h; activeLabel = "มม. 1 ชม."; }
     else if (telemetrySortMode === "3h") { activeVal = rain3h; activeLabel = "มม. 3 ชม."; }
     else if (telemetrySortMode === "6h") { activeVal = rain6h; activeLabel = "มม. 6 ชม."; }
 
-    // ป๊อปอัปสถานีสไตล์ WAM ONWR พร้อมแจกแจงฝนสะสมครบทุกช่วงเวลา
     const popupHtml = `
       <div class="wam-popup">
         <div class="wam-pop-name">${st.name}</div>
@@ -1880,7 +1836,6 @@ function renderRangeRings() {
   `, { offset: [0, -6] });
 }
 
-// อัปเดตสีตาม Basemap อัตโนมัติ ทั้งวงแหวนและป้ายแคปซูล
 function updateThemeVisuals(themeKey) {
   currentTheme = themeKey;
   const style = THEME_STYLES[themeKey];
@@ -2115,7 +2070,7 @@ document.getElementById("mgModal").addEventListener("click", (e) => {
   }
 });
 
-// จัดการเปิด-ปิดแผงตารางสถานีโทรมาตร
+// เปิด-ปิด แผงตารางสถานีน้ำฝน
 const telemetryPanel = document.getElementById("telemetryPanel");
 document.getElementById("btnToggleTelemetryPanel").addEventListener("click", () => {
   const isOpen = telemetryPanel.classList.contains("open");
@@ -2164,9 +2119,6 @@ document.getElementById("chkStations").addEventListener("change", e => {
   } else {
     map.removeLayer(layerStations);
   }
-});
-document.getElementById("chkStationLabels").addEventListener("change", e => {
-  updateTelemetryStationValues();
 });
 
 document.getElementById("chkProv").addEventListener("change", e => {
