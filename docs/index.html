@@ -215,7 +215,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .btn-open-telemetry:hover { background: rgba(16, 185, 129, 0.3); }
 
-/* แผงขอบเขตพื้นที่ & เวกเตอร์ (รองรับการย่อเป็น Collapsed Badge) */
+/* แผงขอบเขตพื้นที่ & เวกเตอร์ (เริ่มต้นในสถานะ Collapsed) */
 .layer-card {
   position: absolute; top: 62px; right: 12px; z-index: 999;
   width: 235px; padding: 12px 14px; font-size: 12px;
@@ -241,7 +241,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .custom-checkbox input, .layer-label-check input { accent-color: var(--accent); cursor: pointer; }
 .divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0; }
 
-/* Actionable Weather Card & Pill */
+/* Actionable Weather Card & Pill (เริ่มต้นในสถานะ Collapsed) */
 .rail {
   position: absolute; top: 62px; left: 12px; width: 345px; z-index: 999;
   display: flex; flex-direction: column; gap: 10px; pointer-events: none;
@@ -440,7 +440,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #00ECEC 0%, #00A000 25%, #FFFF00 50%, #FF9000 75%, #FF0000 100%); }
 .lg-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 
-/* แถบช่วงเวลา (รองรับสถานะ Collapsed) */
+/* แถบช่วงเวลา (เริ่มต้นในสถานะ Collapsed) */
 .timeline-container {
   position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
   width: min(640px, calc(100% - 24px)); z-index: 1000;
@@ -918,19 +918,23 @@ function safeLucide() {
 const THEME_STYLES = {
   dark: {
     arrowColor: "#38BDF8", ringColor: "#38BDF8", ringOpacity: 0.45, radarCenter: "#38BDF8", impactLine: "#F59E0B",
-    ringLabelBg: "rgba(15, 23, 42, 0.85)", ringLabelBorder: "rgba(56, 189, 248, 0.45)", ringLabelColor: "#38BDF8"
+    ringLabelBg: "rgba(15, 23, 42, 0.85)", ringLabelBorder: "rgba(56, 189, 248, 0.45)", ringLabelColor: "#38BDF8",
+    maskColor: "#050B14", maskOpacity: 0.75
   },
   hillshade: {
     arrowColor: "#EA580C", ringColor: "#0369A1", ringOpacity: 0.75, radarCenter: "#0284C7", impactLine: "#D97706",
-    ringLabelBg: "rgba(255, 255, 255, 0.88)", ringLabelBorder: "rgba(2, 132, 199, 0.45)", ringLabelColor: "#0369A1"
+    ringLabelBg: "rgba(255, 255, 255, 0.88)", ringLabelBorder: "rgba(2, 132, 199, 0.45)", ringLabelColor: "#0369A1",
+    maskColor: "#0F172A", maskOpacity: 0.68
   },
   satellite: {
     arrowColor: "#FACC15", ringColor: "#FDE047", ringOpacity: 0.85, radarCenter: "#FDE047", impactLine: "#F59E0B",
-    ringLabelBg: "rgba(0, 0, 0, 0.85)", ringLabelBorder: "rgba(250, 204, 21, 0.6)", ringLabelColor: "#FDE047"
+    ringLabelBg: "rgba(0, 0, 0, 0.85)", ringLabelBorder: "rgba(250, 204, 21, 0.6)", ringLabelColor: "#FDE047",
+    maskColor: "#020617", maskOpacity: 0.80
   },
   light: {
     arrowColor: "#0F172A", ringColor: "#334155", ringOpacity: 0.55, radarCenter: "#0F172A", impactLine: "#DC2626",
-    ringLabelBg: "rgba(255, 255, 255, 0.92)", ringLabelBorder: "rgba(51, 65, 85, 0.35)", ringLabelColor: "#1E293B"
+    ringLabelBg: "rgba(255, 255, 255, 0.92)", ringLabelBorder: "rgba(51, 65, 85, 0.35)", ringLabelColor: "#1E293B",
+    maskColor: "#1E293B", maskOpacity: 0.55
   }
 };
 
@@ -955,10 +959,14 @@ const baseLayers = {
 const map = L.map("map", { center: [16.77, 100.22], zoom: 8, zoomControl: false, layers: [baseLayers.dark] });
 L.control.zoom({ position: "bottomright" }).addTo(map);
 
+// สร้าง Pane พิเศษสำหรับ Radar Mask (อยู่เหนือภาพเรดาร์ แต่ไม่บล็อกการคลิกแผนที่)
+map.createPane('maskPane');
+map.getPane('maskPane').style.zIndex = 410;
+map.getPane('maskPane').style.pointerEvents = 'none';
+
 const layerArrows = L.layerGroup().addTo(map);
 const layerRings = L.layerGroup().addTo(map);
 const layerTrajectory = L.layerGroup().addTo(map);
-
 const layerStations = L.layerGroup().addTo(map);
 
 const layerProvince = L.layerGroup();
@@ -981,6 +989,7 @@ let userPinMarker = null;
 
 let rangeCircleElements = [];
 let stationMarkerElement = null;
+let radarMaskPolygon = null;
 
 let isAlertEnabled = localStorage.getItem("tanfon_alert_enabled") === "true";
 let lastAlertTimestamp = 0;
@@ -1097,7 +1106,7 @@ function dbzToRainRate(dbz) {
   return Math.pow(z / 200, 1 / 1.6);
 }
 
-// สร้างสถานีบนแผนที่
+// 1. สร้างสถานีบนแผนที่
 function initTelemetryStationMarkers() {
   layerStations.clearLayers();
   stationMarkerInstances = [];
@@ -1128,7 +1137,7 @@ function initTelemetryStationMarkers() {
   if (!document.getElementById("chkStations").checked) map.removeLayer(layerStations);
 }
 
-// คำนวณฝนสะสม 1 ชม., 3 ชม., 6 ชม., 24 ชม. และอัปเดต Popup
+// 2. คำนวณฝนสะสม 1 ชม., 3 ชม., 6 ชม., 24 ชม. และอัปเดต Popup
 function updateTelemetryStationValues() {
   if (stationMarkerInstances.length === 0 || !manifest || frameImages.length === 0) return;
 
@@ -1226,7 +1235,7 @@ function updateTelemetryStationValues() {
   renderTelemetryPanelList();
 }
 
-// ฟังก์ชันเรนเดอร์ลิสต์ตารางจัดอันดับน้ำฝน 1h, 3h, 6h, 24h
+// 3. เรนเดอร์ลิสต์ตารางจัดอันดับน้ำฝน 1h, 3h, 6h, 24h
 function renderTelemetryPanelList() {
   const container = document.getElementById("telemetryStationList");
   if (!container) return;
@@ -1805,6 +1814,50 @@ function renderCellVectors(frameIdx) {
   }
 }
 
+// สร้าง Radar Mask นอกวง 240 กม. เพื่อไฮไลต์พื้นที่ตรวจวัดให้สว่างคมชัด
+function renderRadarMask() {
+  if (radarMaskPolygon) {
+    map.removeLayer(radarMaskPolygon);
+    radarMaskPolygon = null;
+  }
+
+  const lat0 = radarStationLatLon[0];
+  const lon0 = radarStationLatLon[1];
+  const radiusKm = 240;
+
+  // กรอบขอบเขตผืนโลกด้านนอก
+  const worldOuterCoords = [
+    [-85, -180],
+    [-85, 180],
+    [85, 180],
+    [85, -180]
+  ];
+
+  // รูเจาะวงกลมรัศมี 240 กม.
+  const holeCoords = [];
+  const numPoints = 120;
+  for (let i = 0; i < numPoints; i++) {
+    const angle = (i / numPoints) * 2 * Math.PI;
+    const e = radiusKm * Math.sin(angle);
+    const n = radiusKm * Math.cos(angle);
+    const pt = unproject(e, n, lat0, lon0);
+    holeCoords.push(pt);
+  }
+
+  const style = THEME_STYLES[currentTheme];
+  const maskColor = style.maskColor || "#050B14";
+  const maskOpacity = style.maskOpacity !== undefined ? style.maskOpacity : 0.75;
+
+  // วาดโพลีกอนคลุมด้านนอกโดยเจาะรูกึ่งกลาง 240 กม.
+  radarMaskPolygon = L.polygon([worldOuterCoords, holeCoords], {
+    stroke: false,
+    fillColor: maskColor,
+    fillOpacity: maskOpacity,
+    interactive: false,
+    pane: 'maskPane'
+  }).addTo(map);
+}
+
 function renderRangeRings() {
   layerRings.clearLayers();
   rangeCircleElements = [];
@@ -1844,8 +1897,11 @@ function renderRangeRings() {
       </div>
     </div>
   `, { offset: [0, -6] });
+
+  renderRadarMask();
 }
 
+// อัปเดตสีตาม Basemap อัตโนมัติ ทั้งวงแหวน, ป้ายแคปซูล และ Radar Mask
 function updateThemeVisuals(themeKey) {
   currentTheme = themeKey;
   const style = THEME_STYLES[themeKey];
@@ -1861,6 +1917,13 @@ function updateThemeVisuals(themeKey) {
 
   if (stationMarkerElement) {
     stationMarkerElement.setStyle({ color: style.radarCenter });
+  }
+
+  if (radarMaskPolygon) {
+    radarMaskPolygon.setStyle({
+      fillColor: style.maskColor,
+      fillOpacity: style.maskOpacity
+    });
   }
 
   renderCellVectors(currentIndex);
@@ -2133,7 +2196,13 @@ document.getElementById("chkArrows").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerArrows); else map.removeLayer(layerArrows);
 });
 document.getElementById("chkRings").addEventListener("change", e => {
-  if (e.target.checked) map.addLayer(layerRings); else map.removeLayer(layerRings);
+  if (e.target.checked) {
+    map.addLayer(layerRings);
+    if (radarMaskPolygon && !map.hasLayer(radarMaskPolygon)) map.addLayer(radarMaskPolygon);
+  } else {
+    map.removeLayer(layerRings);
+    if (radarMaskPolygon && map.hasLayer(radarMaskPolygon)) map.removeLayer(radarMaskPolygon);
+  }
 });
 
 document.getElementById("chkStations").addEventListener("change", e => {
