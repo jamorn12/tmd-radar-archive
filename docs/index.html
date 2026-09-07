@@ -1933,7 +1933,7 @@ function updateThemeVisuals(themeKey) {
   analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
 }
 
-// 📌 โหลดขอบเขตจังหวัด, อำเภอ (districts_240km.geojson) และตำบล (subdistricts_240km.geojson)
+// 📌 โหลดขอบเขตจังหวัด, อำเภอ (districts_240km.geojson) และตำบล (subdistricts_240km.geojson) ในรัศมี 240 กม.
 async function loadBoundaries() {
   try {
     const resProv = await fetch("https://cdn.jsdelivr.net/gh/apisit/thailand.json@master/thailand.json");
@@ -1954,12 +1954,13 @@ async function loadBoundaries() {
     }
   } catch (err) {}
 
+  // ขอบเขตอำเภอ (ปรับสไตล์ให้เส้นหนาและชัดขึ้น)
   try {
     const resAmp = await fetch("districts_240km.geojson");
     if (resAmp.ok) {
       const dataAmp = await resAmp.json();
       L.geoJSON(dataAmp, {
-        style: { color: "#FBBF24", weight: 1.1, dashArray: "3, 3", fill: false, opacity: 0.65 },
+        style: { color: "#FBBF24", weight: 1.2, dashArray: "3, 3", fill: false, opacity: 0.8 },
         onEachFeature: (feature, layer) => {
           const name = feature.properties.name || "";
           if (name) {
@@ -1971,17 +1972,22 @@ async function loadBoundaries() {
         }
       }).addTo(layerAmphoe);
     }
-  } catch (err) {}
+  } catch (err) {
+    console.error("ไม่พบไฟล์ districts_240km.geojson ในโฟลเดอร์ docs/");
+  }
 
+  // ขอบเขตตำบลภายในรัศมี 240 กม. (ปรับสีและน้ำหนักเส้นให้มองเห็นชัดเจน)
   try {
     const resTam = await fetch("subdistricts_240km.geojson");
     if (resTam.ok) {
       const dataTam = await resTam.json();
       L.geoJSON(dataTam, {
-        style: { color: "#38BDF8", weight: 0.5, fill: false, opacity: 0.35 }
+        style: { color: "#94A3B8", weight: 0.8, fill: false, opacity: 0.6 }
       }).addTo(layerTambon);
     }
-  } catch (err) {}
+  } catch (err) {
+    console.error("ไม่พบไฟล์ subdistricts_240km.geojson ในโฟลเดอร์ docs/");
+  }
 }
 
 async function initRadar() {
