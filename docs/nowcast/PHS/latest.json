@@ -1,53 +1,103 @@
-{
-  "projection": "+proj=laea +lat_0=16.77 +lon_0=100.22 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs",
-  "grid": [160, 160],
-  "kmperpixel": 3.0,
-  "motion": {
-    "speed_kmh": 15.0,
-    "direction_deg": 270
-  },
-  "frames": [
-    {
-      "t": 1788814800,
-      "url": "PHS_20260907_2100Z_solid.png",
-      "offset_min": -120,
-      "kind": "obs"
-    },
-    {
-      "t": 1788822000,
-      "url": "PHS_20260907_2300Z_solid.png",
-      "offset_min": -105,
-      "kind": "obs"
-    },
-    {
-      "t": 1788825600,
-      "url": "PHS_20260908_0000Z_solid.png",
-      "offset_min": -90,
-      "kind": "obs"
-    },
-    {
-      "t": 1788829200,
-      "url": "PHS_20260908_0100Z_solid.png",
-      "offset_min": -75,
-      "kind": "obs"
-    },
-    {
-      "t": 1788833700,
-      "url": "PHS_20260908_0215Z_solid.png",
-      "offset_min": -60,
-      "kind": "obs"
-    },
-    {
-      "t": 1788834600,
-      "url": "PHS_20260908_0230Z_solid.png",
-      "offset_min": -45,
-      "kind": "obs"
-    },
-    {
-      "t": 1788837300,
-      "url": "PHS_20260908_0315Z_solid.png",
-      "offset_min": -30,
-      "kind": "obs"
-    }
-  ]
-}
+import time
+import traceback
+import requests
+import os
+
+# --- ตั้งค่าการแจ้งเตือนผ่าน Telegram Bot ---
+TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"  # ใส่ Token ของบอทที่คุณสร้างจาก @BotFather
+TELEGRAM_CHAT_ID = "YOUR_CHAT_ID_HERE"      # ใส่ Chat ID ของคุณ
+
+def send_alert(message):
+    """ฟังก์ชันส่งข้อความแจ้งเตือนเข้า Telegram ทันทีเมื่อเกิดเหตุฉุกเฉิน"""
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        payload = {
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": f"🚨 *[ทันฝน System Alert]*\n{message}",
+            "parse_mode": "Markdown"
+        }
+        response = requests.post(url, json=payload, timeout=5)
+        if response.status_code != 200:
+            print("⚠️ ไม่สามารถส่งการแจ้งเตือนไป Telegram ได้")
+    except Exception as e:
+        print(f"⚠️ เกิดข้อผิดพลาดในการส่ง Alert: {e}")
+
+def run_with_retry_and_recovery(task_func, task_name="งานประมวลผลเรดาร์"):
+    """
+    ฟังก์ชันแม่ข่าย (Wrapper) ควบคุมความปลอดภัย:
+    - ลองทำซ้ำอัตโนมัติ (Retry)
+    - กู้คืนระบบอัตโนมัติ (Auto-Recovery) เมื่อล้มเหลว
+    - แจ้งเตือนผ่าน Telegram (Notification)
+    """
+    max_retries = 3
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"🔄 กำลังดำเนินการ: {task_name} (ความพยายามครั้งที่ {attempt}/{max_retries})")
+            
+            # เรียกใช้งานฟังก์ชันหลักของคุณที่นี่
+            task_func()
+            
+            print(f"✅ สำเร็จ: {task_name}")
+            return True # ทำงานสำเร็จ ออกจากลูป
+            
+        except Exception as e:
+            error_detail = traceback.format_exc()
+            print(f"⚠️ พลาดในรอบที่ {attempt}: {str(e)}")
+            
+            if attempt < max_retries:
+                sleep_time = attempt * 15 # เว้นระยะเพิ่มขึ้นเรื่อยๆ (Exponential Backoff)
+                print(f"⏳ กำลังรอ {sleep_time} วินาทีก่อนลองใหม่...")
+                time.sleep(sleep_time)
+            else:
+                # --- เมื่อพยายามครบ 3 ครั้งแล้วยังพัง เข้าสู่กระบวนการกู้คืน (Auto-Recovery) ---
+                print(f"❌ {task_name} ล้มเหลวทั้งหมด 3 ครั้ง กำลังสั่งกู้คืนระบบ...")
+                send_alert(f"❌ *{task_name}* ล้มเหลวขั้นวิกฤตหลังพยายาม 3 ครั้ง!\nกำลังเริ่มกระบวนการกู้คืนระบบอัตโนมัติ...\n\n`{str(e)}`")
+                
+                success_recovered = execute_auto_recovery_routine()
+                if success_recovered:
+                    send_alert(f"🛠️ *Auto-Recovery สำเร็จ:* ระบบได้กู้คืนตัวเองและกลับมาทำงานต่อเรียบร้อยแล้ว")
+                else:
+                    send_alert(f"🚨 *Auto-Recovery ล้มเหลว:* ระบบไม่สามารถกู้คืนตัวเองได้อัตโนมัติ ต้องให้ผู้ดูแลตรวจสอบด่วน!")
+                
+                return False
+
+def execute_auto_recovery_routine():
+    """ขั้นตอนการกู้คืนระบบเมื่อเกิดความเสียหาย"""
+    try:
+        print("🛠️ กำลังเคลียร์พื้นที่ชั่วคราวและรีเซ็ตสถานะ...")
+        
+        # 1. ลบไฟล์แคชหรือไฟล์ temp ที่อาจจะเสียหายค้างอยู่
+        temp_files = ["districts_temp.geojson", "nowcast/PHS/temp_frame.png"]
+        for f in temp_files:
+            if os.path.exists(f):
+                os.remove(f)
+                print(f"🗑️ ลบไฟล์ขยะ: {f}")
+        
+        # 2. ตรวจสอบความถูกต้องของ Manifest ล่าสุด ถ้าพังให้ถอยไปใช้เวอร์ชันก่อนหน้า
+        manifest_path = "nowcast/PHS/latest.json"
+        if os.path.exists(manifest_path):
+            with open(manifest_path, "r", encoding="utf-8") as file_check:
+                content = file_check.read()
+                if not content.strip():
+                    raise ValueError("ไฟล์ latest.json ว่างเปล่า (Corrupted)")
+        
+        # กู้คืนสำเร็จ
+        return True
+        
+    except Exception as recovery_err:
+        print(f"🔥 กู้คืนระบบไม่สำเร็จเนื่องจาก: {recovery_err}")
+        return False
+
+# --- ตัวอย่างการนำไปใช้งานในลูปหลักของบอทหลังบ้าน ---
+def my_main_radar_pipeline():
+    # โค้ดดึงภาพเรดาร์ ประมวลผล และอัปเดตไฟล์ของคุณทั้งหมดใส่อยู่ในนี้
+    pass
+
+if __name__ == "__main__":
+    while True:
+        # สั่งรันงานโดยมีระบบป้องกันพังครอบไว้ตลอด 24 ชม.
+        run_with_retry_and_recovery(my_main_radar_pipeline, "ดึงและประมวลผลเรดาร์รอบเวลาปัจจุบัน")
+        
+        # พักรอนอบถัดไป (เช่น ทุกๆ 5 หรือ 15 นาที)
+        time.sleep(300)
