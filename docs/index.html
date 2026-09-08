@@ -2060,24 +2060,39 @@ function updateThemeVisuals(themeKey) {
   analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
 }
 
+// Helper to sanitize geojson features (removes null or empty geometries)
+function sanitizeGeoJson(data) {
+  if (!data || !data.features) return data;
+  data.features = data.features.filter(f => {
+    return f && f.geometry && f.geometry.coordinates && f.geometry.coordinates.length > 0;
+  });
+  return data;
+}
+
 async function loadBoundaries() {
   console.log("📍 กำลังโหลดขอบเขตพื้นที่...");
 
   try {
     const resProv = await fetch("./provinces_240km.geojson");
     if (!resProv.ok) throw new Error(`HTTP ${resProv.status}`);
-    const dataProv = await resProv.json();
+    let dataProv = await resProv.json();
+    dataProv = sanitizeGeoJson(dataProv);
     loadedProvinceFeatures = dataProv.features || [];
 
     L.geoJSON(dataProv, {
       style: { color: "#38BDF8", weight: 1.5, fill: false, opacity: 0.75 },
       onEachFeature: (feature, layer) => {
         const name = feature.properties.name || "";
-        if (name) {
-          const center = layer.getBounds().getCenter();
-          const label = L.tooltip({ permanent: true, direction: "center", className: "map-label" })
-                         .setContent(name).setLatLng(center);
-          layerProvinceLabels.addLayer(label);
+        if (name && typeof layer.getBounds === "function") {
+          const bounds = layer.getBounds();
+          if (bounds && typeof bounds.getCenter === "function") {
+            const center = bounds.getCenter();
+            if (center) {
+              const label = L.tooltip({ permanent: true, direction: "center", className: "map-label" })
+                             .setContent(name).setLatLng(center);
+              layerProvinceLabels.addLayer(label);
+            }
+          }
         }
       }
     }).addTo(layerProvince);
@@ -2089,16 +2104,22 @@ async function loadBoundaries() {
   try {
     const resAmp = await fetch("./districts_240km.geojson");
     if (resAmp.ok) {
-      const dataAmp = await resAmp.json();
+      let dataAmp = await resAmp.json();
+      dataAmp = sanitizeGeoJson(dataAmp);
       L.geoJSON(dataAmp, {
         style: { color: "#FBBF24", weight: 1.2, dashArray: "3, 3", fill: false, opacity: 0.85 },
         onEachFeature: (feature, layer) => {
           const name = feature.properties.name || "";
-          if (name) {
-            const center = layer.getBounds().getCenter();
-            const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
-                           .setContent(name).setLatLng(center);
-            layerAmphoeLabels.addLayer(label);
+          if (name && typeof layer.getBounds === "function") {
+            const bounds = layer.getBounds();
+            if (bounds && typeof bounds.getCenter === "function") {
+              const center = bounds.getCenter();
+              if (center) {
+                const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
+                               .setContent(name).setLatLng(center);
+                layerAmphoeLabels.addLayer(label);
+              }
+            }
           }
         }
       }).addTo(layerAmphoe);
@@ -2109,7 +2130,8 @@ async function loadBoundaries() {
   try {
     const resTam = await fetch("./subdistricts_240km.geojson");
     if (resTam.ok) {
-      const dataTam = await resTam.json();
+      let dataTam = await resTam.json();
+      dataTam = sanitizeGeoJson(dataTam);
       L.geoJSON(dataTam, {
         style: { color: "#38BDF8", weight: 0.9, fill: false, opacity: 0.7 }
       }).addTo(layerTambon);
