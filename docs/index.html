@@ -910,17 +910,11 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 </div>
 
 <script>
-// --- MAINTENANCE MODE BYPASS CHECK ---
-const urlParams = new URLSearchParams(window.location.search);
-const isDevMode = urlParams.get('dev') === 'true' || urlParams.get('admin') === '1' || window.location.hostname === 'localhost';
-
-if (isDevMode) {
-  // ซ่อนหน้าต่างปิดปรับปรุงเมื่อเข้าผ่านลิงก์ลับ ?dev=true
-  document.addEventListener("DOMContentLoaded", () => {
-    const overlay = document.getElementById("maintenanceOverlay");
-    if (overlay) overlay.style.display = "none";
-  });
-}
+// --- REMOVE MAINTENANCE MODE ---
+document.addEventListener("DOMContentLoaded", () => {
+  const overlay = document.getElementById("maintenanceOverlay");
+  if (overlay) overlay.style.display = "none";
+});
 
 const MANIFEST_URL = "nowcast/PHS/latest.json";
 const R_EARTH = 6371.0088;
