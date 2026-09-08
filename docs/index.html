@@ -425,7 +425,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #00ECEC 0%, #00A000 25%, #FFFF00 50%, #FF9000 75%, #FF0000 100%); }
 .lg-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 
-/* Impacted Areas UI Card (Spatial Impact Analysis) - Positioned above Legend to prevent overlap */
+/* Impacted Areas UI Card (Spatial Impact Analysis) - Positioned above Legend */
 .impact-card {
   position: absolute; left: 12px; bottom: 135px; z-index: 998;
   width: 235px; padding: 10px 12px; border-radius: 12px;
@@ -880,6 +880,7 @@ const geocodeCache = new Map();
 let loadedProvinceFeatures = [];
 
 async function getReverseGeocode(lat, lon) {
+  if (isNaN(lat) || isNaN(lon)) return "";
   const key = `${lat.toFixed(3)},${lon.toFixed(3)}`;
   if (geocodeCache.has(key)) return geocodeCache.get(key);
   try {
@@ -1074,16 +1075,19 @@ scanCanvas.height = SCAN_RES;
 const scanCtx = scanCanvas.getContext("2d", { willReadFrequently: true });
 
 function unproject(E, Nn, lat0, lon0) {
+  if (isNaN(E) || isNaN(Nn)) return [lat0, lon0];
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
   const rho = Math.hypot(E, Nn);
   if (rho < 1e-9) return [lat0, lon0];
   const c = rho / R_EARTH;
   const lat = Math.asin(Math.cos(c) * Math.sin(p0) + Nn * Math.sin(c) * Math.cos(p0) / rho);
   const lon = l0 + Math.atan2(E * Math.sin(c), rho * Math.cos(p0) * Math.cos(c) - Nn * Math.sin(p0) * Math.sin(c));
+  if (isNaN(lat) || isNaN(lon)) return [lat0, lon0];
   return [lat * 180 / Math.PI, lon * 180 / Math.PI];
 }
 
 function project(lat, lon, lat0, lon0) {
+  if (isNaN(lat) || isNaN(lon)) return [0, 0];
   const p = lat * Math.PI / 180, l = lon * Math.PI / 180;
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
   const cosC = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(l - l0);
@@ -1092,6 +1096,7 @@ function project(lat, lon, lat0, lon0) {
   const k = c / Math.sin(c);
   const E = R_EARTH * k * Math.cos(p) * Math.sin(l - l0);
   const Nn = R_EARTH * k * (Math.cos(p0) * Math.sin(p) - Math.sin(p0) * Math.cos(p) * Math.cos(l - l0));
+  if (isNaN(E) || isNaN(Nn)) return [0, 0];
   return [E, Nn];
 }
 
@@ -1381,6 +1386,8 @@ function updateImpactedProvinces() {
       const coords = centroid.geometry.coordinates; // [lon, lat]
       const pLat = coords[1], pLon = coords[0];
 
+      if (isNaN(pLat) || isNaN(pLon)) return;
+
       const [pinE, pinN] = project(pLat, pLon, lat0, lon0);
       const px = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
       const py = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
@@ -1427,6 +1434,7 @@ function updateImpactedProvinces() {
 }
 
 function zoomToStation(lat, lon, name, idx) {
+  if (isNaN(lat) || isNaN(lon)) return;
   map.flyTo([lat, lon], 10, { duration: 1.2 });
   setInspectionPoint(lat, lon, name);
   const inst = stationMarkerInstances[idx];
@@ -1568,6 +1576,7 @@ function renderModalMeteogram() {
 }
 
 function analyzeImpactAtPoint(lat, lon) {
+  if (isNaN(lat) || isNaN(lon)) return;
   layerTrajectory.clearLayers();
   if (!manifest || !manifest.motion || frameImages.length === 0) return;
 
@@ -1757,16 +1766,18 @@ function analyzeImpactAtPoint(lat, lon) {
 
     const rad = deg * Math.PI / 180;
     const [cloudLat, cloudLon] = unproject(pinE - Math.sin(rad) * hitDistFront, pinN - Math.cos(rad) * hitDistFront, lat0, lon0);
-    const style = THEME_STYLES[currentTheme];
+    
+    if (!isNaN(cloudLat) && !isNaN(cloudLon)) {
+      const style = THEME_STYLES[currentTheme];
+      const impactPolyline = L.polyline([[cloudLat, cloudLon], [lat, lon]], {
+        color: willHail ? "#C084FC" : style.impactLine,
+        weight: 2.8, dashArray: "6, 6", opacity: 0.95
+      }).addTo(layerTrajectory);
 
-    const impactPolyline = L.polyline([[cloudLat, cloudLon], [lat, lon]], {
-      color: willHail ? "#C084FC" : style.impactLine,
-      weight: 2.8, dashArray: "6, 6", opacity: 0.95
-    }).addTo(layerTrajectory);
-
-    impactPolyline.bindTooltip(`${willHail ? 'เสี่ยงลูกเห็บ' : 'กลุ่มฝน'} (ETA: ~${etaMin} นาที)`, {
-      permanent: true, direction: "center", className: "map-label"
-    });
+      impactPolyline.bindTooltip(`${willHail ? 'เสี่ยงลูกเห็บ' : 'กลุ่มฝน'} (ETA: ~${etaMin} นาที)`, {
+        permanent: true, direction: "center", className: "map-label"
+      });
+    }
 
     if (etaMin <= 120) {
       triggerRainNotification(etaMin, startStr, durationMin, willHail);
@@ -1790,6 +1801,10 @@ function analyzeImpactAtPoint(lat, lon) {
 }
 
 async function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") {
+  if (isNaN(lat) || isNaN(lon)) {
+    lat = radarStationLatLon[0];
+    lon = radarStationLatLon[1];
+  }
   userPinLatLon = [lat, lon];
   document.getElementById("pinNameLabel").textContent = `${label}`;
   document.getElementById("modalLocationLabel").textContent = `${label} (Lat: ${lat.toFixed(3)}, Lon: ${lon.toFixed(3)})`;
@@ -1938,6 +1953,7 @@ function renderCellVectors(frameIdx) {
 
         if (Math.hypot(e, n) <= 230) {
           const [lat, lon] = unproject(e, n, lat0, lon0);
+          if (isNaN(lat) || isNaN(lon)) continue;
           
           const localMotion = getLocalMotionAtPoint(e, n);
           const spd = localMotion.spd;
@@ -1986,7 +2002,8 @@ function renderRadarMask() {
     const angle = (i / numPoints) * 2 * Math.PI;
     const e = radiusKm * Math.sin(angle);
     const n = radiusKm * Math.cos(angle);
-    holeCoords.push(unproject(e, n, lat0, lon0));
+    const pt = unproject(e, n, lat0, lon0);
+    if (!isNaN(pt[0]) && !isNaN(pt[1])) holeCoords.push(pt);
   }
 
   const style = THEME_STYLES[currentTheme];
@@ -2019,9 +2036,11 @@ function renderRangeRings() {
     rangeCircleElements.push(circle);
 
     const [labelLat, labelLon] = unproject(0, km, lat0, lon0);
-    const label = L.tooltip({ permanent: true, direction: "center", className: "ring-label" })
-                   .setContent(`${km} km`).setLatLng([labelLat, labelLon]);
-    layerRings.addLayer(label);
+    if (!isNaN(labelLat) && !isNaN(labelLon)) {
+      const label = L.tooltip({ permanent: true, direction: "center", className: "ring-label" })
+                     .setContent(`${km} km`).setLatLng([labelLat, labelLon]);
+      layerRings.addLayer(label);
+    }
   });
 
   stationMarkerElement = L.circleMarker([lat0, lon0], {
@@ -2086,7 +2105,7 @@ async function loadBoundaries() {
           const bounds = layer.getBounds();
           if (bounds && typeof bounds.getCenter === "function") {
             const center = bounds.getCenter();
-            if (center) {
+            if (center && !isNaN(center.lat) && !isNaN(center.lng)) {
               const label = L.tooltip({ permanent: true, direction: "center", className: "map-label" })
                              .setContent(name).setLatLng(center);
               layerProvinceLabels.addLayer(label);
@@ -2113,7 +2132,7 @@ async function loadBoundaries() {
             const bounds = layer.getBounds();
             if (bounds && typeof bounds.getCenter === "function") {
               const center = bounds.getCenter();
-              if (center) {
+              if (center && !isNaN(center.lat) && !isNaN(center.lng)) {
                 const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
                                .setContent(name).setLatLng(center);
                 layerAmphoeLabels.addLayer(label);
@@ -2406,8 +2425,10 @@ function autoDetectGPS() {
     navigator.geolocation.getCurrentPosition((pos) => {
       const userLat = pos.coords.latitude;
       const userLon = pos.coords.longitude;
-      map.setView([userLat, userLon], 10);
-      setInspectionPoint(userLat, userLon, "ตำแหน่งของคุณ (GPS)");
+      if (!isNaN(userLat) && !isNaN(userLon)) {
+        map.setView([userLat, userLon], 10);
+        setInspectionPoint(userLat, userLon, "ตำแหน่งของคุณ (GPS)");
+      }
     }, () => {}, { timeout: 4000 });
   }
 }
@@ -2417,8 +2438,10 @@ document.getElementById("btnLoc").addEventListener("click", () => {
   navigator.geolocation.getCurrentPosition((pos) => {
     const userLat = pos.coords.latitude;
     const userLon = pos.coords.longitude;
-    map.setView([userLat, userLon], 10);
-    setInspectionPoint(userLat, userLon, "ตำแหน่งของคุณ (GPS)");
+    if (!isNaN(userLat) && !isNaN(userLon)) {
+      map.setView([userLat, userLon], 10);
+      setInspectionPoint(userLat, userLon, "ตำแหน่งของคุณ (GPS)");
+    }
   }, () => {
     alert("ไม่สามารถเข้าถึงพิกัด GPS ได้");
   });
