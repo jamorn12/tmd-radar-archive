@@ -425,7 +425,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #00ECEC 0%, #00A000 25%, #FFFF00 50%, #FF9000 75%, #FF0000 100%); }
 .lg-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 
-/* Impacted Areas UI Card (Spatial Impact Analysis) - Positioned above Legend */
+/* Impacted Areas UI Card (Spatial Impact Analysis) - Positioned above Legend without overlap */
 .impact-card {
   position: absolute; left: 12px; bottom: 135px; z-index: 998;
   width: 235px; padding: 10px 12px; border-radius: 12px;
@@ -1995,7 +1995,7 @@ function renderRadarMask() {
   const lon0 = radarStationLatLon[1];
   const radiusKm = 240;
 
-  const worldOuterCoords = [[-85, -180], [-85, 180], [85, 180], -85, -180];
+  const worldOuterCoords = [[-85, -180], [-85, 180], [85, 180], [85, -180], [-85, -180]];
   const holeCoords = [];
   const numPoints = 120;
   for (let i = 0; i < numPoints; i++) {
@@ -2003,7 +2003,7 @@ function renderRadarMask() {
     const e = radiusKm * Math.sin(angle);
     const n = radiusKm * Math.cos(angle);
     const pt = unproject(e, n, lat0, lon0);
-    if (!isNaN(pt[0]) && !isNaN(pt[1])) holeCoords.push(pt);
+    if (pt && !isNaN(pt[0]) && !isNaN(pt[1])) holeCoords.push(pt);
   }
 
   const style = THEME_STYLES[currentTheme];
@@ -2082,7 +2082,18 @@ function updateThemeVisuals(themeKey) {
 function sanitizeGeoJson(data) {
   if (!data || !data.features) return data;
   data.features = data.features.filter(f => {
-    return f && f.geometry && f.geometry.coordinates && f.geometry.coordinates.length > 0;
+    if (!f || !f.geometry || !f.geometry.coordinates) return false;
+    const cleanCoords = (coords) => {
+      if (!Array.isArray(coords)) return null;
+      if (typeof coords[0] === 'number') {
+        if (coords.length < 2 || isNaN(coords[0]) || isNaN(coords[1])) return null;
+        return [coords[0], coords[1]];
+      }
+      const cleaned = coords.map(c => cleanCoords(c)).filter(c => c !== null);
+      return cleaned.length > 0 ? cleaned : null;
+    };
+    f.geometry.coordinates = cleanCoords(f.geometry.coordinates);
+    return f.geometry.coordinates !== null;
   });
   return data;
 }
@@ -2102,15 +2113,17 @@ async function loadBoundaries() {
       onEachFeature: (feature, layer) => {
         const name = feature.properties.name || "";
         if (name && typeof layer.getBounds === "function") {
-          const bounds = layer.getBounds();
-          if (bounds && typeof bounds.getCenter === "function") {
-            const center = bounds.getCenter();
-            if (center && !isNaN(center.lat) && !isNaN(center.lng)) {
-              const label = L.tooltip({ permanent: true, direction: "center", className: "map-label" })
-                             .setContent(name).setLatLng(center);
-              layerProvinceLabels.addLayer(label);
+          try {
+            const bounds = layer.getBounds();
+            if (bounds && bounds.isValid()) {
+              const center = bounds.getCenter();
+              if (center && !isNaN(center.lat) && !isNaN(center.lng)) {
+                const label = L.tooltip({ permanent: true, direction: "center", className: "map-label" })
+                               .setContent(name).setLatLng(center);
+                layerProvinceLabels.addLayer(label);
+              }
             }
-          }
+          } catch (e) {}
         }
       }
     }).addTo(layerProvince);
@@ -2129,15 +2142,17 @@ async function loadBoundaries() {
         onEachFeature: (feature, layer) => {
           const name = feature.properties.name || "";
           if (name && typeof layer.getBounds === "function") {
-            const bounds = layer.getBounds();
-            if (bounds && typeof bounds.getCenter === "function") {
-              const center = bounds.getCenter();
-              if (center && !isNaN(center.lat) && !isNaN(center.lng)) {
-                const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
-                               .setContent(name).setLatLng(center);
-                layerAmphoeLabels.addLayer(label);
+            try {
+              const bounds = layer.getBounds();
+              if (bounds && bounds.isValid()) {
+                const center = bounds.getCenter();
+                if (center && !isNaN(center.lat) && !isNaN(center.lng)) {
+                  const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
+                                 .setContent(name).setLatLng(center);
+                  layerAmphoeLabels.addLayer(label);
+                }
               }
-            }
+            } catch (e) {}
           }
         }
       }).addTo(layerAmphoe);
