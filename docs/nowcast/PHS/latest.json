@@ -1,56 +1,137 @@
-import os
-import glob
-import json
-from datetime import datetime, timezone
-
-# กำหนดพาทโฟลเดอร์ที่เก็บรูปภาพเรดาร์
-folder_path = "docs/nowcast/PHS"
-
-# ค้นหาไฟล์ภาพทั้งหมดที่อยู่ในโฟลเดอร์
-files = glob.glob(os.path.join(folder_path, "PHS_*_solid.png"))
-files.sort()
-
-frames = []
-for f in files:
-    filename = os.path.basename(f)
-    try:
-        # ตัวอย่างชื่อไฟล์: PHS_20260908_0315Z_solid.png
-        parts = filename.split("_")
-        date_str = parts[1] # ได้ 20260908
-        time_str = parts[2].replace("Z", "") # ได้ 0315
-        
-        dt = datetime.strptime(f"{date_str} {time_str}", "%Y%m%d %H%M").replace(tzinfo=timezone.utc)
-        timestamp = int(dt.timestamp())
-        
-        frames.append({
-            "t": timestamp,
-            "url": filename,
-            "offset_min": 0,
-            "kind": "obs"
-        })
-    except Exception as e:
-        print(f"ข้ามไฟล์ {filename}: {e}")
-
-if not frames:
-    print("❌ ไม่พบไฟล์ภาพเรดาร์ กรุณาตรวจสอบพาทโฟลเดอร์อีกครั้ง")
-else:
-    # คำนวณช่วงเวลา offset (ย้อนหลังและพยากรณ์ล่วงหน้าทีละ 15 นาที)
-    total = len(frames)
-    for i, fr in enumerate(frames):
-        offset = (i - (total - 1)) * 15
-        fr["offset_min"] = offset
-        fr["kind"] = "obs" if offset <= 0 else "nowcast"
-
-    manifest = {
-        "projection": "+proj=laea +lat_0=16.77 +lon_0=100.22 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs",
-        "grid": [160, 160],
-        "kmperpixel": 3.0,
-        "motion": {"speed_kmh": 15.0, "direction_deg": 270},
-        "frames": frames
+{
+  "projection": "+proj=laea +lat_0=16.77 +lon_0=100.22 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs",
+  "grid": [160, 160],
+  "kmperpixel": 3.0,
+  "motion": {
+    "speed_kmh": 15.0,
+    "direction_deg": 270
+  },
+  "frames": [
+    {
+      "t": 1788814800,
+      "url": "PHS_20260907_2100Z_solid.png",
+      "offset_min": -300,
+      "kind": "obs"
+    },
+    {
+      "t": 1788815700,
+      "url": "PHS_20260907_2115Z_solid.png",
+      "offset_min": -285,
+      "kind": "obs"
+    },
+    {
+      "t": 1788816600,
+      "url": "PHS_20260907_2130Z_solid.png",
+      "offset_min": -270,
+      "kind": "obs"
+    },
+    {
+      "t": 1788817500,
+      "url": "PHS_20260907_2145Z_solid.png",
+      "offset_min": -255,
+      "kind": "obs"
+    },
+    {
+      "t": 1788818400,
+      "url": "PHS_20260907_2200Z_solid.png",
+      "offset_min": -240,
+      "kind": "obs"
+    },
+    {
+      "t": 1788819300,
+      "url": "PHS_20260907_2215Z_solid.png",
+      "offset_min": -225,
+      "kind": "obs"
+    },
+    {
+      "t": 1788820200,
+      "url": "PHS_20260907_2230Z_solid.png",
+      "offset_min": -210,
+      "kind": "obs"
+    },
+    {
+      "t": 1788821100,
+      "url": "PHS_20260907_2245Z_solid.png",
+      "offset_min": -195,
+      "kind": "obs"
+    },
+    {
+      "t": 1788822000,
+      "url": "PHS_20260907_2300Z_solid.png",
+      "offset_min": -180,
+      "kind": "obs"
+    },
+    {
+      "t": 1788822900,
+      "url": "PHS_20260907_2315Z_solid.png",
+      "offset_min": -165,
+      "kind": "obs"
+    },
+    {
+      "t": 1788823800,
+      "url": "PHS_20260907_2330Z_solid.png",
+      "offset_min": -150,
+      "kind": "obs"
+    },
+    {
+      "t": 1788824700,
+      "url": "PHS_20260907_2345Z_solid.png",
+      "offset_min": -135,
+      "kind": "obs"
+    },
+    {
+      "t": 1788825600,
+      "url": "PHS_20260908_0000Z_solid.png",
+      "offset_min": -120,
+      "kind": "obs"
+    },
+    {
+      "t": 1788826500,
+      "url": "PHS_20260908_0015Z_solid.png",
+      "offset_min": -105,
+      "kind": "obs"
+    },
+    {
+      "t": 1788828300,
+      "url": "PHS_20260908_0045Z_solid.png",
+      "offset_min": -90,
+      "kind": "obs"
+    },
+    {
+      "t": 1788829200,
+      "url": "PHS_20260908_0100Z_solid.png",
+      "offset_min": -75,
+      "kind": "obs"
+    },
+    {
+      "t": 1788831000,
+      "url": "PHS_20260908_0130Z_solid.png",
+      "offset_min": -60,
+      "kind": "obs"
+    },
+    {
+      "t": 1788831900,
+      "url": "PHS_20260908_0145Z_solid.png",
+      "offset_min": -45,
+      "kind": "obs"
+    },
+    {
+      "t": 1788833700,
+      "url": "PHS_20260908_0215Z_solid.png",
+      "offset_min": -30,
+      "kind": "obs"
+    },
+    {
+      "t": 1788834600,
+      "url": "PHS_20260908_0230Z_solid.png",
+      "offset_min": -15,
+      "kind": "obs"
+    },
+    {
+      "t": 1788837300,
+      "url": "PHS_20260908_0315Z_solid.png",
+      "offset_min": 0,
+      "kind": "obs"
     }
-
-    output_path = os.path.join(folder_path, "latest.json")
-    with open(output_path, "w", encoding="utf-8") as file:
-        json.dump(manifest, file, ensure_ascii=False, indent=2)
-
-    print(f"✅ สร้างไฟล์ latest.json สำเร็จ! (มีทั้งหมด {total} เฟรม | ล่าสุด: {frames[-1]['url']})")
+  ]
+}
