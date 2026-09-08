@@ -1,250 +1,56 @@
-{
- "station": "PHS",
- "generated": 1788827404,
- "base_time_utc": "2026-09-08T00:15:00Z",
- "base_time_local": "2026-09-08T07:15:00+07:00",
- "age_min": 15.1,
- "stale_after_min": 40,
- "projection": "+proj=aeqd +lat_0=16.7765 +lon_0=100.2161 +units=m +ellps=WGS84",
- "extent_m": [
-  -240000.0,
-  -240000.0,
-  240000.0,
-  240000.0
- ],
- "grid": [
-  241,
-  241
- ],
- "kmperpixel": 2.0,
- "timestep_min": 15.0,
- "yorigin": "lower",
- "levels_dbz": [
-  10.4,
-  11.3,
-  16.5,
-  19.0,
-  21.5,
-  24.0,
-  26.5,
-  29.0,
-  31.5,
-  34.0,
-  36.5,
-  39.0,
-  41.5,
-  44.0,
-  46.5,
-  49.0,
-  51.5,
-  54.0,
-  56.5,
-  59.0,
-  61.5,
-  64.0
- ],
- "levels_rgb": [
-  [
-   2,
-   171,
-   2
-  ],
-  [
-   4,
-   188,
-   0
-  ],
-  [
-   2,
-   202,
-   0
-  ],
-  [
-   2,
-   202,
-   0
-  ],
-  [
-   3,
-   208,
-   69
-  ],
-  [
-   4,
-   230,
-   3
-  ],
-  [
-   4,
-   244,
-   3
-  ],
-  [
-   248,
-   246,
-   5
-  ],
-  [
-   224,
-   224,
-   9
-  ],
-  [
-   218,
-   215,
-   5
-  ],
-  [
-   253,
-   199,
-   10
-  ],
-  [
-   240,
-   160,
-   4
-  ],
-  [
-   225,
-   150,
-   4
-  ],
-  [
-   251,
-   84,
-   5
-  ],
-  [
-   238,
-   3,
-   2
-  ],
-  [
-   226,
-   2,
-   92
-  ],
-  [
-   211,
-   3,
-   83
-  ],
-  [
-   210,
-   0,
-   85
-  ],
-  [
-   247,
-   2,
-   248
-  ],
-  [
-   253,
-   127,
-   253
-  ],
-  [
-   253,
-   199,
-   253
-  ],
-  [
-   254,
-   225,
-   253
-  ]
- ],
- "zr": [
-  250.0,
-  1.2
- ],
- "motion": {
-  "method": "block-matching",
-  "engine": "light",
-  "confidence": "low",
-  "kmh": 31.9,
-  "bearing": 2,
-  "speed_spread_kmh": 21.0,
-  "speed_spread_rel": 0.66,
-  "dir_consistency": 0.333,
-  "n_samples": 3,
-  "extrapolation": "semilagrangian (light)"
- },
- "wet_threshold_dbz": 11.98,
- "qc": {
-  "despeckled_cells": 0
- },
- "frames": [
-  {
-   "t": 1788823800,
-   "kind": "past",
-   "offset_min": -45,
-   "url": "f/1788823800.png",
-   "max_dbz": 16.1,
-   "wet_pct": 0.004
-  },
-  {
-   "t": 1788824700,
-   "kind": "past",
-   "offset_min": -30,
-   "url": "f/1788824700.png",
-   "max_dbz": 7.3,
-   "wet_pct": 0.0
-  },
-  {
-   "t": 1788825600,
-   "kind": "past",
-   "offset_min": -15,
-   "url": "f/1788825600.png",
-   "max_dbz": 17.4,
-   "wet_pct": 0.033
-  },
-  {
-   "t": 1788826500,
-   "kind": "present",
-   "offset_min": 0,
-   "url": "f/1788826500.png",
-   "max_dbz": 16.0,
-   "wet_pct": 0.007
-  },
-  {
-   "t": 1788827400,
-   "kind": "nowcast",
-   "offset_min": 15,
-   "url": "f/1788827400.png",
-   "max_dbz": 13.7,
-   "wet_pct": 0.007,
-   "method": "extrapolation"
-  },
-  {
-   "t": 1788828300,
-   "kind": "nowcast",
-   "offset_min": 30,
-   "url": "f/1788828300.png",
-   "max_dbz": 15.1,
-   "wet_pct": 0.007,
-   "method": "extrapolation"
-  },
-  {
-   "t": 1788829200,
-   "kind": "nowcast",
-   "offset_min": 45,
-   "url": "f/1788829200.png",
-   "max_dbz": 13.6,
-   "wet_pct": 0.004,
-   "method": "extrapolation"
-  },
-  {
-   "t": 1788830100,
-   "kind": "nowcast",
-   "offset_min": 60,
-   "url": "f/1788830100.png",
-   "max_dbz": 14.2,
-   "wet_pct": 0.004,
-   "method": "extrapolation"
-  }
- ],
- "source": "Thai Meteorological Department (TMD)",
- "stale": false
-}
+import os
+import glob
+import json
+from datetime import datetime, timezone
+
+# กำหนดพาทโฟลเดอร์ที่เก็บรูปภาพเรดาร์
+folder_path = "docs/nowcast/PHS"
+
+# ค้นหาไฟล์ภาพทั้งหมดที่อยู่ในโฟลเดอร์
+files = glob.glob(os.path.join(folder_path, "PHS_*_solid.png"))
+files.sort()
+
+frames = []
+for f in files:
+    filename = os.path.basename(f)
+    try:
+        # ตัวอย่างชื่อไฟล์: PHS_20260908_0315Z_solid.png
+        parts = filename.split("_")
+        date_str = parts[1] # ได้ 20260908
+        time_str = parts[2].replace("Z", "") # ได้ 0315
+        
+        dt = datetime.strptime(f"{date_str} {time_str}", "%Y%m%d %H%M").replace(tzinfo=timezone.utc)
+        timestamp = int(dt.timestamp())
+        
+        frames.append({
+            "t": timestamp,
+            "url": filename,
+            "offset_min": 0,
+            "kind": "obs"
+        })
+    except Exception as e:
+        print(f"ข้ามไฟล์ {filename}: {e}")
+
+if not frames:
+    print("❌ ไม่พบไฟล์ภาพเรดาร์ กรุณาตรวจสอบพาทโฟลเดอร์อีกครั้ง")
+else:
+    # คำนวณช่วงเวลา offset (ย้อนหลังและพยากรณ์ล่วงหน้าทีละ 15 นาที)
+    total = len(frames)
+    for i, fr in enumerate(frames):
+        offset = (i - (total - 1)) * 15
+        fr["offset_min"] = offset
+        fr["kind"] = "obs" if offset <= 0 else "nowcast"
+
+    manifest = {
+        "projection": "+proj=laea +lat_0=16.77 +lon_0=100.22 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs",
+        "grid": [160, 160],
+        "kmperpixel": 3.0,
+        "motion": {"speed_kmh": 15.0, "direction_deg": 270},
+        "frames": frames
+    }
+
+    output_path = os.path.join(folder_path, "latest.json")
+    with open(output_path, "w", encoding="utf-8") as file:
+        json.dump(manifest, file, ensure_ascii=False, indent=2)
+
+    print(f"✅ สร้างไฟล์ latest.json สำเร็จ! (มีทั้งหมด {total} เฟรม | ล่าสุด: {frames[-1]['url']})")
