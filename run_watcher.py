@@ -29,10 +29,10 @@ def send_telegram_alert(message):
     except Exception as e:
         print(f"⚠️ เกิดข้อผิดพลาดในการส่ง Alert: {e}")
 
-def update_manifest_dynamically(folder_path="nowcast/PHS"):
+def update_manifest_dynamically(folder_path="docs/nowcast/PHS"):
     """
-    สแกนไฟล์ภาพเรดาร์ทั้งหมดในโฟลเดอร์ แล้วสร้าง/อัปเดตไฟล์ latest.json ใหม่โดยอัตโนมัติ
-    แก้ปัญหาเวลาบนหน้าเว็บไม่ตรงกับภาพล่าสุด หรือข้อมูลขาดหาย
+    สแกนไฟล์ภาพเรดาร์ทั้งหมดในโฟลเดอร์ docs/nowcast/PHS แล้วสร้าง/อัปเดตไฟล์ latest.json 
+    เพื่อให้เวลาบนหน้าเว็บซิงค์กับข้อมูลล่าสุดเสมอโดยอัตโนมัติ
     """
     if not os.path.exists(folder_path):
         os.makedirs(folder_path, exist_ok=True)
@@ -51,7 +51,7 @@ def update_manifest_dynamically(folder_path="nowcast/PHS"):
     files = list(set(files)) # กรองไฟล์ซ้ำ
     
     if not files:
-        print("⚠️ ไม่พบไฟล์ภาพเรดาร์ในโฟลเดอร์สำหรับสร้าง Manifest")
+        print("⚠️ ไม่พบไฟล์ภาพเรดาร์ในโฟลเดอร์ docs/nowcast/PHS สำหรับสร้าง Manifest")
         return
 
     frames = []
@@ -150,14 +150,14 @@ def execute_auto_recovery_routine():
     """ขั้นตอนการกู้คืนระบบ (Auto-Recovery)"""
     try:
         print("🛠️ กำลังดำเนินการกู้คืนระบบ (Auto-Recovery Routine)...")
-        temp_files = ["districts_temp.geojson", "nowcast/PHS/temp_frame.png", "temp_radar.png"]
+        temp_files = ["districts_temp.geojson", "docs/nowcast/PHS/temp_frame.png", "temp_radar.png"]
         for f in temp_files:
             if os.path.exists(f):
                 os.remove(f)
                 print(f"🗑️ ลบไฟล์ขยะเคลียร์ระบบ: {f}")
         
-        # สั่งรีเฟรชสร้าง Manifest ใหม่ทันที
-        update_manifest_dynamically("nowcast/PHS")
+        # สั่งรีเฟรชสร้าง Manifest ใหม่ทันทีในโฟลเดอร์ docs
+        update_manifest_dynamically("docs/nowcast/PHS")
         print("✨ กู้คืนสถานะระบบสำเร็จเรียบร้อย")
         return True
     except Exception as recovery_err:
@@ -166,18 +166,17 @@ def execute_auto_recovery_routine():
 
 def main_radar_pipeline():
     """
-    ฟังก์ชันหลักสำหรับดึงข้อมูลเรดาร์ ประมวลผล และอัปเดตระบบ
+    ฟังก์ชันหลักสำหรับดึงข้อมูลเรดาร์ ประมวลผล และบันทึกลงโฟลเดอร์ docs/nowcast/PHS
     """
     print("🛰️ กำลังดึงภาพเรดาร์และข้อมูล Nowcast ล่าสุด...")
     
     # --- [ใส่โค้ดดาวน์โหลด / ประมวลผลภาพเรดาร์ของคุณตรงนี้] ---
-    # ตัวอย่าง: ดาวน์โหลดภาพจาก TMD มาเก็บไว้ในโฟลเดอร์ nowcast/PHS/
-    
+    # ตัวอย่าง: ดาวน์โหลดภาพมาเก็บไว้ที่ 'docs/nowcast/PHS/'
     # --------------------------------------------------------
     
-    # [จุดสำคัญ]: ทุกครั้งที่ดาวน์โหลดภาพเสร็จ ให้สั่งอัปเดต Manifest ทันที
-    update_manifest_dynamically("nowcast/PHS")
-    print("📥 บันทึกภาพและอัปเดต Manifest เรียบร้อย")
+    # บังคับอัปเดต Manifest ในโฟลเดอร์ docs ทันทีหลังประมวลผลเสร็จ
+    update_manifest_dynamically("docs/nowcast/PHS")
+    print("📥 บันทึกภาพและอัปเดต Manifest ในโฟลเดอร์ docs เรียบร้อย")
 
 if __name__ == "__main__":
     print("🚀 ระบบ Watcher หลังบ้านเริ่มต้นทำงาน (พร้อมระบบป้องกัน, กู้คืน และซิงค์ Manifest)")
