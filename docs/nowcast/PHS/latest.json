@@ -10,90 +10,18 @@
     {
       "t": 1788814800,
       "url": "PHS_20260907_2100Z_solid.png",
-      "offset_min": -300,
-      "kind": "obs"
-    },
-    {
-      "t": 1788815700,
-      "url": "PHS_20260907_2115Z_solid.png",
-      "offset_min": -285,
-      "kind": "obs"
-    },
-    {
-      "t": 1788816600,
-      "url": "PHS_20260907_2130Z_solid.png",
-      "offset_min": -270,
-      "kind": "obs"
-    },
-    {
-      "t": 1788817500,
-      "url": "PHS_20260907_2145Z_solid.png",
-      "offset_min": -255,
-      "kind": "obs"
-    },
-    {
-      "t": 1788818400,
-      "url": "PHS_20260907_2200Z_solid.png",
-      "offset_min": -240,
-      "kind": "obs"
-    },
-    {
-      "t": 1788819300,
-      "url": "PHS_20260907_2215Z_solid.png",
-      "offset_min": -225,
-      "kind": "obs"
-    },
-    {
-      "t": 1788820200,
-      "url": "PHS_20260907_2230Z_solid.png",
-      "offset_min": -210,
-      "kind": "obs"
-    },
-    {
-      "t": 1788821100,
-      "url": "PHS_20260907_2245Z_solid.png",
-      "offset_min": -195,
+      "offset_min": -120,
       "kind": "obs"
     },
     {
       "t": 1788822000,
       "url": "PHS_20260907_2300Z_solid.png",
-      "offset_min": -180,
-      "kind": "obs"
-    },
-    {
-      "t": 1788822900,
-      "url": "PHS_20260907_2315Z_solid.png",
-      "offset_min": -165,
-      "kind": "obs"
-    },
-    {
-      "t": 1788823800,
-      "url": "PHS_20260907_2330Z_solid.png",
-      "offset_min": -150,
-      "kind": "obs"
-    },
-    {
-      "t": 1788824700,
-      "url": "PHS_20260907_2345Z_solid.png",
-      "offset_min": -135,
+      "offset_min": -105,
       "kind": "obs"
     },
     {
       "t": 1788825600,
       "url": "PHS_20260908_0000Z_solid.png",
-      "offset_min": -120,
-      "kind": "obs"
-    },
-    {
-      "t": 1788826500,
-      "url": "PHS_20260908_0015Z_solid.png",
-      "offset_min": -105,
-      "kind": "obs"
-    },
-    {
-      "t": 1788828300,
-      "url": "PHS_20260908_0045Z_solid.png",
       "offset_min": -90,
       "kind": "obs"
     },
@@ -104,33 +32,21 @@
       "kind": "obs"
     },
     {
-      "t": 1788831000,
-      "url": "PHS_20260908_0130Z_solid.png",
-      "offset_min": -60,
-      "kind": "obs"
-    },
-    {
-      "t": 1788831900,
-      "url": "PHS_20260908_0145Z_solid.png",
-      "offset_min": -45,
-      "kind": "obs"
-    },
-    {
       "t": 1788833700,
       "url": "PHS_20260908_0215Z_solid.png",
-      "offset_min": -30,
+      "offset_min": -60,
       "kind": "obs"
     },
     {
       "t": 1788834600,
       "url": "PHS_20260908_0230Z_solid.png",
-      "offset_min": -15,
+      "offset_min": -45,
       "kind": "obs"
     },
     {
       "t": 1788837300,
       "url": "PHS_20260908_0315Z_solid.png",
-      "offset_min": 0,
+      "offset_min": -30,
       "kind": "obs"
     }
   ]
