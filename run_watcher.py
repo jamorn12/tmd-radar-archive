@@ -1,99 +1,78 @@
 import os
 import glob
 import json
-import time
-import traceback
-import requests
 from datetime import datetime, timezone, timedelta
-
-# --- [ตั้งค่าระบบแจ้งเตือน Telegram Bot] ---
-TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"  
-TELEGRAM_CHAT_ID = "YOUR_CHAT_ID_HERE"      
-
-def send_telegram_alert(message):
-    """ฟังก์ชันส่งข้อความแจ้งเตือนเข้า Telegram ทันทีเมื่อเกิดเหตุฉุกเฉิน"""
-    if not TELEGRAM_BOT_TOKEN or TELEGRAM_BOT_TOKEN == "YOUR_BOT_TOKEN_HERE":
-        print(f"⚠️ [Telegram Alert Skipped]: {message}")
-        return
-    
-    try:
-        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-        payload = {
-            "chat_id": TELEGRAM_CHAT_ID,
-            "text": f"🚨 *[ทันฝน System Alert]*\n{message}",
-            "parse_mode": "Markdown"
-        }
-        response = requests.post(url, json=payload, timeout=5)
-        if response.status_code != 200:
-            print("⚠️ ไม่สามารถส่งการแจ้งเตือนไป Telegram ได้")
-    except Exception as e:
-        print(f"⚠️ เกิดข้อผิดพลาดในการส่ง Alert: {e}")
 
 def update_manifest_dynamically(folder_path="docs/nowcast/PHS"):
     """
-    สแกนไฟล์ภาพเรดาร์ทั้งหมดในโฟลเดอร์ docs/nowcast/PHS แล้วสร้าง/อัปเดตไฟล์ latest.json 
-    เพื่อให้เวลาบนหน้าเว็บซิงค์กับข้อมูลล่าสุดเสมอโดยอัตโนมัติ
+    สร้างไฟล์ latest.json ในรูปแบบ Nowcast มาตรฐาน:
+    - เฟรมอดีต (obs) ย้อนหลัง
+    - เฟรมปัจจุบัน (obs ที่ offset_min = 0)
+    - เฟรมพยากรณ์ล่วงหน้า (nowcast)
     """
     if not os.path.exists(folder_path):
         os.makedirs(folder_path, exist_ok=True)
         
-    # ค้นหาไฟล์ภาพทั้งหมด (รองรับทั้ง _solid.png และ .jpg)
-    patterns = [
-        os.path.join(folder_path, "PHS_*_solid.png"), 
-        os.path.join(folder_path, "PHS_*.jpg"),
-        os.path.join(folder_path, "*.png"),
-        os.path.join(folder_path, "*.jpg")
-    ]
-    files = []
-    for p in patterns:
-        files.extend(glob.glob(p))
-        
-    files = list(set(files)) # กรองไฟล์ซ้ำ
+    pattern = os.path.join(folder_path, "PHS_*_solid.png")
+    files = glob.glob(pattern)
+    files.sort()
     
     if not files:
-        print("⚠️ ไม่พบไฟล์ภาพเรดาร์ในโฟลเดอร์ docs/nowcast/PHS สำหรับสร้าง Manifest")
+        print("⚠️ ไม่พบไฟล์ภาพเรดาร์ในโฟลเดอร์")
         return
 
-    frames = []
-    for file_path in sorted(files):
+    obs_frames = []
+    for file_path in files:
         filename = os.path.basename(file_path)
-        # ข้ามไฟล์ที่ไม่ใช่รูปภาพหลักของเรดาร์
-        if "icon" in filename or "temp" in filename:
-            continue
-            
         try:
-            # รูปแบบชื่อไฟล์ตัวอย่าง: PHS_20260908_0315Z_solid.png หรือ PHS_20260908_0315Z.jpg
+            # ตัวอย่างชื่อไฟล์: PHS_20260908_0315Z_solid.png
             parts = filename.split("_")
-            if len(parts) >= 2:
-                date_str = parts[1] # เช่น 20260908
-                time_str = parts[2].replace("Z", "").split(".")[0] # เช่น 0315
-                
-                dt_str = f"{date_str} {time_str}"
-                dt = datetime.strptime(dt_str, "%Y%m%d %H%M").replace(tzinfo=timezone.utc)
-                timestamp = int(dt.timestamp())
-                
-                frames.append({
-                    "t": timestamp,
-                    "url": filename,
-                    "offset_min": 0,
-                    "kind": "obs"
-                })
-        except Exception as e:
-            print(f"⚠️ ข้ามไฟล์ {filename} เนื่องจากแปลงเวลาไม่ได้: {e}")
+            date_str = parts[1]
+            time_str = parts[2].replace("Z", "").split(".")[0]
             
-    if not frames:
-        print("⚠️ ไม่สามารถสกัด Timestamp จากชื่อไฟล์ภาพได้เลย")
+            dt = datetime.strptime(f"{date_str} {time_str}", "%Y%m%d %H%M").replace(tzinfo=timezone.utc)
+            timestamp = int(dt.timestamp())
+            
+            obs_frames.append({
+                "t": timestamp,
+                "url": filename
+            })
+        except Exception as e:
+            print(f"⚠️ ข้ามไฟล์ {filename}: {e}")
+            
+    if not obs_frames:
         return
-        
-    # เรียงลำดับเฟรมตามเวลาจากอดีตไปปัจจุบัน
-    frames.sort(key=lambda x: x["t"])
+
+    # เรียงลำดับจากเก่าไปใหม่ และเลือกเอาเฉพาะ 4-6 เฟรมล่าสุดมาทำเป็นอดีต+ปัจจุบัน
+    obs_frames.sort(key=lambda x: x["t"])
+    recent_obs = obs_frames[-6:] # เอา 6 เฟรมล่าสุด (เช่น ย้อนหลัง 1.5 ชม.)
     
-    # คำนวณ offset_min และกำหนดชนิดของเฟรม (obs หรือ nowcast)
-    total_frames = len(frames)
-    for i, frame in enumerate(frames):
-        offset = (i - (total_frames - 1)) * 15
-        frame["offset_min"] = offset
-        frame["kind"] = "obs" if offset <= 0 else "nowcast"
+    frames = []
+    total_obs = len(recent_obs)
+    
+    # 1. สร้างเฟรมตรวจวัดจริง (obs) โดยให้เฟรมสุดท้ายเป็นปัจจุบัน (offset_min = 0)
+    for i, item in enumerate(recent_obs):
+        offset = (i - (total_obs - 1)) * 15  # เช่น -75, -60, -45, -30, -15, 0
+        frames.append({
+            "t": item["t"],
+            "url": item["url"],
+            "offset_min": offset,
+            "kind": "obs"
+        })
+        
+    # 2. สร้างเฟรมพยากรณ์ล่วงหน้า (Nowcast) ต่อเนื่องไปอีก 4 เฟรม (+15, +30, +45, +60 นาที)
+    latest_t = recent_obs[-1]["t"]
+    latest_url = recent_obs[-1]["url"]
+    
+    for step in range(1, 5):
+        future_offset = step * 15
+        future_t = latest_t + (future_offset * 60)
+        frames.append({
+            "t": future_t,
+            "url": latest_url,  # ใช้ภาพล่าสุดเป็นฐานในการทำนายทิศทางบนหน้าเว็บ
+            "offset_min": future_offset,
+            "kind": "nowcast"
+        })
 
     manifest = {
         "projection": "+proj=laea +lat_0=16.77 +lon_0=100.22 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs",
@@ -107,83 +86,4 @@ def update_manifest_dynamically(folder_path="docs/nowcast/PHS"):
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
         
-    print(f"✅ อัปเดตไฟล์ {manifest_path} สำเร็จ! (รวมทั้งหมด {total_frames} เฟรม | ล่าสุด: {frames[-1]['url']})")
-
-def run_with_retry_and_recovery(task_func, task_name="ประมวลผลเรดาร์รอบปัจจุบัน"):
-    """
-    ฟังก์ชันแม่ข่ายควบคุมความปลอดภัย:
-    1. ระบบลองใหม่แบบอัตโนมัติ (Retry) สูงสุด 3 ครั้ง
-    2. ระบบกู้คืนอัตโนมัติ (Auto-Recovery)
-    3. ระบบแจ้งเตือนผ่าน Telegram
-    """
-    max_retries = 3
-    for attempt in range(1, max_retries + 1):
-        try:
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 🔄 เริ่มงาน: {task_name} (ความพยายามครั้งที่ {attempt}/{max_retries})")
-            
-            task_func()
-            
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ✅ สำเร็จ: {task_name}")
-            return True
-            
-        except Exception as e:
-            error_detail = traceback.format_exc()
-            print(f"❌ พลาดในรอบที่ {attempt}: {str(e)}")
-            print(error_detail)
-            
-            if attempt < max_retries:
-                sleep_time = attempt * 20
-                print(f"⏳ กำลังรอ {sleep_time} วินาทีก่อนลองใหม่...")
-                time.sleep(sleep_time)
-            else:
-                fail_msg = f"❌ *{task_name}* ล้มเหลวขั้นวิกฤตหลังพยายาม 3 ครั้ง!\nกำลังเริ่มกระบวนการกู้คืนระบบ...\n\n`{str(e)[:300]}`"
-                send_telegram_alert(fail_msg)
-                
-                success_recovered = execute_auto_recovery_routine()
-                if success_recovered:
-                    send_telegram_alert("🛠️ *Auto-Recovery สำเร็จ:* ระบบได้กู้คืนสถานะพร้อมทำงานต่อแล้ว")
-                else:
-                    send_telegram_alert("🚨 *Auto-Recovery ล้มเหลว:* ระบบไม่สามารถกู้คืนตัวเองได้อัตโนมัติ ต้องตรวจสอบด่วน!")
-                return False
-
-def execute_auto_recovery_routine():
-    """ขั้นตอนการกู้คืนระบบ (Auto-Recovery)"""
-    try:
-        print("🛠️ กำลังดำเนินการกู้คืนระบบ (Auto-Recovery Routine)...")
-        temp_files = ["districts_temp.geojson", "docs/nowcast/PHS/temp_frame.png", "temp_radar.png"]
-        for f in temp_files:
-            if os.path.exists(f):
-                os.remove(f)
-                print(f"🗑️ ลบไฟล์ขยะเคลียร์ระบบ: {f}")
-        
-        # สั่งรีเฟรชสร้าง Manifest ใหม่ทันทีในโฟลเดอร์ docs
-        update_manifest_dynamically("docs/nowcast/PHS")
-        print("✨ กู้คืนสถานะระบบสำเร็จเรียบร้อย")
-        return True
-    except Exception as recovery_err:
-        print(f"🔥 กู้คืนระบบไม่สำเร็จเนื่องจาก: {recovery_err}")
-        return False
-
-def main_radar_pipeline():
-    """
-    ฟังก์ชันหลักสำหรับดึงข้อมูลเรดาร์ ประมวลผล และบันทึกลงโฟลเดอร์ docs/nowcast/PHS
-    """
-    print("🛰️ กำลังดึงภาพเรดาร์และข้อมูล Nowcast ล่าสุด...")
-    
-    # --- [ใส่โค้ดดาวน์โหลด / ประมวลผลภาพเรดาร์ของคุณตรงนี้] ---
-    # ตัวอย่าง: ดาวน์โหลดภาพมาเก็บไว้ที่ 'docs/nowcast/PHS/'
-    # --------------------------------------------------------
-    
-    # บังคับอัปเดต Manifest ในโฟลเดอร์ docs ทันทีหลังประมวลผลเสร็จ
-    update_manifest_dynamically("docs/nowcast/PHS")
-    print("📥 บันทึกภาพและอัปเดต Manifest ในโฟลเดอร์ docs เรียบร้อย")
-
-if __name__ == "__main__":
-    print("🚀 ระบบ Watcher หลังบ้านเริ่มต้นทำงาน (พร้อมระบบป้องกัน, กู้คืน และซิงค์ Manifest)")
-    send_telegram_alert("🟢 *ระบบหลังบ้าน (Radar Watcher)* เริ่มต้นทำงานและสแตนด์บายดูแล 24 ชม. แล้ว")
-    
-    while True:
-        run_with_retry_and_recovery(main_radar_pipeline, "ดึงและประมวลผลเรดาร์รอบเวลาปัจจุบัน")
-        
-        print("⏳ พักรอนรอบถัดไปในอีก 5 นาที...")
-        time.sleep(300)
+    print(f"✅ สร้าง Manifest Nowcast สำเร็จ! (รวม {len(frames)} เฟรม | ปัจจุบัน: {latest_url})")
