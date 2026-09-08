@@ -1109,13 +1109,11 @@ function dbzToRainRate(dbz) {
   return Math.pow(z / 200, 1 / 1.6);
 }
 
-// 📌 ฟังก์ชันคำนวณเวกเตอร์การเคลื่อนที่แบบเฉพาะจุด (Spatial/Local Motion Field Lookup)
-// เพื่อให้สอดคล้องตามหลักการ Optical Flow ของ PySTEPS ที่ความเร็ว/ทิศทางแปรผันตามพื้นที่
+// 📌 ฟังก์ชันคำนวณเวกเตอร์การเคลื่อนที่แบบเฉพาะจุด (Spatial Motion Field / Optical Flow)
 function getLocalMotionAtPoint(pinE, pinN) {
   if (!manifest || !manifest.motion) return { spd: 15.0, deg: 270 };
   const motion = manifest.motion;
 
-  // หากหลังบ้านส่งข้อมูลมาเป็นกริดสนามความเร็ว (Spatial Grid)
   if (motion.grid_u && motion.grid_v && motion.resolution_km) {
     const gridRes = motion.resolution_km;
     const col = Math.floor((pinE / gridRes) + (motion.cols / 2));
@@ -1131,8 +1129,6 @@ function getLocalMotionAtPoint(pinE, pinN) {
     }
   }
 
-  // Fallback: หากเป็นค่า Global ให้เพิ่มการกระจายตัวเชิงพื้นที่ (Spatial Modulation) ตามตำแหน่งพิกัด
-  // เพื่อจำลองลักษณะการเคลื่อนที่ของกลุ่มฝนจริงในแต่ละโซน (ไม่ให้ความเร็วเท่ากันทุกจุด)
   const globalSpd = motion.speed_kmh || motion.kmh || 15.0;
   const globalDeg = motion.direction_deg !== undefined ? motion.direction_deg : (motion.bearing || 270);
 
@@ -1453,7 +1449,6 @@ function analyzeImpactAtPoint(lat, lon) {
   const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
   const [pinE, pinN] = project(lat, lon, lat0, lon0);
 
-  // 📌 ดึงค่าความเร็วและทิศทางเฉพาะตำแหน่งพิกัดนี้ (Local Motion) แทนการใช้ค่าเดียวทั้งแผ่น
   const localMotion = getLocalMotionAtPoint(pinE, pinN);
   const spd = localMotion.spd;
   const deg = localMotion.deg;
@@ -1775,7 +1770,6 @@ map.on("popupopen", () => {
   safeLucide();
 });
 
-// 📌 ปรับปรุงการวาดเวกเตอร์ให้ดึงค่าความเร็ว/ทิศทางเฉพาะตำแหน่ง (Local Motion) ของแต่ละจุด
 function renderCellVectors(frameIdx) {
   layerArrows.clearLayers();
   if (!manifest || !manifest.motion) return;
@@ -1818,7 +1812,6 @@ function renderCellVectors(frameIdx) {
         if (Math.hypot(e, n) <= 230) {
           const [lat, lon] = unproject(e, n, lat0, lon0);
           
-          // ดึงค่าการเคลื่อนที่เฉพาะพิกัดนี้ (Local Vector Field)
           const localMotion = getLocalMotionAtPoint(e, n);
           const spd = localMotion.spd;
           const deg = localMotion.deg;
@@ -1940,7 +1933,7 @@ function updateThemeVisuals(themeKey) {
   analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
 }
 
-// 📌 โหลดขอบเขตจังหวัด อำเภอ (districts_240km.geojson) และตำบล (subdistricts_240km.geojson)
+// 📌 โหลดขอบเขตจังหวัด, อำเภอ (districts_240km.geojson) และตำบล (subdistricts_240km.geojson) ในรัศมี 240 กม.
 async function loadBoundaries() {
   try {
     const resProv = await fetch("https://cdn.jsdelivr.net/gh/apisit/thailand.json@master/thailand.json");
@@ -1961,12 +1954,13 @@ async function loadBoundaries() {
     }
   } catch (err) {}
 
+  // ขอบเขตอำเภอ (ปรับสไตล์ให้เส้นหนาและชัดขึ้น)
   try {
     const resAmp = await fetch("districts_240km.geojson");
     if (resAmp.ok) {
       const dataAmp = await resAmp.json();
       L.geoJSON(dataAmp, {
-        style: { color: "#FBBF24", weight: 1.1, dashArray: "3, 3", fill: false, opacity: 0.65 },
+        style: { color: "#FBBF24", weight: 1.2, dashArray: "3, 3", fill: false, opacity: 0.8 },
         onEachFeature: (feature, layer) => {
           const name = feature.properties.name || "";
           if (name) {
@@ -1978,17 +1972,22 @@ async function loadBoundaries() {
         }
       }).addTo(layerAmphoe);
     }
-  } catch (err) {}
+  } catch (err) {
+    console.error("ไม่พบไฟล์ districts_240km.geojson ในโฟลเดอร์ docs/");
+  }
 
+  // ขอบเขตตำบลภายในรัศมี 240 กม. (ปรับสีและน้ำหนักเส้นให้มองเห็นชัดเจน)
   try {
     const resTam = await fetch("subdistricts_240km.geojson");
     if (resTam.ok) {
       const dataTam = await resTam.json();
       L.geoJSON(dataTam, {
-        style: { color: "#38BDF8", weight: 0.5, fill: false, opacity: 0.35 }
+        style: { color: "#94A3B8", weight: 0.8, fill: false, opacity: 0.6 }
       }).addTo(layerTambon);
     }
-  } catch (err) {}
+  } catch (err) {
+    console.error("ไม่พบไฟล์ subdistricts_240km.geojson ในโฟลเดอร์ docs/");
+  }
 }
 
 async function initRadar() {
