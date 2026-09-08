@@ -32,7 +32,6 @@
   --purple: #C084FC;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
   --blur: blur(16px);
-
   --ring-label-bg: rgba(15, 23, 42, 0.82);
   --ring-label-border: rgba(56, 189, 248, 0.45);
   --ring-label-color: #38BDF8;
@@ -123,6 +122,68 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   color: #34D399; font-weight: 600; padding: 6px 12px; border-radius: 999px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 11.5px;
 }
 
+.layer-card { position: absolute; top: 62px; right: 12px; z-index: 999; width: 235px; padding: 12px 14px; font-size: 12px; }
+.layer-card.collapsed { width: fit-content; padding: 7px 12px; border-radius: 999px; }
+.layer-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: var(--accent); cursor: pointer; gap: 8px; }
+.layer-card.collapsed .layer-head { margin-bottom: 0; }
+.layer-head-title { display: flex; align-items: center; gap: 6px; }
+.layer-content { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.layer-row { display: flex; align-items: center; justify-content: space-between; }
+.custom-checkbox { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.custom-checkbox input { accent-color: var(--accent); cursor: pointer; }
+.divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0; }
+
+.rail { position: absolute; top: 62px; left: 12px; width: 345px; z-index: 999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.rail > * { pointer-events: auto; }
+.action-card { padding: 15px 16px; border-radius: 16px; position: relative; }
+.ac-head { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--text-dim); margin-bottom: 6px; }
+.ac-head-left { display: flex; align-items: center; gap: 6px; }
+.ac-collapse-btn { background: transparent; border: none; color: var(--text-dim); cursor: pointer; padding: 3px; border-radius: 6px; }
+
+.ac-badges-wrap { display: flex; align-items: center; gap: 5px; }
+.ac-status-badge { padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.badge-clear { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+.ac-headline-wrap { display: flex; align-items: center; gap: 12px; margin: 6px 0 10px 0; }
+.ac-headline { font-size: 19px; font-weight: 700; line-height: 1.25; color: #fff; margin: 0; }
+
+.ac-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; background: rgba(0, 0, 0, 0.25);
+  padding: 8px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 10px;
+}
+.ac-grid-col { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.ac-grid-lbl { font-size: 10.5px; color: var(--text-dim); margin-bottom: 2px; }
+.ac-grid-val { font-size: 12.5px; font-weight: 600; color: #fff; font-family: "IBM Plex Mono", monospace; }
+
+.meteogram-box { background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; }
+.mg-header { display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: var(--text-dim); margin-bottom: 4px; }
+.mg-header-left { display: flex; align-items: center; gap: 5px; }
+.mg-header-right { display: flex; align-items: center; gap: 6px; }
+.btn-expand-mg {
+  background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--accent);
+  border-radius: 6px; padding: 2px 7px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;
+}
+.mg-chart-svg { width: 100%; height: 52px; overflow: visible; }
+.ac-desc { font-size: 11.5px; color: var(--text-dim); line-height: 1.45; margin-bottom: 10px; }
+
+.ac-btn-row { display: flex; gap: 6px; margin-bottom: 6px; }
+.btn-loc-sm {
+  flex: 1; padding: 7px 10px; border-radius: 9px; background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3); color: var(--accent); font-weight: 600; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-alert-sm {
+  flex: 1; padding: 7px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15); color: var(--text-dim); font-weight: 600; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.opacity-box { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-dim); }
+.opacity-box input { width: 120px; accent-color: var(--accent); }
+
+.rail.collapsed { width: fit-content; }
+.rail.collapsed .action-card { display: none; }
+.ac-pill { display: none; padding: 7px 14px; border-radius: 999px; align-items: center; gap: 10px; cursor: pointer; width: fit-content; }
+.rail.collapsed .ac-pill { display: flex; }
+.ac-pill-text { font-size: 12px; font-weight: 600; color: #fff; }
+
 .telemetry-panel {
   position: absolute; top: 62px; right: 12px; bottom: 90px; width: 360px; z-index: 1001;
   display: none; flex-direction: column; padding: 16px; border-radius: 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.7);
@@ -146,6 +207,17 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .tp-st-val { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
 .tp-val-num { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 700; color: var(--accent); }
 .tp-val-unit { font-size: 9px; color: var(--text-dim); }
+
+.modal-backdrop { position: fixed; inset: 0; z-index: 2000; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); display: none; place-items: center; padding: 16px; }
+.modal-backdrop.open { display: grid; }
+.modal-box { width: min(580px, 100%); padding: 20px; border-radius: 18px; }
+.modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 10px; }
+.modal-title-wrap { display: flex; align-items: center; gap: 8px; }
+.modal-title { font-size: 15px; font-weight: 700; color: #fff; }
+.modal-subtitle { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.modal-close-btn { background: rgba(255, 255, 255, 0.1); border: none; color: var(--text); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; }
+.modal-svg-wrap { width: 100%; height: 180px; margin: 16px 0; }
+.modal-svg-wrap svg { width: 100%; height: 100%; overflow: visible; }
 
 .legend { position: absolute; left: 12px; bottom: 65px; z-index: 998; padding: 8px 12px; border-radius: 12px; width: 210px; }
 .lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #02ab02 0%, #22ce22 25%, #ffff00 50%, #ff8c00 75%, #ff0000 100%); }
@@ -175,6 +247,8 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   .map-switch { margin-left: auto; padding: 2px; height: 32px; max-width: calc(100vw - 110px); overflow-x: auto; }
   .map-btn { padding: 4px 9px; font-size: 11px; }
   .btn-open-telemetry { position: fixed !important; top: 48px; right: 98px; height: 28px; padding: 0 9px; font-size: 11px; z-index: 1000; border-radius: 999px; }
+  .layer-card { top: 48px; right: 8px; }
+  .rail { top: 48px; left: 8px; width: calc(100% - 16px); }
   .timeline-container { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: calc(100% - 16px); }
   .legend { display: none; }
 }
@@ -204,6 +278,16 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
+<div class="layer-card glass collapsed" id="layerCard">
+  <div class="layer-head" id="toggleLayerCard">
+    <div class="layer-head-title"><i data-lucide="layers" class="icon-sm"></i><span>ชั้นข้อมูล</span></div>
+    <i data-lucide="chevron-down" id="layerToggleIcon" class="icon-xs"></i>
+  </div>
+  <div class="layer-content" id="layerBody" style="display: none;">
+    <div class="layer-row"><label class="custom-checkbox"><input type="checkbox" id="chkStations" checked><span style="font-weight: 600; color: #34D399;">จุดสถานีโทรมาตร</span></label></div>
+  </div>
+</div>
+
 <div class="telemetry-panel glass" id="telemetryPanel">
   <div class="tp-head">
     <div class="tp-title"><i data-lucide="bar-chart-3" class="icon-sm" style="color: #34D399;"></i><span>ฝนสถานีโทรมาตร</span></div>
@@ -216,6 +300,55 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     <button class="tp-tab-btn" data-mode="24h">24 ชม.</button>
   </div>
   <div class="tp-list" id="telemetryStationList"></div>
+</div>
+
+<div class="rail" id="actionRail">
+  <div class="action-card glass" id="actionCard">
+    <div class="ac-head">
+      <div class="ac-head-left">
+        <i data-lucide="map-pin" class="icon-xs" style="color: var(--accent);"></i>
+        <span id="pinNameLabel">ตำแหน่งตรวจวัด</span>
+        <div class="ac-badges-wrap">
+          <span class="ac-status-badge badge-clear" id="statusBadge">พร้อมวิเคราะห์</span>
+        </div>
+      </div>
+      <button class="ac-collapse-btn" id="btnCollapseAc"><i data-lucide="chevron-left" class="icon-sm"></i></button>
+    </div>
+    <div class="ac-headline-wrap">
+      <div class="ac-headline" id="acHeadline">พิกัดศูนย์กลางเรดาร์พิษณุโลก</div>
+    </div>
+    <div class="ac-grid">
+      <div class="ac-grid-col"><span class="ac-grid-lbl">ค่า dBZ สูงสุด</span><span class="ac-grid-val" id="valEta">—</span></div>
+      <div class="ac-grid-col"><span class="ac-grid-lbl">พื้นที่ฝน (%)</span><span class="ac-grid-val" id="valDuration">—</span></div>
+      <div class="ac-grid-col"><span class="ac-grid-lbl">ฝนสูงสุด</span><span class="ac-grid-val" id="valRainAccum" style="color: var(--accent);">—</span></div>
+    </div>
+    <div class="meteogram-box">
+      <div class="mg-header">
+        <div class="mg-header-left"><i data-lucide="bar-chart-2" class="icon-xs" style="color: var(--accent);"></i><span>แนวโน้มความเข้มฝน (dBZ)</span></div>
+        <div class="mg-header-right"><button class="btn-expand-mg" id="btnOpenModal"><i data-lucide="maximize-2" class="icon-xs"></i> ขยาย</button></div>
+      </div>
+      <svg class="mg-chart-svg" id="mgChartSvg" viewBox="0 0 280 50"></svg>
+    </div>
+    <div class="ac-desc" id="acDesc">ระบบแสดงผลเรดาร์ Nowcast อัตโนมัติจาก TMD</div>
+    <div class="ac-btn-row">
+      <button class="btn-loc-sm" id="btnLoc"><i data-lucide="crosshair" class="icon-sm"></i> ตำแหน่งฉัน</button>
+      <button class="btn-alert-sm" id="btnToggleAlert"><i data-lucide="bell" class="icon-sm"></i><span id="alertLabel">แจ้งเตือน</span></button>
+    </div>
+    <div class="opacity-box"><span>ความทึบเรดาร์:</span><input type="range" id="radarOpacity" min="20" max="100" value="85"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="mgModal">
+  <div class="modal-box glass">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title-wrap"><i data-lucide="bar-chart-3" class="icon-md" style="color: var(--accent);"></i><div class="modal-title">กราฟวิเคราะห์ฝนรายพิกัด</div></div>
+        <div class="modal-subtitle" id="modalLocationLabel">ตำแหน่งตรวจวัด: พิษณุโลก</div>
+      </div>
+      <button class="modal-close-btn" id="btnCloseModal"><i data-lucide="x" class="icon-sm"></i></button>
+    </div>
+    <div class="modal-svg-wrap"><svg id="modalChartSvg" viewBox="0 0 520 180"></svg></div>
+  </div>
 </div>
 
 <div class="legend glass">
@@ -294,6 +427,7 @@ L.control.zoom({ position: "bottomright" }).addTo(map);
 
 const layerStations = L.layerGroup().addTo(map);
 
+// ตั้งค่าขนาด Scan Resolution ให้ตรงกับ Grid จริง (241x241)
 const SCAN_RES = 241;
 const scanCanvas = document.createElement("canvas");
 scanCanvas.width = SCAN_RES; scanCanvas.height = SCAN_RES;
@@ -307,7 +441,6 @@ function safeLucide() {
   } catch (e) {}
 }
 
-// AEQD (Azimuthal Equidistant) Projection Forward & Inverse
 function unproject(E, Nn, lat0, lon0) {
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
   const rho = Math.hypot(E, Nn);
@@ -446,7 +579,7 @@ async function initRadar() {
     frameImages = [];
 
     manifest.frames.forEach((frame, idx) => {
-      // frame.url เช่น "f/1788842700.png"
+      // ดึง URL จาก JSON เช่น "f/1788842700.png" -> path เต็มคือ "nowcast/PHS/f/1788842700.png"
       const url = "nowcast/PHS/" + frame.url;
       const overlay = L.imageOverlay(url, radarBounds, { opacity: 0, interactive: false }).addTo(map);
       radarOverlays.push(overlay);
@@ -475,9 +608,10 @@ async function initRadar() {
 function showFrame(index) {
   if (!manifest || !manifest.frames) return;
   currentIndex = index;
+  const targetOpacity = document.getElementById("radarOpacity").value / 100;
 
   radarOverlays.forEach((ov, i) => {
-    ov.setOpacity(i === currentIndex ? 0.85 : 0);
+    ov.setOpacity(i === currentIndex ? targetOpacity : 0);
   });
 
   document.getElementById("tlSlider").value = currentIndex;
@@ -503,6 +637,14 @@ function showFrame(index) {
 
   document.getElementById("tlFrameCount").textContent = `เฟรม ${currentIndex + 1}/${manifest.frames.length}`;
   document.getElementById("tlLatestTime").textContent = `ข้อมูลตรวจวัดล่าสุด: ${formatThaiDateTime(new Date(manifest.generated * 1000), true)}`;
+  
+  // อัปเดตข้อมูลบน Action Card
+  if (f.max_dbz !== undefined) {
+    document.getElementById("valEta").textContent = f.max_dbz + " dBZ";
+    document.getElementById("valDuration").textContent = f.wet_pct + " %";
+    document.getElementById("valRainAccum").textContent = dbzToRainRate(f.max_dbz).toFixed(1) + " มม./ชม.";
+  }
+
   safeLucide();
 }
 
@@ -529,6 +671,7 @@ document.getElementById("btnPlay").addEventListener("click", togglePlay);
 document.getElementById("tlSlider").addEventListener("input", (e) => { showFrame(parseInt(e.target.value)); });
 document.getElementById("btnToggleTelemetryPanel").addEventListener("click", () => { document.getElementById("telemetryPanel").classList.toggle("open"); });
 document.getElementById("btnCloseTelemetryPanel").addEventListener("click", () => { document.getElementById("telemetryPanel").classList.remove("open"); });
+document.getElementById("radarOpacity").addEventListener("input", () => { showFrame(currentIndex); });
 
 document.querySelectorAll(".map-btn").forEach(btn => {
   btn.addEventListener("click", (e) => {
