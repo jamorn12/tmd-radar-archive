@@ -4,18 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0C1524">
-<title>ทันฝน — เรดาร์พิษณุโลก & Nowcast (ปิดปรับปรุง)</title>
+<title>ทันฝน — เรดาร์พิษณุโลก & Nowcast</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
 
-<!-- Fonts, Leaflet Web GIS, Turf.js Spatial Analysis & Lucide Icons -->
+<!-- Fonts, Leaflet Web GIS & Lucide Icons -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
@@ -42,65 +41,6 @@
 html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: var(--text); font-family: "IBM Plex Sans Thai", sans-serif; overflow: hidden; }
 
 #map { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; background: #1a202c; cursor: crosshair; }
-
-/* Maintenance Overlay Screen */
-#maintenanceOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  background: #070B12;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 24px;
-  font-family: "IBM Plex Sans Thai", sans-serif;
-}
-.maint-card {
-  max-width: 440px;
-  width: 100%;
-  padding: 32px 24px;
-  border-radius: 20px;
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(20px);
-}
-.maint-icon-box {
-  width: 64px; height: 64px;
-  border-radius: 50%;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  display: grid; place-items: center;
-  margin: 0 auto 16px auto;
-  color: var(--accent);
-}
-.maint-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 8px;
-}
-.maint-desc {
-  font-size: 13.5px;
-  color: var(--text-dim);
-  line-height: 1.6;
-  margin-bottom: 24px;
-}
-.maint-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  color: #FBBF24;
-  font-size: 12px;
-  font-weight: 600;
-  font-family: "IBM Plex Mono", monospace;
-}
 
 .glass {
   background: var(--card);
@@ -484,38 +424,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #00ECEC 0%, #00A000 25%, #FFFF00 50%, #FF9000 75%, #FF0000 100%); }
 .lg-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 
-/* Impacted Areas UI Card (Spatial Impact Analysis) - Positioned above Legend without overlap */
-.impact-card {
-  position: absolute; left: 12px; bottom: 135px; z-index: 998;
-  width: 235px; padding: 10px 12px; border-radius: 12px;
-}
-.ic-head {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 11.5px; font-weight: 700; color: #fff; margin-bottom: 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 4px;
-}
-.ic-unit { font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
-.ic-list { display: flex; flex-direction: column; gap: 4px; max-height: 110px; overflow-y: auto; padding-right: 2px; }
-.ic-list::-webkit-scrollbar { width: 3px; }
-.ic-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
-.ic-item {
-  display: flex; align-items: center; justify-content: space-between;
-  background: rgba(0, 0, 0, 0.3); padding: 4px 7px; border-radius: 6px;
-  border-left: 3px solid var(--accent); font-size: 11px;
-}
-.ic-prov-name { font-weight: 600; color: #fff; }
-.ic-rain-val { font-family: "IBM Plex Mono", monospace; font-weight: 700; color: var(--accent); }
-
-.rain-scale-bar {
-  height: 6px; border-radius: 3px; margin: 3px 0 2px 0;
-  background: linear-gradient(90deg, #1E3A8A 0%, #0284C7 35%, #38BDF8 70%, #7DD3FC 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-.rain-scale-labels {
-  display: flex; justify-content: space-between; font-size: 8.5px;
-  color: var(--text-dim); font-family: "IBM Plex Mono", monospace; margin-bottom: 6px;
-}
-
 /* Timeline Container */
 .timeline-container {
   position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
@@ -602,28 +510,10 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   .tl-pill { padding: 5px 12px; height: 32px; gap: 8px; }
   .tl-pill-text { font-size: 11.5px; }
   .legend { display: none; }
-  .impact-card { display: none; }
 }
 </style>
 </head>
 <body>
-
-<!-- Maintenance Mode Overlay -->
-<div id="maintenanceOverlay">
-  <div class="maint-card">
-    <div class="maint-icon-box">
-      <i data-lucide="wrench" style="width: 32px; height: 32px;"></i>
-    </div>
-    <div class="maint-title">ระบบอยู่ระหว่างการปรับปรุง</div>
-    <div class="maint-desc">
-      เรากำลังอัปเดตระบบวิเคราะห์เชิงพื้นที่และเพิ่มประสิทธิภาพการประมวลผลเรดาร์ เพื่อการใช้งานที่แม่นยำยิ่งขึ้น โปรดกลับมาใหม่อีกครั้งเร็วๆ นี้
-    </div>
-    <div class="maint-badge">
-      <i data-lucide="shield-alert" style="width: 14px; height: 14px;"></i>
-      <span>ระบบปิดชั่วคราว</span>
-    </div>
-  </div>
-</div>
 
 <div id="map"></div>
 
@@ -685,7 +575,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     <div class="layer-row">
       <label class="custom-checkbox">
         <input type="checkbox" id="chkProv">
-        <span>ขอบเขตจังหวัด (240 กม.)</span>
+        <span>ขอบเขตจังหวัด</span>
       </label>
       <label class="layer-label-check">
         <input type="checkbox" id="chkProvLabel"> ป้าย
@@ -815,24 +705,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- Impacted Areas UI Card (Spatial Impact Analysis) - Positioned above Legend without overlap -->
-<div class="impact-card glass" id="impactCard">
-  <div class="ic-head">
-    <span>จังหวัดที่ได้รับผลกระทบ</span>
-    <span class="ic-unit">มม./3 ชม.</span>
-  </div>
-  <div class="rain-scale-bar"></div>
-  <div class="rain-scale-labels">
-    <span>1–10</span>
-    <span>10–20</span>
-    <span>20–35</span>
-    <span>35–60+</span>
-  </div>
-  <div class="ic-list" id="impactedListContainer">
-    <div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 6px;">กำลังวิเคราะห์พื้นที่เสี่ยง...</div>
-  </div>
-</div>
-
 <!-- Modal -->
 <div class="modal-backdrop" id="mgModal">
   <div class="modal-box glass">
@@ -910,18 +782,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 </div>
 
 <script>
-// --- MAINTENANCE MODE BYPASS CHECK ---
-const urlParams = new URLSearchParams(window.location.search);
-const isDevMode = urlParams.get('dev') === 'true' || urlParams.get('admin') === '1' || window.location.hostname === 'localhost';
-
-if (isDevMode) {
-  // ซ่อนหน้าต่างปิดปรับปรุงเมื่อเข้าผ่านลิงก์ลับ ?dev=true
-  document.addEventListener("DOMContentLoaded", () => {
-    const overlay = document.getElementById("maintenanceOverlay");
-    if (overlay) overlay.style.display = "none";
-  });
-}
-
 const MANIFEST_URL = "nowcast/PHS/latest.json";
 const R_EARTH = 6371.0088;
 const THAI_MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
@@ -965,10 +825,8 @@ const TELEMETRY_STATIONS = [
 ];
 
 const geocodeCache = new Map();
-let loadedProvinceFeatures = [];
 
 async function getReverseGeocode(lat, lon) {
-  if (isNaN(lat) || isNaN(lon)) return "";
   const key = `${lat.toFixed(3)},${lon.toFixed(3)}`;
   if (geocodeCache.has(key)) return geocodeCache.get(key);
   try {
@@ -1163,19 +1021,16 @@ scanCanvas.height = SCAN_RES;
 const scanCtx = scanCanvas.getContext("2d", { willReadFrequently: true });
 
 function unproject(E, Nn, lat0, lon0) {
-  if (isNaN(E) || isNaN(Nn)) return [lat0, lon0];
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
   const rho = Math.hypot(E, Nn);
   if (rho < 1e-9) return [lat0, lon0];
   const c = rho / R_EARTH;
   const lat = Math.asin(Math.cos(c) * Math.sin(p0) + Nn * Math.sin(c) * Math.cos(p0) / rho);
   const lon = l0 + Math.atan2(E * Math.sin(c), rho * Math.cos(p0) * Math.cos(c) - Nn * Math.sin(p0) * Math.sin(c));
-  if (isNaN(lat) || isNaN(lon)) return [lat0, lon0];
   return [lat * 180 / Math.PI, lon * 180 / Math.PI];
 }
 
 function project(lat, lon, lat0, lon0) {
-  if (isNaN(lat) || isNaN(lon)) return [0, 0];
   const p = lat * Math.PI / 180, l = lon * Math.PI / 180;
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
   const cosC = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(l - l0);
@@ -1184,7 +1039,6 @@ function project(lat, lon, lat0, lon0) {
   const k = c / Math.sin(c);
   const E = R_EARTH * k * Math.cos(p) * Math.sin(l - l0);
   const Nn = R_EARTH * k * (Math.cos(p0) * Math.sin(p) - Math.sin(p0) * Math.cos(p) * Math.cos(l - l0));
-  if (isNaN(E) || isNaN(Nn)) return [0, 0];
   return [E, Nn];
 }
 
@@ -1255,10 +1109,13 @@ function dbzToRainRate(dbz) {
   return Math.pow(z / 200, 1 / 1.6);
 }
 
+// 📌 ฟังก์ชันคำนวณเวกเตอร์การเคลื่อนที่แบบเฉพาะจุด (Spatial/Local Motion Field Lookup)
+// เพื่อให้สอดคล้องตามหลักการ Optical Flow ของ PySTEPS ที่ความเร็ว/ทิศทางแปรผันตามพื้นที่
 function getLocalMotionAtPoint(pinE, pinN) {
   if (!manifest || !manifest.motion) return { spd: 15.0, deg: 270 };
   const motion = manifest.motion;
 
+  // หากหลังบ้านส่งข้อมูลมาเป็นกริดสนามความเร็ว (Spatial Grid)
   if (motion.grid_u && motion.grid_v && motion.resolution_km) {
     const gridRes = motion.resolution_km;
     const col = Math.floor((pinE / gridRes) + (motion.cols / 2));
@@ -1274,6 +1131,8 @@ function getLocalMotionAtPoint(pinE, pinN) {
     }
   }
 
+  // Fallback: หากเป็นค่า Global ให้เพิ่มการกระจายตัวเชิงพื้นที่ (Spatial Modulation) ตามตำแหน่งพิกัด
+  // เพื่อจำลองลักษณะการเคลื่อนที่ของกลุ่มฝนจริงในแต่ละโซน (ไม่ให้ความเร็วเท่ากันทุกจุด)
   const globalSpd = motion.speed_kmh || motion.kmh || 15.0;
   const globalDeg = motion.direction_deg !== undefined ? motion.direction_deg : (motion.bearing || 270);
 
@@ -1409,7 +1268,6 @@ function updateTelemetryStationValues() {
   });
 
   renderTelemetryPanelList();
-  updateImpactedProvinces();
 }
 
 function renderTelemetryPanelList() {
@@ -1445,84 +1303,7 @@ function renderTelemetryPanelList() {
   container.innerHTML = html;
 }
 
-function updateImpactedProvinces() {
-  const container = document.getElementById("impactedListContainer");
-  if (!container || loadedProvinceFeatures.length === 0 || frameImages.length === 0) return;
-
-  const img = frameImages[currentIndex];
-  if (!img || !img.complete || img.naturalWidth === 0) return;
-
-  scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
-  scanCtx.drawImage(img, 0, 0, SCAN_RES, SCAN_RES);
-  let imgData = null;
-  try {
-    imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
-  } catch (e) { return; }
-
-  const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
-  const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
-
-  let impactedHtml = "";
-  let count = 0;
-
-  loadedProvinceFeatures.forEach(feat => {
-    const props = feat.properties || {};
-    const provName = props.name || props.pro_en || props.pro_th || "พื้นที่";
-    
-    try {
-      const centroid = turf.centroid(feat);
-      const coords = centroid.geometry.coordinates; // [lon, lat]
-      const pLat = coords[1], pLon = coords[0];
-
-      if (isNaN(pLat) || isNaN(pLon)) return;
-
-      const [pinE, pinN] = project(pLat, pLon, lat0, lon0);
-      const px = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
-      const py = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
-
-      let maxDbz = 0;
-      if (imgData && px >= 0 && px < SCAN_RES && py >= 0 && py < SCAN_RES) {
-        for (let dy = -3; dy <= 3; dy++) {
-          for (let dx = -3; dx <= 3; dx++) {
-            const nx = px + dx, ny = py + dy;
-            if (nx >= 0 && nx < SCAN_RES && ny >= 0 && ny < SCAN_RES) {
-              const idx = (ny * SCAN_RES + nx) * 4;
-              const dbz = rgbToDbz(imgData[idx], imgData[idx+1], imgData[idx+2], imgData[idx+3]);
-              if (dbz > maxDbz) maxDbz = dbz;
-            }
-          }
-        }
-      }
-
-      if (maxDbz >= 18) {
-        const rain3h = dbzToRainRate(maxDbz) * 3;
-        if (rain3h >= 1) {
-          count++;
-          let borderColor = "#1E3A8A";
-          if (rain3h >= 35) borderColor = "#7DD3FC";
-          else if (rain3h >= 20) borderColor = "#38BDF8";
-          else if (rain3h >= 10) borderColor = "#0284C7";
-
-          impactedHtml += `
-            <div class="ic-item" style="border-left-color: ${borderColor};">
-              <span class="ic-prov-name">จ.${provName}</span>
-              <span class="ic-rain-val">${rain3h.toFixed(1)} มม.</span>
-            </div>
-          `;
-        }
-      }
-    } catch (err) {}
-  });
-
-  if (count === 0) {
-    container.innerHTML = `<div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 6px;">ไม่พบกลุ่มฝนกระทบพื้นที่ในรอบนี้</div>`;
-  } else {
-    container.innerHTML = impactedHtml;
-  }
-}
-
 function zoomToStation(lat, lon, name, idx) {
-  if (isNaN(lat) || isNaN(lon)) return;
   map.flyTo([lat, lon], 10, { duration: 1.2 });
   setInspectionPoint(lat, lon, name);
   const inst = stationMarkerInstances[idx];
@@ -1664,7 +1445,6 @@ function renderModalMeteogram() {
 }
 
 function analyzeImpactAtPoint(lat, lon) {
-  if (isNaN(lat) || isNaN(lon)) return;
   layerTrajectory.clearLayers();
   if (!manifest || !manifest.motion || frameImages.length === 0) return;
 
@@ -1673,6 +1453,7 @@ function analyzeImpactAtPoint(lat, lon) {
   const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
   const [pinE, pinN] = project(lat, lon, lat0, lon0);
 
+  // 📌 ดึงค่าความเร็วและทิศทางเฉพาะตำแหน่งพิกัดนี้ (Local Motion) แทนการใช้ค่าเดียวทั้งแผ่น
   const localMotion = getLocalMotionAtPoint(pinE, pinN);
   const spd = localMotion.spd;
   const deg = localMotion.deg;
@@ -1854,18 +1635,16 @@ function analyzeImpactAtPoint(lat, lon) {
 
     const rad = deg * Math.PI / 180;
     const [cloudLat, cloudLon] = unproject(pinE - Math.sin(rad) * hitDistFront, pinN - Math.cos(rad) * hitDistFront, lat0, lon0);
-    
-    if (!isNaN(cloudLat) && !isNaN(cloudLon)) {
-      const style = THEME_STYLES[currentTheme];
-      const impactPolyline = L.polyline([[cloudLat, cloudLon], [lat, lon]], {
-        color: willHail ? "#C084FC" : style.impactLine,
-        weight: 2.8, dashArray: "6, 6", opacity: 0.95
-      }).addTo(layerTrajectory);
+    const style = THEME_STYLES[currentTheme];
 
-      impactPolyline.bindTooltip(`${willHail ? 'เสี่ยงลูกเห็บ' : 'กลุ่มฝน'} (ETA: ~${etaMin} นาที)`, {
-        permanent: true, direction: "center", className: "map-label"
-      });
-    }
+    const impactPolyline = L.polyline([[cloudLat, cloudLon], [lat, lon]], {
+      color: willHail ? "#C084FC" : style.impactLine,
+      weight: 2.8, dashArray: "6, 6", opacity: 0.95
+    }).addTo(layerTrajectory);
+
+    impactPolyline.bindTooltip(`${willHail ? 'เสี่ยงลูกเห็บ' : 'กลุ่มฝน'} (ETA: ~${etaMin} นาที)`, {
+      permanent: true, direction: "center", className: "map-label"
+    });
 
     if (etaMin <= 120) {
       triggerRainNotification(etaMin, startStr, durationMin, willHail);
@@ -1889,10 +1668,6 @@ function analyzeImpactAtPoint(lat, lon) {
 }
 
 async function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") {
-  if (isNaN(lat) || isNaN(lon)) {
-    lat = radarStationLatLon[0];
-    lon = radarStationLatLon[1];
-  }
   userPinLatLon = [lat, lon];
   document.getElementById("pinNameLabel").textContent = `${label}`;
   document.getElementById("modalLocationLabel").textContent = `${label} (Lat: ${lat.toFixed(3)}, Lon: ${lon.toFixed(3)})`;
@@ -2000,6 +1775,7 @@ map.on("popupopen", () => {
   safeLucide();
 });
 
+// 📌 ปรับปรุงการวาดเวกเตอร์ให้ดึงค่าความเร็ว/ทิศทางเฉพาะตำแหน่ง (Local Motion) ของแต่ละจุด
 function renderCellVectors(frameIdx) {
   layerArrows.clearLayers();
   if (!manifest || !manifest.motion) return;
@@ -2041,8 +1817,8 @@ function renderCellVectors(frameIdx) {
 
         if (Math.hypot(e, n) <= 230) {
           const [lat, lon] = unproject(e, n, lat0, lon0);
-          if (isNaN(lat) || isNaN(lon)) continue;
           
+          // ดึงค่าการเคลื่อนที่เฉพาะพิกัดนี้ (Local Vector Field)
           const localMotion = getLocalMotionAtPoint(e, n);
           const spd = localMotion.spd;
           const deg = localMotion.deg;
@@ -2083,15 +1859,14 @@ function renderRadarMask() {
   const lon0 = radarStationLatLon[1];
   const radiusKm = 240;
 
-  const worldOuterCoords = [[-85, -180], [-85, 180], [85, 180], [85, -180], [-85, -180]];
+  const worldOuterCoords = [[-85, -180], [-85, 180], [85, 180], [85, -180]];
   const holeCoords = [];
   const numPoints = 120;
   for (let i = 0; i < numPoints; i++) {
     const angle = (i / numPoints) * 2 * Math.PI;
     const e = radiusKm * Math.sin(angle);
     const n = radiusKm * Math.cos(angle);
-    const pt = unproject(e, n, lat0, lon0);
-    if (pt && !isNaN(pt[0]) && !isNaN(pt[1])) holeCoords.push(pt);
+    holeCoords.push(unproject(e, n, lat0, lon0));
   }
 
   const style = THEME_STYLES[currentTheme];
@@ -2124,11 +1899,9 @@ function renderRangeRings() {
     rangeCircleElements.push(circle);
 
     const [labelLat, labelLon] = unproject(0, km, lat0, lon0);
-    if (!isNaN(labelLat) && !isNaN(labelLon)) {
-      const label = L.tooltip({ permanent: true, direction: "center", className: "ring-label" })
-                     .setContent(`${km} km`).setLatLng([labelLat, labelLon]);
-      layerRings.addLayer(label);
-    }
+    const label = L.tooltip({ permanent: true, direction: "center", className: "ring-label" })
+                   .setContent(`${km} km`).setLatLng([labelLat, labelLon]);
+    layerRings.addLayer(label);
   });
 
   stationMarkerElement = L.circleMarker([lat0, lon0], {
@@ -2167,96 +1940,53 @@ function updateThemeVisuals(themeKey) {
   analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
 }
 
-function sanitizeGeoJson(data) {
-  if (!data || !data.features) return data;
-  data.features = data.features.filter(f => {
-    if (!f || !f.geometry || !f.geometry.coordinates) return false;
-    const cleanCoords = (coords) => {
-      if (!Array.isArray(coords)) return null;
-      if (typeof coords[0] === 'number') {
-        if (coords.length < 2 || isNaN(coords[0]) || isNaN(coords[1])) return null;
-        return [coords[0], coords[1]];
-      }
-      const cleaned = coords.map(c => cleanCoords(c)).filter(c => c !== null);
-      return cleaned.length > 0 ? cleaned : null;
-    };
-    f.geometry.coordinates = cleanCoords(f.geometry.coordinates);
-    return f.geometry.coordinates !== null;
-  });
-  return data;
-}
-
+// 📌 โหลดขอบเขตจังหวัด อำเภอ (districts_240km.geojson) และตำบล (subdistricts_240km.geojson)
 async function loadBoundaries() {
-  console.log("📍 กำลังโหลดขอบเขตพื้นที่...");
-
   try {
-    const resProv = await fetch("./provinces_240km.geojson");
-    if (!resProv.ok) throw new Error(`HTTP ${resProv.status}`);
-    let dataProv = await resProv.json();
-    dataProv = sanitizeGeoJson(dataProv);
-    loadedProvinceFeatures = dataProv.features || [];
-
-    L.geoJSON(dataProv, {
-      style: { color: "#38BDF8", weight: 1.5, fill: false, opacity: 0.75 },
-      onEachFeature: (feature, layer) => {
-        const name = feature.properties.name || "";
-        if (name && typeof layer.getBounds === "function") {
-          try {
-            const bounds = layer.getBounds();
-            if (bounds && bounds.isValid()) {
-              const center = bounds.getCenter();
-              if (center && !isNaN(center.lat) && !isNaN(center.lng)) {
-                const label = L.tooltip({ permanent: true, direction: "center", className: "map-label" })
-                               .setContent(name).setLatLng(center);
-                layerProvinceLabels.addLayer(label);
-              }
-            }
-          } catch (e) {}
-        }
-      }
-    }).addTo(layerProvince);
-    console.log("✅ โหลดขอบเขตจังหวัดสำเร็จ");
-  } catch (err) {
-    console.warn("⚠️ โหลดขอบเขตจังหวัดไม่สำเร็จ:", err);
-  }
-
-  try {
-    const resAmp = await fetch("./districts_240km.geojson");
-    if (resAmp.ok) {
-      let dataAmp = await resAmp.json();
-      dataAmp = sanitizeGeoJson(dataAmp);
-      L.geoJSON(dataAmp, {
-        style: { color: "#FBBF24", weight: 1.2, dashArray: "3, 3", fill: false, opacity: 0.85 },
+    const resProv = await fetch("https://cdn.jsdelivr.net/gh/apisit/thailand.json@master/thailand.json");
+    if (resProv.ok) {
+      const dataProv = await resProv.json();
+      L.geoJSON(dataProv, {
+        style: { color: "#38BDF8", weight: 1.5, fill: false, opacity: 0.75 },
         onEachFeature: (feature, layer) => {
-          const name = feature.properties.name || "";
-          if (name && typeof layer.getBounds === "function") {
-            try {
-              const bounds = layer.getBounds();
-              if (bounds && bounds.isValid()) {
-                const center = bounds.getCenter();
-                if (center && !isNaN(center.lat) && !isNaN(center.lng)) {
-                  const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
-                                 .setContent(name).setLatLng(center);
-                  layerAmphoeLabels.addLayer(label);
-                }
-              }
-            } catch (e) {}
+          const name = feature.properties.name || feature.properties.pro_th || "";
+          if (name) {
+            const center = layer.getBounds().getCenter();
+            const label = L.tooltip({ permanent: true, direction: "center", className: "map-label" })
+                           .setContent(name).setLatLng(center);
+            layerProvinceLabels.addLayer(label);
           }
         }
-      }).addTo(layerAmphoe);
-      console.log("✅ โหลดขอบเขตอำเภอสำเร็จ");
+      }).addTo(layerProvince);
     }
   } catch (err) {}
 
   try {
-    const resTam = await fetch("./subdistricts_240km.geojson");
+    const resAmp = await fetch("districts_240km.geojson");
+    if (resAmp.ok) {
+      const dataAmp = await resAmp.json();
+      L.geoJSON(dataAmp, {
+        style: { color: "#FBBF24", weight: 1.1, dashArray: "3, 3", fill: false, opacity: 0.65 },
+        onEachFeature: (feature, layer) => {
+          const name = feature.properties.name || "";
+          if (name) {
+            const center = layer.getBounds().getCenter();
+            const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
+                           .setContent(name).setLatLng(center);
+            layerAmphoeLabels.addLayer(label);
+          }
+        }
+      }).addTo(layerAmphoe);
+    }
+  } catch (err) {}
+
+  try {
+    const resTam = await fetch("subdistricts_240km.geojson");
     if (resTam.ok) {
-      let dataTam = await resTam.json();
-      dataTam = sanitizeGeoJson(dataTam);
+      const dataTam = await resTam.json();
       L.geoJSON(dataTam, {
-        style: { color: "#38BDF8", weight: 0.9, fill: false, opacity: 0.7 }
+        style: { color: "#38BDF8", weight: 0.5, fill: false, opacity: 0.35 }
       }).addTo(layerTambon);
-      console.log("✅ โหลดขอบเขตตำบลสำเร็จ");
     }
   } catch (err) {}
 }
@@ -2528,10 +2258,8 @@ function autoDetectGPS() {
     navigator.geolocation.getCurrentPosition((pos) => {
       const userLat = pos.coords.latitude;
       const userLon = pos.coords.longitude;
-      if (!isNaN(userLat) && !isNaN(userLon)) {
-        map.setView([userLat, userLon], 10);
-        setInspectionPoint(userLat, userLon, "ตำแหน่งของคุณ (GPS)");
-      }
+      map.setView([userLat, userLon], 10);
+      setInspectionPoint(userLat, userLon, "ตำแหน่งของคุณ (GPS)");
     }, () => {}, { timeout: 4000 });
   }
 }
@@ -2541,10 +2269,8 @@ document.getElementById("btnLoc").addEventListener("click", () => {
   navigator.geolocation.getCurrentPosition((pos) => {
     const userLat = pos.coords.latitude;
     const userLon = pos.coords.longitude;
-    if (!isNaN(userLat) && !isNaN(userLon)) {
-      map.setView([userLat, userLon], 10);
-      setInspectionPoint(userLat, userLon, "ตำแหน่งของคุณ (GPS)");
-    }
+    map.setView([userLat, userLon], 10);
+    setInspectionPoint(userLat, userLon, "ตำแหน่งของคุณ (GPS)");
   }, () => {
     alert("ไม่สามารถเข้าถึงพิกัด GPS ได้");
   });
