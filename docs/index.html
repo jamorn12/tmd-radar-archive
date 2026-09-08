@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0C1524">
-<title>ทันฝน — เรดาร์พิษณุโลก & Nowcast</title>
+<title>ทันฝน — เรดาร์พิษณุโลก & Nowcast (ปิดปรับปรุง)</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -42,6 +42,65 @@
 html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: var(--text); font-family: "IBM Plex Sans Thai", sans-serif; overflow: hidden; }
 
 #map { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; background: #1a202c; cursor: crosshair; }
+
+/* Maintenance Overlay Screen */
+#maintenanceOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #070B12;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  font-family: "IBM Plex Sans Thai", sans-serif;
+}
+.maint-card {
+  max-width: 440px;
+  width: 100%;
+  padding: 32px 24px;
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
+}
+.maint-icon-box {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  display: grid; place-items: center;
+  margin: 0 auto 16px auto;
+  color: var(--accent);
+}
+.maint-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.maint-desc {
+  font-size: 13.5px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.maint-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #FBBF24;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: "IBM Plex Mono", monospace;
+}
 
 .glass {
   background: var(--card);
@@ -549,6 +608,23 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 </head>
 <body>
 
+<!-- Maintenance Mode Overlay -->
+<div id="maintenanceOverlay">
+  <div class="maint-card">
+    <div class="maint-icon-box">
+      <i data-lucide="wrench" style="width: 32px; height: 32px;"></i>
+    </div>
+    <div class="maint-title">ระบบอยู่ระหว่างการปรับปรุง</div>
+    <div class="maint-desc">
+      เรากำลังอัปเดตระบบวิเคราะห์เชิงพื้นที่และเพิ่มประสิทธิภาพการประมวลผลเรดาร์ เพื่อการใช้งานที่แม่นยำยิ่งขึ้น โปรดกลับมาใหม่อีกครั้งเร็วๆ นี้
+    </div>
+    <div class="maint-badge">
+      <i data-lucide="shield-alert" style="width: 14px; height: 14px;"></i>
+      <span>ระบบปิดชั่วคราว</span>
+    </div>
+  </div>
+</div>
+
 <div id="map"></div>
 
 <!-- Top Bar -->
@@ -739,7 +815,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<!-- Impacted Areas UI Card (Spatial Impact Analysis) -->
+<!-- Impacted Areas UI Card (Spatial Impact Analysis) - Positioned above Legend without overlap -->
 <div class="impact-card glass" id="impactCard">
   <div class="ic-head">
     <span>จังหวัดที่ได้รับผลกระทบ</span>
@@ -834,6 +910,18 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 </div>
 
 <script>
+// --- MAINTENANCE MODE BYPASS CHECK ---
+const urlParams = new URLSearchParams(window.location.search);
+const isDevMode = urlParams.get('dev') === 'true' || urlParams.get('admin') === '1' || window.location.hostname === 'localhost';
+
+if (isDevMode) {
+  // ซ่อนหน้าต่างปิดปรับปรุงเมื่อเข้าผ่านลิงก์ลับ ?dev=true
+  document.addEventListener("DOMContentLoaded", () => {
+    const overlay = document.getElementById("maintenanceOverlay");
+    if (overlay) overlay.style.display = "none";
+  });
+}
+
 const MANIFEST_URL = "nowcast/PHS/latest.json";
 const R_EARTH = 6371.0088;
 const THAI_MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
