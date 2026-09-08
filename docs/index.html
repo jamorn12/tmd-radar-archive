@@ -595,11 +595,18 @@ function updateTelemetryStationValues() {
   if (!manifest || !manifest.frames || stationMarkerInstances.length === 0 || frameImages.length === 0) return;
   const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
   const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+  
   const imgFrame = frameImages[currentIndex];
-  if (!imgFrame || !imgFrame.complete) return;
+  // 🛡️ ป้องกันกรณีรูปภาพเสียหรือยังโหลดไม่เสร็จ (404) จะได้ไม่เกิด Error บน Canvas
+  if (!imgFrame || !imgFrame.complete || imgFrame.naturalWidth === 0) return;
 
   scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
-  scanCtx.drawImage(imgFrame, 0, 0, SCAN_RES, SCAN_RES);
+  try {
+    scanCtx.drawImage(imgFrame, 0, 0, SCAN_RES, SCAN_RES);
+  } catch (e) {
+    return; // ข้ามการประมวลผลรอบนี้หากรูปภาพมีปัญหา
+  }
+
   let imgData = null;
   try { imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data; } catch (err) { return; }
 
@@ -619,7 +626,6 @@ function updateTelemetryStationValues() {
   });
   renderTelemetryPanelList();
 }
-
 function renderTelemetryPanelList() {
   const container = document.getElementById("telemetryStationList");
   if (!container) return;
