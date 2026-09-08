@@ -79,8 +79,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   font-family: "IBM Plex Mono", monospace !important; font-size: 11px !important; font-weight: 600 !important;
 }
 .leaflet-tooltip.ring-label::before { display: none !important; }
-.leaflet-tooltip.map-label { background: transparent; border: none; box-shadow: none; color: #fff; font-weight: 600; text-shadow: 0 1px 3px #000; padding: 0; font-size: 11.5px; }
-.leaflet-tooltip.map-label.amphoe { font-size: 10px; color: #FBBF24; }
 
 .leaflet-popup-content-wrapper {
   background: rgba(18, 24, 38, 0.96) !important; backdrop-filter: blur(16px) !important;
@@ -88,21 +86,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .leaflet-popup-content { margin: 12px 14px !important; font-family: "IBM Plex Sans Thai", sans-serif !important; }
 .leaflet-popup-tip { background: rgba(18, 24, 38, 0.96) !important; }
-
-.wam-popup { display: flex; flex-direction: column; gap: 3px; min-width: 200px; font-family: "IBM Plex Sans Thai", sans-serif; padding: 2px; }
-.wam-pop-name { font-size: 14.5px; font-weight: 700; color: #FFFFFF; line-height: 1.25; }
-.wam-pop-id { font-size: 12.5px; font-weight: 700; color: #FFFFFF; font-family: "IBM Plex Mono", monospace; }
-.wam-pop-loc { font-size: 11.5px; color: #CBD5E1; margin-bottom: 4px; }
-.wam-pop-metric { font-size: 16.5px; font-weight: 700; color: #FFFFFF; display: flex; align-items: center; gap: 5px; font-family: "IBM Plex Mono", monospace; }
-.wam-pop-metric .unit { font-size: 12.5px; font-weight: 600; font-family: "IBM Plex Sans Thai", sans-serif; }
-.wam-pop-chart-btn { color: var(--accent); cursor: pointer; display: inline-flex; align-items: center; margin-left: 2px; }
-.wam-pop-sub-metrics {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 4px 6px; margin: 4px 0; font-size: 10px; font-family: "IBM Plex Mono", monospace;
-}
-.wam-pop-time { font-size: 10.5px; color: #94A3B8; margin-bottom: 6px; }
-.wam-pop-footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255, 255, 255, 0.12); padding-top: 6px; }
-.wam-pop-coord { font-size: 11px; color: var(--accent); text-decoration: underline; cursor: pointer; font-family: "IBM Plex Mono", monospace; }
 
 /* Custom Pins */
 .custom-pin-wrap { background: transparent !important; border: none !important; }
@@ -140,76 +123,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   color: #34D399; font-weight: 600; padding: 6px 12px; border-radius: 999px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 11.5px;
 }
 
-.layer-card { position: absolute; top: 62px; right: 12px; z-index: 999; width: 235px; padding: 12px 14px; font-size: 12px; }
-.layer-card.collapsed { width: fit-content; padding: 7px 12px; border-radius: 999px; }
-.layer-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: var(--accent); cursor: pointer; gap: 8px; }
-.layer-card.collapsed .layer-head { margin-bottom: 0; }
-.layer-head-title { display: flex; align-items: center; gap: 6px; }
-.layer-status { font-size: 10px; color: var(--ok); margin-bottom: 8px; display: block; }
-.layer-content { display: flex; flex-direction: column; gap: 8px; }
-.layer-row { display: flex; align-items: center; justify-content: space-between; }
-.layer-label-check { display: flex; align-items: center; gap: 4px; color: var(--text-dim); font-size: 11px; cursor: pointer; }
-.custom-checkbox { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-.custom-checkbox input, .layer-label-check input { accent-color: var(--accent); cursor: pointer; }
-.divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0; }
-
-.rail { position: absolute; top: 62px; left: 12px; width: 345px; z-index: 999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-.rail > * { pointer-events: auto; }
-.action-card { padding: 15px 16px; border-radius: 16px; position: relative; }
-.ac-head { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--text-dim); margin-bottom: 6px; }
-.ac-head-left { display: flex; align-items: center; gap: 6px; }
-.ac-collapse-btn { background: transparent; border: none; color: var(--text-dim); cursor: pointer; padding: 3px; border-radius: 6px; }
-
-.ac-badges-wrap { display: flex; align-items: center; gap: 5px; }
-.ac-status-badge { padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
-.badge-rain-incoming { background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
-.badge-raining { background: rgba(239, 68, 68, 0.2); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-.badge-clear { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
-.badge-hail { background: rgba(192, 132, 252, 0.25); color: #E9D5FF; border: 1px solid rgba(192, 132, 252, 0.5); font-weight: 700; }
-
-.ac-headline-wrap { display: flex; align-items: center; gap: 12px; margin: 6px 0 10px 0; }
-.ac-headline { font-size: 19px; font-weight: 700; line-height: 1.25; color: #fff; margin: 0; }
-.ac-headline span.time-highlight { color: var(--accent); font-family: "IBM Plex Mono", monospace; }
-
-.ac-grid {
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; background: rgba(0, 0, 0, 0.25);
-  padding: 8px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 10px;
-}
-.ac-grid-col { display: flex; flex-direction: column; align-items: center; text-align: center; }
-.ac-grid-lbl { font-size: 10.5px; color: var(--text-dim); margin-bottom: 2px; }
-.ac-grid-val { font-size: 12.5px; font-weight: 600; color: #fff; font-family: "IBM Plex Mono", monospace; }
-
-.meteogram-box { background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; }
-.mg-header { display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: var(--text-dim); margin-bottom: 4px; }
-.mg-header-left { display: flex; align-items: center; gap: 5px; }
-.mg-header-right { display: flex; align-items: center; gap: 6px; }
-.btn-expand-mg {
-  background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--accent);
-  border-radius: 6px; padding: 2px 7px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;
-}
-.mg-chart-svg { width: 100%; height: 52px; overflow: visible; }
-.ac-desc { font-size: 11.5px; color: var(--text-dim); line-height: 1.45; margin-bottom: 10px; }
-
-.ac-btn-row { display: flex; gap: 6px; margin-bottom: 6px; }
-.btn-loc-sm {
-  flex: 1; padding: 7px 10px; border-radius: 9px; background: rgba(56, 189, 248, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.3); color: var(--accent); font-weight: 600; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;
-}
-.btn-alert-sm {
-  flex: 1; padding: 7px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.15); color: var(--text-dim); font-weight: 600; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;
-}
-.btn-alert-sm.active { background: rgba(16, 185, 129, 0.2); border-color: var(--ok); color: #34D399; }
-
-.opacity-box { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-dim); }
-.opacity-box input { width: 120px; accent-color: var(--accent); }
-
-.rail.collapsed { width: fit-content; }
-.rail.collapsed .action-card { display: none; }
-.ac-pill { display: none; padding: 7px 14px; border-radius: 999px; align-items: center; gap: 10px; cursor: pointer; width: fit-content; }
-.rail.collapsed .ac-pill { display: flex; }
-.ac-pill-text { font-size: 12px; font-weight: 600; color: #fff; }
-
 .telemetry-panel {
   position: absolute; top: 62px; right: 12px; bottom: 90px; width: 360px; z-index: 1001;
   display: none; flex-direction: column; padding: 16px; border-radius: 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.7);
@@ -227,7 +140,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   border: 1px solid rgba(255, 255, 255, 0.06); padding: 8px 10px; border-radius: 10px; cursor: pointer;
 }
 .tp-rank { font-size: 12px; font-weight: 700; color: var(--text-dim); width: 22px; text-align: center; font-family: "IBM Plex Mono", monospace; }
-.tp-rank.top { color: #FBBF24; }
 .tp-st-info { flex: 1; padding: 0 8px; display: flex; flex-direction: column; gap: 1px; }
 .tp-st-name { font-size: 12px; font-weight: 600; color: #fff; }
 .tp-st-sub { font-size: 10px; color: var(--text-dim); }
@@ -235,33 +147,9 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .tp-val-num { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 700; color: var(--accent); }
 .tp-val-unit { font-size: 9px; color: var(--text-dim); }
 
-.modal-backdrop { position: fixed; inset: 0; z-index: 2000; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); display: none; place-items: center; padding: 16px; }
-.modal-backdrop.open { display: grid; }
-.modal-box { width: min(580px, 100%); padding: 20px; border-radius: 18px; }
-.modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 10px; }
-.modal-title-wrap { display: flex; align-items: center; gap: 8px; }
-.modal-title { font-size: 15px; font-weight: 700; color: #fff; }
-.modal-subtitle { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
-.modal-close-btn { background: rgba(255, 255, 255, 0.1); border: none; color: var(--text); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; }
-.modal-svg-wrap { width: 100%; height: 180px; margin: 16px 0; }
-.modal-svg-wrap svg { width: 100%; height: 100%; overflow: visible; }
-.modal-legend-row { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--text-dim); justify-content: center; }
-.mg-badge-item { display: flex; align-items: center; gap: 5px; }
-.mg-dot { width: 8px; height: 8px; border-radius: 2px; }
-
 .legend { position: absolute; left: 12px; bottom: 65px; z-index: 998; padding: 8px 12px; border-radius: 12px; width: 210px; }
-.lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #00ECEC 0%, #00A000 25%, #FFFF00 50%, #FF9000 75%, #FF0000 100%); }
+.lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #02ab02 0%, #22ce22 25%, #ffff00 50%, #ff8c00 75%, #ff0000 100%); }
 .lg-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
-
-.impact-card { position: absolute; left: 12px; bottom: 135px; z-index: 998; width: 235px; padding: 10px 12px; border-radius: 12px; }
-.ic-head { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 700; color: #fff; margin-bottom: 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 4px; }
-.ic-unit { font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
-.ic-list { display: flex; flex-direction: column; gap: 4px; max-height: 110px; overflow-y: auto; padding-right: 2px; }
-.ic-item { display: flex; align-items: center; justify-content: space-between; background: rgba(0, 0, 0, 0.3); padding: 4px 7px; border-radius: 6px; border-left: 3px solid var(--accent); font-size: 11px; }
-.ic-prov-name { font-weight: 600; color: #fff; }
-.ic-rain-val { font-family: "IBM Plex Mono", monospace; font-weight: 700; color: var(--accent); }
-.rain-scale-bar { height: 6px; border-radius: 3px; margin: 3px 0 2px 0; background: linear-gradient(90deg, #1E3A8A 0%, #0284C7 35%, #38BDF8 70%, #7DD3FC 100%); border: 1px solid rgba(255, 255, 255, 0.12); }
-.rain-scale-labels { display: flex; justify-content: space-between; font-size: 8.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; margin-bottom: 6px; }
 
 .timeline-container { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); width: min(640px, calc(100% - 24px)); z-index: 1000; }
 .tl-card { padding: 10px 16px; border-radius: 16px; }
@@ -273,17 +161,12 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .tl-slider { flex: 1; accent-color: var(--accent); cursor: pointer; }
 .tl-badges { display: flex; align-items: center; gap: 8px; flex: none; }
 .badge-tag { font-size: 11px; padding: 2px 7px; border-radius: 6px; font-weight: 500; }
-.badge-tag.fc { background: rgba(245, 158, 11, 0.2); color: #FBBF24; }
-.badge-tag.obs { background: rgba(16, 185, 129, 0.2); color: #34D399; }
+.badge-tag.nowcast { background: rgba(245, 158, 11, 0.2); color: #FBBF24; }
+.badge-tag.present { background: rgba(56, 189, 248, 0.2); color: var(--accent); font-weight: 700; }
+.badge-tag.past { background: rgba(16, 185, 129, 0.2); color: #34D399; }
 .badge-frames { font-size: 11px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 .tl-sub-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 11px; color: var(--text-dim); }
 .btn-reset-view { color: var(--accent); cursor: pointer; display: flex; align-items: center; gap: 4px; }
-
-.timeline-container.collapsed .tl-card { display: none; }
-.tl-pill { display: none; padding: 7px 14px; border-radius: 999px; align-items: center; gap: 10px; cursor: pointer; margin: 0 auto; width: fit-content; }
-.timeline-container.collapsed .tl-pill { display: flex; }
-.tl-pill-text { font-size: 12.5px; font-weight: 600; color: #fff; }
-.tl-pill-play { border: none; background: var(--accent); color: #070B12; border-radius: 50%; width: 22px; height: 22px; display: grid; place-items: center; cursor: pointer; }
 
 @media (max-width: 768px) {
   .top-bar { top: 8px; left: 8px; right: 8px; gap: 6px; }
@@ -292,20 +175,14 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   .map-switch { margin-left: auto; padding: 2px; height: 32px; max-width: calc(100vw - 110px); overflow-x: auto; }
   .map-btn { padding: 4px 9px; font-size: 11px; }
   .btn-open-telemetry { position: fixed !important; top: 48px; right: 98px; height: 28px; padding: 0 9px; font-size: 11px; z-index: 1000; border-radius: 999px; }
-  .layer-card { top: 48px; right: 8px; }
-  .layer-card.collapsed { top: 48px; right: 8px; padding: 0 9px; height: 28px; display: flex; align-items: center; }
-  .rail { top: 48px; left: 8px; width: calc(100% - 16px); }
-  .rail.collapsed { top: 48px; left: 8px; width: fit-content; max-width: calc(100vw - 200px); }
-  .ac-pill { padding: 0 9px; height: 28px; gap: 5px; }
   .timeline-container { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: calc(100% - 16px); }
   .legend { display: none; }
-  .impact-card { display: none; }
 }
 </style>
 </head>
 <body>
 
-<div id="maintenanceOverlay">
+<div id="maintenanceOverlay" style="display: none;">
   <div class="maint-card">
     <div class="maint-icon-box"><i data-lucide="wrench" style="width: 32px; height: 32px;"></i></div>
     <div class="maint-title">ระบบอยู่ระหว่างการปรับปรุง</div>
@@ -327,24 +204,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
-<div class="layer-card glass collapsed" id="layerCard">
-  <div class="layer-head" id="toggleLayerCard">
-    <div class="layer-head-title"><i data-lucide="layers" class="icon-sm"></i><span>ชั้นข้อมูล</span></div>
-    <i data-lucide="chevron-down" id="layerToggleIcon" class="icon-xs"></i>
-  </div>
-  <span class="layer-status" id="boundaryStatus" style="display: none;">● ขอบเขตพื้นที่พร้อมใช้งาน</span>
-  <div class="layer-content" id="layerBody" style="display: none;">
-    <div class="layer-row"><label class="custom-checkbox"><input type="checkbox" id="chkArrows" checked><span style="font-weight: 600; color: var(--accent);">เวกเตอร์เซลล์ฝน</span></label></div>
-    <div class="layer-row"><label class="custom-checkbox"><input type="checkbox" id="chkRings" checked><span>วงรัศมีตรวจวัดเรดาร์</span></label></div>
-    <div class="divider"></div>
-    <div class="layer-row"><label class="custom-checkbox"><input type="checkbox" id="chkStations" checked><span style="font-weight: 600; color: #34D399;">จุดสถานีโทรมาตร</span></label></div>
-    <div class="divider"></div>
-    <div class="layer-row"><label class="custom-checkbox"><input type="checkbox" id="chkProv"><span>ขอบเขตจังหวัด (240 กม.)</span></label><label class="layer-label-check"><input type="checkbox" id="chkProvLabel"> ป้าย</label></div>
-    <div class="layer-row"><label class="custom-checkbox"><input type="checkbox" id="chkAmp"><span>ขอบเขตอำเภอ (240 กม.)</span></label><label class="layer-label-check"><input type="checkbox" id="chkAmpLabel"> ป้าย</label></div>
-    <div class="layer-row"><label class="custom-checkbox"><input type="checkbox" id="chkTam"><span>ขอบเขตตำบล (240 กม.)</span></label></div>
-  </div>
-</div>
-
 <div class="telemetry-panel glass" id="telemetryPanel">
   <div class="tp-head">
     <div class="tp-title"><i data-lucide="bar-chart-3" class="icon-sm" style="color: #34D399;"></i><span>ฝนสถานีโทรมาตร</span></div>
@@ -359,76 +218,13 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   <div class="tp-list" id="telemetryStationList"></div>
 </div>
 
-<div class="rail collapsed" id="actionRail">
-  <div class="action-card glass" id="actionCard">
-    <div class="ac-head">
-      <div class="ac-head-left">
-        <i data-lucide="map-pin" class="icon-xs" style="color: var(--accent);"></i>
-        <span id="pinNameLabel">ตำแหน่งตรวจวัด</span>
-        <div class="ac-badges-wrap">
-          <span class="ac-status-badge badge-clear" id="statusBadge">กำลังวิเคราะห์</span>
-          <span class="ac-status-badge badge-hail" id="hailBadge" style="display: none;"><i data-lucide="zap" class="icon-xs"></i> เสี่ยงลูกเห็บ</span>
-        </div>
-      </div>
-      <button class="ac-collapse-btn" id="btnCollapseAc"><i data-lucide="chevron-left" class="icon-sm"></i></button>
-    </div>
-    <div class="ac-headline-wrap">
-      <div class="ac-weather-icon-box" id="headlineWeatherIcon"></div>
-      <div class="ac-headline" id="acHeadline">กำลังสแกนสนามฝน...</div>
-    </div>
-    <div class="ac-grid">
-      <div class="ac-grid-col"><span class="ac-grid-lbl">เริ่มตก</span><span class="ac-grid-val" id="valEta">—</span></div>
-      <div class="ac-grid-col"><span class="ac-grid-lbl">ตกต่อเนื่อง</span><span class="ac-grid-val" id="valDuration">—</span></div>
-      <div class="ac-grid-col"><span class="ac-grid-lbl">ฝนสะสม 1 ชม.</span><span class="ac-grid-val" id="valRainAccum" style="color: var(--accent);">~0 มม.</span></div>
-    </div>
-    <div class="meteogram-box">
-      <div class="mg-header">
-        <div class="mg-header-left"><i data-lucide="bar-chart-2" class="icon-xs" style="color: var(--accent);"></i><span>แนวโน้มฝน 105 นาที (dBZ)</span></div>
-        <div class="mg-header-right"><span id="mgPeakLabel">สูงสุด: — dBZ</span><button class="btn-expand-mg" id="btnOpenModal"><i data-lucide="maximize-2" class="icon-xs"></i> ขยาย</button></div>
-      </div>
-      <svg class="mg-chart-svg" id="mgChartSvg" viewBox="0 0 280 50"></svg>
-    </div>
-    <div class="ac-desc" id="acDesc">แตะบนแผนที่เพื่อเลือกจุดตรวจวัด หรือกดปุ่มค้นหาตำแหน่ง GPS ของคุณ</div>
-    <div class="ac-btn-row">
-      <button class="btn-loc-sm" id="btnLoc"><i data-lucide="crosshair" class="icon-sm"></i> ตำแหน่งฉัน</button>
-      <button class="btn-alert-sm" id="btnToggleAlert"><i data-lucide="bell" id="alertIcon" class="icon-sm"></i><span id="alertLabel">เปิดแจ้งเตือน</span></button>
-    </div>
-    <div class="opacity-box"><span>ความทึบเรดาร์:</span><input type="range" id="radarOpacity" min="20" max="100" value="85"></div>
-  </div>
-  <div class="ac-pill glass" id="btnExpandAc">
-    <div class="ac-pill-icon" id="pillWeatherIcon"></div>
-    <span class="ac-pill-text" id="acPillText">กำลังวิเคราะห์...</span>
-    <i data-lucide="chevron-right" class="icon-xs" style="color: var(--accent);"></i>
-  </div>
-</div>
-
-<div class="impact-card glass" id="impactCard">
-  <div class="ic-head"><span>จังหวัดที่ได้รับผลกระทบ</span><span class="ic-unit">มม./3 ชม.</span></div>
-  <div class="rain-scale-bar"></div>
-  <div class="rain-scale-labels"><span>1–10</span><span>10–20</span><span>20–35</span><span>35–60+</span></div>
-  <div class="ic-list" id="impactedListContainer"><div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 6px;">กำลังวิเคราะห์พื้นที่เสี่ยง...</div></div>
-</div>
-
-<div class="modal-backdrop" id="mgModal">
-  <div class="modal-box glass">
-    <div class="modal-head">
-      <div>
-        <div class="modal-title-wrap"><i data-lucide="bar-chart-3" class="icon-md" style="color: var(--accent);"></i><div class="modal-title">กราฟวิเคราะห์ฝน 105 นาทีรายพิกัด</div></div>
-        <div class="modal-subtitle" id="modalLocationLabel">ตำแหน่งตรวจวัด: พิษณุโลก</div>
-      </div>
-      <button class="modal-close-btn" id="btnCloseModal"><i data-lucide="x" class="icon-sm"></i></button>
-    </div>
-    <div class="modal-svg-wrap"><svg id="modalChartSvg" viewBox="0 0 520 180"></svg></div>
-  </div>
-</div>
-
 <div class="legend glass">
-  <div class="lg-labels"><span>20</span><span>30</span><span>40</span><span>50</span><span>60+ dBZ</span></div>
+  <div class="lg-labels"><span>10</span><span>20</span><span>35</span><span>50</span><span>64 dBZ</span></div>
   <div class="lg-bar"></div>
   <div class="lg-labels"><span>เบา</span><span>ปานกลาง</span><span>หนัก</span><span>หนักมาก</span></div>
 </div>
 
-<div class="timeline-container collapsed" id="timelineBox">
+<div class="timeline-container" id="timelineBox">
   <div class="tl-card glass">
     <div class="tl-header">
       <div class="tl-title" id="tlFullTitle"><i data-lucide="activity" class="icon-xs" style="color: var(--accent);"></i><span>ทันฝน เรดาร์พิษณุโลก (Nowcast)</span></div>
@@ -438,19 +234,14 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
       <button class="btn-play-sm" id="btnPlay"><i data-lucide="play" id="playIcon" class="icon-sm"></i></button>
       <input type="range" class="tl-slider" id="tlSlider" min="0" max="0" value="0">
       <div class="tl-badges">
-        <span class="badge-tag obs" id="tlBadge">ตรวจวัดจริง</span>
+        <span class="badge-tag past" id="tlBadge">ตรวจวัดจริง</span>
         <span class="badge-frames" id="tlFrameCount">0/0</span>
       </div>
     </div>
     <div class="tl-sub-row">
       <span id="tlLatestTime">ข้อมูลล่าสุด: กำลังเชื่อมต่อ...</span>
-      <span class="btn-reset-view" onclick="map.setView([16.77, 100.22], 8)"><i data-lucide="locate" class="icon-xs"></i> รีเซ็ตมุมมอง</span>
+      <span class="btn-reset-view" onclick="map.setView(radarStationLatLon, 8)"><i data-lucide="locate" class="icon-xs"></i> รีเซ็ตมุมมอง</span>
     </div>
-  </div>
-  <div class="tl-pill glass" id="btnExpandTl">
-    <span class="tl-pill-text" id="tlPillText">—:— น.</span>
-    <button class="tl-pill-play" id="btnPlayPill"><i data-lucide="play" id="playIconPill" class="icon-xs"></i></button>
-    <span style="font-size: 11px; color: var(--accent);">ขยาย <i data-lucide="chevron-up" class="icon-xs"></i></span>
   </div>
 </div>
 
@@ -489,45 +280,34 @@ let currentIndex = 0;
 let isPlaying = false;
 let playTimer = null;
 let radarBounds = null;
-let radarStationLatLon = [16.77, 100.22];
-let userPinLatLon = [16.77, 100.22];
-let userPinMarker = null;
-let rangeCircleElements = [];
-let stationMarkerElement = null;
-let radarMaskPolygon = null;
-let isAlertEnabled = localStorage.getItem("tanfon_alert_enabled") === "true";
-let currentSampledDbzList = [];
+let radarStationLatLon = [16.7765, 100.2161];
 let stationMarkerInstances = [];
-let telemetrySortMode = "1h";
-let loadedProvinceFeatures = [];
 
-const map = L.map("map", { center: [16.77, 100.22], zoom: 8, zoomControl: false });
-L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }).addTo(map);
+const map = L.map("map", { center: [16.7765, 100.2161], zoom: 8, zoomControl: false });
+const tileLayers = {
+  dark: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }).addTo(map),
+  hillshade: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+  satellite: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+  light: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
+};
 L.control.zoom({ position: "bottomright" }).addTo(map);
 
-map.createPane('maskPane');
-map.getPane('maskPane').style.zIndex = 410;
-map.getPane('maskPane').style.pointerEvents = 'none';
-
-const layerArrows = L.layerGroup().addTo(map);
-const layerRings = L.layerGroup().addTo(map);
-const layerTrajectory = L.layerGroup().addTo(map);
 const layerStations = L.layerGroup().addTo(map);
-const layerProvince = L.layerGroup();
-const layerProvinceLabels = L.layerGroup();
-const layerAmphoe = L.layerGroup();
 
-const liveGpsIcon = L.divIcon({
-  className: "custom-pin-wrap",
-  html: `<div class="modern-pin"><div class="pin-pulse"></div><div class="pin-core"></div></div>`,
-  iconSize: [24, 24], iconAnchor: [12, 12]
-});
-
-const SCAN_RES = 160;
+const SCAN_RES = 241;
 const scanCanvas = document.createElement("canvas");
 scanCanvas.width = SCAN_RES; scanCanvas.height = SCAN_RES;
 const scanCtx = scanCanvas.getContext("2d", { willReadFrequently: true });
 
+function safeLucide() {
+  try {
+    if (window.lucide && typeof lucide.createIcons === "function") {
+      lucide.createIcons();
+    }
+  } catch (e) {}
+}
+
+// AEQD (Azimuthal Equidistant) Projection Forward & Inverse
 function unproject(E, Nn, lat0, lon0) {
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
   const rho = Math.hypot(E, Nn);
@@ -541,7 +321,7 @@ function unproject(E, Nn, lat0, lon0) {
 function project(lat, lon, lat0, lon0) {
   const p = lat * Math.PI / 180, l = lon * Math.PI / 180;
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
-  const cosC = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(l - l0);
+  const cosC = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(l - l0) * Math.cos(p);
   const c = Math.acos(Math.min(1, Math.max(-1, cosC)));
   if (c < 1e-9) return [0, 0];
   const k = c / Math.sin(c);
@@ -563,19 +343,18 @@ function formatThaiDateTime(dateObj, showFull = false) {
 
 function rgbToDbz(r, g, b, a) {
   if (a < 35) return 0;
-  if (r > 170 && b > 170) return 56;
-  if (r > 190 && g < 70 && b < 70) return 50;
-  if (r > 200 && g > 100 && b < 60) return 42;
-  if (r > 190 && g > 190 && b < 70) return 35;
-  if (g > 130 && r < 140) return 25;
-  if (b > 160 && g > 160) return 18;
+  if (r > 200 && g > 200 && b > 200) return 56;
+  if (r > 200 && g < 50) return 50;
+  if (r > 200 && g > 100) return 40;
+  if (g > 150) return 25;
+  if (b > 150) return 15;
   return 0;
 }
 
 function dbzToRainRate(dbz) {
   if (dbz < 15) return 0;
   const z = Math.pow(10, dbz / 10);
-  return Math.pow(z / 200, 1 / 1.6);
+  return Math.pow(z / 250, 1 / 1.2);
 }
 
 function initTelemetryStationMarkers() {
@@ -587,25 +366,23 @@ function initTelemetryStationMarkers() {
       iconSize: [10, 10], iconAnchor: [5, 5]
     });
     const marker = L.marker([st.lat, st.lon], { icon: stationIcon }).addTo(layerStations);
-    stationMarkerInstances.push({ data: st, idx: idx, marker: marker, rain1h: 0, rain3h: 0, rain6h: 0, rain24h: 0, dbz: 0 });
+    stationMarkerInstances.push({ data: st, idx: idx, marker: marker, rain1h: 0, dbz: 0 });
   });
 }
 
 function updateTelemetryStationValues() {
   if (!manifest || !manifest.frames || stationMarkerInstances.length === 0 || frameImages.length === 0) return;
   const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
-  const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+  const extent = manifest.extent_m || [-240000, -240000, 240000, 240000];
+  const xmin = extent[0], ymin = extent[1], xmax = extent[2], ymax = extent[3];
   
   const imgFrame = frameImages[currentIndex];
-  // 🛡️ ป้องกันกรณีรูปภาพเสียหรือยังโหลดไม่เสร็จ (404) จะได้ไม่เกิด Error บน Canvas
   if (!imgFrame || !imgFrame.complete || imgFrame.naturalWidth === 0) return;
 
   scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
   try {
     scanCtx.drawImage(imgFrame, 0, 0, SCAN_RES, SCAN_RES);
-  } catch (e) {
-    return; // ข้ามการประมวลผลรอบนี้หากรูปภาพมีปัญหา
-  }
+  } catch (e) { return; }
 
   let imgData = null;
   try { imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data; } catch (err) { return; }
@@ -613,8 +390,8 @@ function updateTelemetryStationValues() {
   stationMarkerInstances.forEach(item => {
     const st = item.data;
     const [pinE, pinN] = project(st.lat, st.lon, lat0, lon0);
-    const px = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
-    const py = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
+    const px = Math.round((pinE - xmin) / (xmax - xmin) * (SCAN_RES - 1));
+    const py = Math.round((ymax - pinN) / (ymax - ymin) * (SCAN_RES - 1));
     let dbz = 0;
     if (imgData && px >= 0 && px < SCAN_RES && py >= 0 && py < SCAN_RES) {
       const idx = (py * SCAN_RES + px) * 4;
@@ -622,10 +399,10 @@ function updateTelemetryStationValues() {
     }
     item.dbz = dbz;
     item.rain1h = dbzToRainRate(dbz);
-    item.rain24h = item.rain1h * 3.5;
   });
   renderTelemetryPanelList();
 }
+
 function renderTelemetryPanelList() {
   const container = document.getElementById("telemetryStationList");
   if (!container) return;
@@ -652,15 +429,16 @@ async function initRadar() {
       throw new Error("โครงสร้างไฟล์ manifest ไม่ถูกต้อง");
     }
 
-    const m = /lat_0=([-\d.]+).*?lon_0=([-\d.]+)/.exec(manifest.projection) || [];
-    const lat0 = parseFloat(m[1]) || 16.77;
-    const lon0 = parseFloat(m[2]) || 100.22;
+    const mLat = /lat_0=([-\d.]+)/.exec(manifest.projection);
+    const mLon = /lon_0=([-\d.]+)/.exec(manifest.projection);
+    const lat0 = mLat ? parseFloat(mLat[1]) : 16.7765;
+    const lon0 = mLon ? parseFloat(mLon[1]) : 100.2161;
     radarStationLatLon = [lat0, lon0];
 
-    const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+    const extent = manifest.extent_m || [-240000, -240000, 240000, 240000];
     radarBounds = L.latLngBounds(
-      unproject(0, -halfKm, lat0, lon0),
-      unproject(0, halfKm, lat0, lon0)
+      unproject(extent[0], extent[1], lat0, lon0),
+      unproject(extent[2], extent[3], lat0, lon0)
     );
 
     initTelemetryStationMarkers();
@@ -668,6 +446,7 @@ async function initRadar() {
     frameImages = [];
 
     manifest.frames.forEach((frame, idx) => {
+      // frame.url เช่น "f/1788842700.png"
       const url = "nowcast/PHS/" + frame.url;
       const overlay = L.imageOverlay(url, radarBounds, { opacity: 0, interactive: false }).addTo(map);
       radarOverlays.push(overlay);
@@ -685,8 +464,8 @@ async function initRadar() {
     const slider = document.getElementById("tlSlider");
     slider.max = manifest.frames.length - 1;
 
-    const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
-    showFrame(nowIdx >= 0 ? nowIdx : manifest.frames.length - 1);
+    const presentIdx = manifest.frames.findIndex(f => f.kind === "present" || f.offset_min === 0);
+    showFrame(presentIdx >= 0 ? presentIdx : Math.floor(manifest.frames.length / 2));
   } catch (err) {
     console.error("Radar Init Error:", err);
     document.getElementById("tlFullTitle").textContent = "เชื่อมต่อฐานข้อมูลเรดาร์ล้มเหลว (กำลังลองใหม่...)";
@@ -696,10 +475,9 @@ async function initRadar() {
 function showFrame(index) {
   if (!manifest || !manifest.frames) return;
   currentIndex = index;
-  const targetOpacity = document.getElementById("radarOpacity").value / 100;
 
   radarOverlays.forEach((ov, i) => {
-    ov.setOpacity(i === currentIndex ? targetOpacity : 0);
+    ov.setOpacity(i === currentIndex ? 0.85 : 0);
   });
 
   document.getElementById("tlSlider").value = currentIndex;
@@ -713,9 +491,18 @@ function showFrame(index) {
     <span>ทันฝน เรดาร์พิษณุโลก (Nowcast) — <b>${formatThaiDateTime(frameDate, true)}</b></span>
   `;
 
-  document.getElementById("tlPillText").textContent = `${formatThaiDateTime(frameDate)} ${f.offset_min > 0 ? '(+' + f.offset_min + 'น.)' : ''}`;
-  document.getElementById("tlBadge").textContent = f.kind === "nowcast" ? `พยากรณ์ +${f.offset_min} นาที` : (f.offset_min === 0 ? "ภาพตรวจวัดจริง" : `${f.offset_min} นาที`);
+  const badgeEl = document.getElementById("tlBadge");
+  badgeEl.className = "badge-tag " + (f.kind || "past");
+  if (f.kind === "present") {
+    badgeEl.textContent = "ภาพปัจจุบัน";
+  } else if (f.kind === "nowcast") {
+    badgeEl.textContent = `พยากรณ์ +${f.offset_min} นาที`;
+  } else {
+    badgeEl.textContent = f.offset_min < 0 ? `${f.offset_min} นาที` : "ตรวจวัดจริง";
+  }
+
   document.getElementById("tlFrameCount").textContent = `เฟรม ${currentIndex + 1}/${manifest.frames.length}`;
+  document.getElementById("tlLatestTime").textContent = `ข้อมูลตรวจวัดล่าสุด: ${formatThaiDateTime(new Date(manifest.generated * 1000), true)}`;
   safeLucide();
 }
 
@@ -723,11 +510,9 @@ function togglePlay() {
   if (!manifest || !manifest.frames || !Array.isArray(manifest.frames)) return;
   isPlaying = !isPlaying;
   const playIcon = document.getElementById("playIcon");
-  const playIconPill = document.getElementById("playIconPill");
 
   if (isPlaying) {
     if (playIcon) playIcon.setAttribute("data-lucide", "pause");
-    if (playIconPill) playIconPill.setAttribute("data-lucide", "pause");
     playTimer = setInterval(() => {
       if (!manifest || !manifest.frames) { togglePlay(); return; }
       let next = (currentIndex + 1) % manifest.frames.length;
@@ -735,7 +520,6 @@ function togglePlay() {
     }, 800);
   } else {
     if (playIcon) playIcon.setAttribute("data-lucide", "play");
-    if (playIconPill) playIconPill.setAttribute("data-lucide", "play");
     clearInterval(playTimer);
   }
   safeLucide();
@@ -743,13 +527,22 @@ function togglePlay() {
 
 document.getElementById("btnPlay").addEventListener("click", togglePlay);
 document.getElementById("tlSlider").addEventListener("input", (e) => { showFrame(parseInt(e.target.value)); });
-document.getElementById("btnCollapseTl").addEventListener("click", () => { document.getElementById("timelineBox").classList.add("collapsed"); });
-document.getElementById("btnExpandTl").addEventListener("click", () => { document.getElementById("timelineBox").classList.remove("collapsed"); });
-document.getElementById("btnToggleTelemetryPanel").addEventListener("click", () => { telemetryPanel.classList.toggle("open"); });
-document.getElementById("btnCloseTelemetryPanel").addEventListener("click", () => { telemetryPanel.classList.remove("open"); });
-document.getElementById("toggleLayerCard").addEventListener("click", () => {
-  const body = document.getElementById("layerBody");
-  body.style.display = body.style.display === "none" ? "flex" : "none";
+document.getElementById("btnToggleTelemetryPanel").addEventListener("click", () => { document.getElementById("telemetryPanel").classList.toggle("open"); });
+document.getElementById("btnCloseTelemetryPanel").addEventListener("click", () => { document.getElementById("telemetryPanel").classList.remove("open"); });
+
+document.querySelectorAll(".map-btn").forEach(btn => {
+  btn.addEventListener("click", (e) => {
+    document.querySelectorAll(".map-btn").forEach(b => b.classList.remove("active"));
+    e.target.classList.add("active");
+    const layerKey = e.target.getAttribute("data-layer");
+    Object.keys(tileLayers).forEach(k => {
+      if (k === layerKey) {
+        tileLayers[k].addTo(map);
+      } else {
+        map.removeLayer(tileLayers[k]);
+      }
+    });
+  });
 });
 
 setInterval(async () => {
