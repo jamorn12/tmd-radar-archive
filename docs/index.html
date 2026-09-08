@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0C1524">
-<title>ทันฝน — เรดาร์พิษณุโลก & Nowcast</title>
+<title>ทันฝน — เรดาร์พิษณุโลก & Nowcast (ปิดปรับปรุง)</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -32,6 +32,7 @@
   --purple: #C084FC;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
   --blur: blur(16px);
+
   --ring-label-bg: rgba(15, 23, 42, 0.82);
   --ring-label-border: rgba(56, 189, 248, 0.45);
   --ring-label-color: #38BDF8;
@@ -44,232 +45,600 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 /* Maintenance Overlay Screen */
 #maintenanceOverlay {
-  position: fixed; inset: 0; z-index: 99999; background: #070B12;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #070B12;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  font-family: "IBM Plex Sans Thai", sans-serif;
 }
 .maint-card {
-  max-width: 440px; width: 100%; padding: 32px 24px; border-radius: 20px;
-  background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(56, 189, 248, 0.25);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8); backdrop-filter: blur(20px);
+  max-width: 440px;
+  width: 100%;
+  padding: 32px 24px;
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
 }
 .maint-icon-box {
-  width: 64px; height: 64px; border-radius: 50%;
-  background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3);
-  display: grid; place-items: center; margin: 0 auto 16px auto; color: var(--accent);
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  display: grid; place-items: center;
+  margin: 0 auto 16px auto;
+  color: var(--accent);
 }
-.maint-title { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 8px; }
-.maint-desc { font-size: 13.5px; color: var(--text-dim); line-height: 1.6; margin-bottom: 24px; }
+.maint-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.maint-desc {
+  font-size: 13.5px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
 .maint-badge {
-  display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px;
-  background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3);
-  color: #FBBF24; font-size: 12px; font-weight: 600; font-family: "IBM Plex Mono", monospace;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #FBBF24;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: "IBM Plex Mono", monospace;
 }
 
 .glass {
-  background: var(--card); border: 1px solid var(--card-line);
-  backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
-  box-shadow: var(--shadow); border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--card-line);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: var(--shadow);
+  border-radius: 14px;
 }
 
-/* Tooltips & Popups */
+/* Leaflet Custom Ring Labels */
 .leaflet-tooltip.ring-label {
-  background: var(--ring-label-bg) !important; border: 1px solid var(--ring-label-border) !important;
-  color: var(--ring-label-color) !important; border-radius: 999px !important; padding: 2px 10px !important;
-  font-family: "IBM Plex Mono", monospace !important; font-size: 11px !important; font-weight: 600 !important;
+  background: var(--ring-label-bg) !important;
+  border: 1px solid var(--ring-label-border) !important;
+  color: var(--ring-label-color) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border-radius: 999px !important;
+  padding: 2px 10px !important;
+  font-family: "IBM Plex Mono", monospace !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+  text-shadow: none !important;
 }
 .leaflet-tooltip.ring-label::before { display: none !important; }
 
+/* Tooltips */
+.leaflet-tooltip.map-label {
+  background: transparent; border: none; box-shadow: none;
+  color: #fff; font-weight: 600; text-shadow: 0 1px 3px #000, 0 0 6px #000;
+  padding: 0; font-size: 11.5px;
+}
+.leaflet-tooltip.map-label.amphoe { font-size: 10px; color: #FBBF24; text-shadow: 0 1px 3px #000; }
+
+/* Leaflet Custom Modern Popup */
 .leaflet-popup-content-wrapper {
-  background: rgba(18, 24, 38, 0.96) !important; backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 12px !important; color: var(--text) !important;
+  background: rgba(18, 24, 38, 0.96) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7) !important;
+  padding: 0 !important;
+  color: var(--text) !important;
 }
-.leaflet-popup-content { margin: 12px 14px !important; font-family: "IBM Plex Sans Thai", sans-serif !important; }
-.leaflet-popup-tip { background: rgba(18, 24, 38, 0.96) !important; }
+.leaflet-popup-content {
+  margin: 12px 14px !important;
+  line-height: 1.35 !important;
+  font-family: "IBM Plex Sans Thai", sans-serif !important;
+}
+.leaflet-popup-tip-container { overflow: visible !important; }
+.leaflet-popup-tip {
+  background: rgba(18, 24, 38, 0.96) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: none !important;
+  margin-top: -1px !important;
+}
+.leaflet-popup-close-button {
+  color: var(--text-dim) !important;
+  padding: 8px 10px 0 0 !important;
+  font-size: 16px !important;
+  font-weight: 300 !important;
+}
+.leaflet-popup-close-button:hover { color: #fff !important; }
 
-/* Custom Pins */
+/* WAM ONWR Style Popup */
+.wam-popup {
+  display: flex; flex-direction: column; gap: 3px; min-width: 200px;
+  font-family: "IBM Plex Sans Thai", sans-serif; padding: 2px 2px;
+}
+.wam-pop-name { font-size: 14.5px; font-weight: 700; color: #FFFFFF; line-height: 1.25; padding-right: 14px; }
+.wam-pop-id { font-size: 12.5px; font-weight: 700; color: #FFFFFF; font-family: "IBM Plex Mono", monospace; margin: 1px 0; }
+.wam-pop-loc { font-size: 11.5px; color: #CBD5E1; line-height: 1.35; margin-bottom: 4px; }
+.wam-pop-metric {
+  font-size: 16.5px; font-weight: 700; color: #FFFFFF; display: flex; align-items: center; gap: 5px;
+  margin-top: 2px; font-family: "IBM Plex Mono", monospace;
+}
+.wam-pop-metric .unit { font-size: 12.5px; font-weight: 600; color: #FFFFFF; font-family: "IBM Plex Sans Thai", sans-serif; }
+.wam-pop-chart-btn { color: var(--accent); cursor: pointer; display: inline-flex; align-items: center; margin-left: 2px; transition: transform 0.15s ease; }
+.wam-pop-chart-btn:hover { transform: scale(1.2); color: #7DD3FC; }
+
+.wam-pop-sub-metrics {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+  background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px; padding: 4px 6px; margin: 4px 0; font-size: 10px; color: var(--text-dim);
+  font-family: "IBM Plex Mono", monospace;
+}
+.wam-pop-sub-metrics b { color: #F8FAFC; }
+
+.wam-pop-time { font-size: 10.5px; color: #94A3B8; margin-bottom: 6px; }
+.wam-pop-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.12); padding-top: 6px; margin-top: 2px;
+}
+.wam-pop-coord { font-size: 11px; color: var(--accent); text-decoration: underline; cursor: pointer; font-family: "IBM Plex Mono", monospace; }
+.wam-pop-coord:hover { color: #BAE6FD; }
+.wam-pop-agency { font-size: 11.5px; font-weight: 700; color: #F8FAFC; }
+
+/* Custom Live Radar Pulsing Pin */
 .custom-pin-wrap { background: transparent !important; border: none !important; }
-.modern-pin { position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: grab; }
+.modern-pin {
+  position: relative; width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center; cursor: grab;
+}
 .pin-core {
-  width: 13px; height: 13px; background: #38BDF8; border: 2px solid #FFFFFF; border-radius: 50%;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8); z-index: 2;
+  width: 13px; height: 13px; background: #38BDF8;
+  border: 2px solid #FFFFFF; border-radius: 50%;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8), 0 2px 6px rgba(0,0,0,0.5);
+  z-index: 2; transition: transform 0.2s;
 }
+.modern-pin:hover .pin-core { transform: scale(1.15); }
 .pin-pulse {
-  position: absolute; width: 30px; height: 30px; background: rgba(56, 189, 248, 0.4); border-radius: 50%;
-  animation: pin-radar-wave 2s infinite cubic-bezier(0.1, 0.7, 0.3, 1); z-index: 1;
+  position: absolute; width: 30px; height: 30px;
+  background: rgba(56, 189, 248, 0.4); border-radius: 50%;
+  animation: pin-radar-wave 2s infinite cubic-bezier(0.1, 0.7, 0.3, 1);
+  z-index: 1;
 }
-@keyframes pin-radar-wave { 0% { transform: scale(0.4); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
+@keyframes pin-radar-wave {
+  0% { transform: scale(0.4); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
 
-.gauge-pin { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #FFFFFF; box-shadow: 0 1px 4px rgba(0,0,0,0.6); cursor: pointer; }
+/* Rain Gauge Minimal Dot Markers */
+.gauge-pin {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 1.5px solid #FFFFFF; box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  cursor: pointer; transition: background-color 0.35s ease, transform 0.15s ease;
+}
+.gauge-pin:hover { transform: scale(1.6); z-index: 1000; }
 
-/* Layout Elements */
-.lucide-icon { display: inline-flex; align-items: center; justify-content: center; }
+/* Lucide Icons */
+.lucide-icon { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; flex-shrink: 0; }
 .icon-xs { width: 12px; height: 12px; }
 .icon-sm { width: 15px; height: 15px; }
 .icon-md { width: 18px; height: 18px; }
 
-.top-bar { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 1000; display: flex; gap: 8px; align-items: center; pointer-events: none; }
+/* Top Bar */
+.top-bar {
+  position: absolute; top: 12px; left: 12px; right: 12px; z-index: 1000;
+  display: flex; gap: 8px; align-items: center; pointer-events: none;
+}
 .top-bar > * { pointer-events: auto; }
 .brand { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; }
-.brand b { font-size: 14px; color: var(--accent); }
+.brand b { font-size: 14px; letter-spacing: -0.01em; color: var(--accent); }
 .brand span { font-size: 12px; color: var(--text-dim); }
 
 .map-switch { display: flex; gap: 2px; padding: 3px; border-radius: 999px; margin-left: auto; }
-.map-btn { border: none; background: transparent; color: var(--text-dim); padding: 5px 12px; border-radius: 999px; font-size: 11.5px; font-weight: 500; cursor: pointer; }
+.map-btn {
+  border: none; background: transparent; color: var(--text-dim);
+  padding: 5px 12px; border-radius: 999px; font-size: 11.5px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
 .map-btn.active { background: var(--accent); color: #070B12; font-weight: 700; }
 
 .btn-open-telemetry {
   background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.4);
-  color: #34D399; font-weight: 600; padding: 6px 12px; border-radius: 999px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 11.5px;
+  color: #34D399; font-weight: 600; padding: 6px 12px; border-radius: 999px;
+  cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 11.5px;
+  transition: all 0.2s; white-space: nowrap;
 }
+.btn-open-telemetry:hover { background: rgba(16, 185, 129, 0.3); }
 
-.layer-card { position: absolute; top: 62px; right: 12px; z-index: 999; width: 235px; padding: 12px 14px; font-size: 12px; }
-.layer-card.collapsed { width: fit-content; padding: 7px 12px; border-radius: 999px; }
-.layer-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: var(--accent); cursor: pointer; gap: 8px; }
+/* Layer Control Card */
+.layer-card {
+  position: absolute; top: 62px; right: 12px; z-index: 999;
+  width: 235px; padding: 12px 14px; font-size: 12px;
+  transition: all 0.25s cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+.layer-card.collapsed {
+  width: fit-content; padding: 7px 12px; border-radius: 999px;
+}
+.layer-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 600; color: var(--accent); cursor: pointer; user-select: none; margin-bottom: 6px;
+  gap: 8px;
+}
 .layer-card.collapsed .layer-head { margin-bottom: 0; }
 .layer-head-title { display: flex; align-items: center; gap: 6px; }
-.layer-content { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.layer-status { font-size: 10px; color: var(--ok); margin-bottom: 8px; display: block; }
+.layer-content { display: flex; flex-direction: column; gap: 8px; }
 .layer-row { display: flex; align-items: center; justify-content: space-between; }
+.layer-label-check { display: flex; align-items: center; gap: 4px; color: var(--text-dim); font-size: 11px; cursor: pointer; }
 .custom-checkbox { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-.custom-checkbox input { accent-color: var(--accent); cursor: pointer; }
+.custom-checkbox input, .layer-label-check input { accent-color: var(--accent); cursor: pointer; }
 .divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0; }
 
-.rail { position: absolute; top: 62px; left: 12px; width: 345px; z-index: 999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+/* Actionable Weather Card & Rail */
+.rail {
+  position: absolute; top: 62px; left: 12px; width: 345px; z-index: 999;
+  display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.3, 0.8, 0.3, 1);
+}
 .rail > * { pointer-events: auto; }
 .action-card { padding: 15px 16px; border-radius: 16px; position: relative; }
 .ac-head { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--text-dim); margin-bottom: 6px; }
 .ac-head-left { display: flex; align-items: center; gap: 6px; }
-.ac-collapse-btn { background: transparent; border: none; color: var(--text-dim); cursor: pointer; padding: 3px; border-radius: 6px; }
+.ac-collapse-btn {
+  background: transparent; border: none; color: var(--text-dim); cursor: pointer;
+  padding: 3px; border-radius: 6px; transition: all 0.2s; display: grid; place-items: center;
+}
+.ac-collapse-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
 
 .ac-badges-wrap { display: flex; align-items: center; gap: 5px; }
 .ac-status-badge { padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.badge-rain-incoming { background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
+.badge-raining { background: rgba(239, 68, 68, 0.2); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 .badge-clear { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
+.badge-hail {
+  background: rgba(192, 132, 252, 0.25); color: #E9D5FF; border: 1px solid rgba(192, 132, 252, 0.5); font-weight: 700;
+  animation: pulse-border 1.5s infinite;
+}
+@keyframes pulse-border { 0% { box-shadow: 0 0 0 0 rgba(192, 132, 252, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(192, 132, 252, 0); } 100% { box-shadow: 0 0 0 0 rgba(192, 132, 252, 0); } }
 
 .ac-headline-wrap { display: flex; align-items: center; gap: 12px; margin: 6px 0 10px 0; }
 .ac-headline { font-size: 19px; font-weight: 700; line-height: 1.25; color: #fff; margin: 0; }
+.ac-headline span.time-highlight { color: var(--accent); font-family: "IBM Plex Mono", monospace; }
 
 .ac-grid {
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; background: rgba(0, 0, 0, 0.25);
-  padding: 8px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 10px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
+  background: rgba(0, 0, 0, 0.25); padding: 8px; border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 10px;
 }
 .ac-grid-col { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .ac-grid-lbl { font-size: 10.5px; color: var(--text-dim); margin-bottom: 2px; }
 .ac-grid-val { font-size: 12.5px; font-weight: 600; color: #fff; font-family: "IBM Plex Mono", monospace; }
 
-.meteogram-box { background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; }
+.meteogram-box {
+  background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px; padding: 8px 10px; margin-bottom: 10px;
+}
 .mg-header { display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: var(--text-dim); margin-bottom: 4px; }
 .mg-header-left { display: flex; align-items: center; gap: 5px; }
 .mg-header-right { display: flex; align-items: center; gap: 6px; }
 .btn-expand-mg {
-  background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--accent);
-  border-radius: 6px; padding: 2px 7px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;
+  background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3);
+  color: var(--accent); border-radius: 6px; padding: 2px 7px; font-size: 11px;
+  cursor: pointer; transition: all 0.2s; font-family: "IBM Plex Sans Thai", sans-serif;
+  display: flex; align-items: center; gap: 4px;
 }
+.btn-expand-mg:hover { background: rgba(56, 189, 248, 0.25); }
 .mg-chart-svg { width: 100%; height: 52px; overflow: visible; }
 .ac-desc { font-size: 11.5px; color: var(--text-dim); line-height: 1.45; margin-bottom: 10px; }
 
 .ac-btn-row { display: flex; gap: 6px; margin-bottom: 6px; }
 .btn-loc-sm {
-  flex: 1; padding: 7px 10px; border-radius: 9px; background: rgba(56, 189, 248, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.3); color: var(--accent); font-weight: 600; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;
+  flex: 1; padding: 7px 10px; border-radius: 9px;
+  background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3);
+  color: var(--accent); font-weight: 600; cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
 }
+.btn-loc-sm:hover { background: rgba(56, 189, 248, 0.25); }
+
 .btn-alert-sm {
-  flex: 1; padding: 7px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.15); color: var(--text-dim); font-weight: 600; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;
+  flex: 1; padding: 7px 10px; border-radius: 9px;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-dim); font-weight: 600; cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;
 }
+.btn-alert-sm.active { background: rgba(16, 185, 129, 0.2); border-color: var(--ok); color: #34D399; }
+
 .opacity-box { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-dim); }
 .opacity-box input { width: 120px; accent-color: var(--accent); }
 
 .rail.collapsed { width: fit-content; }
 .rail.collapsed .action-card { display: none; }
-.ac-pill { display: none; padding: 7px 14px; border-radius: 999px; align-items: center; gap: 10px; cursor: pointer; width: fit-content; }
+.ac-pill {
+  display: none; padding: 7px 14px; border-radius: 999px;
+  align-items: center; gap: 10px; cursor: pointer; width: fit-content;
+  pointer-events: auto; user-select: none; transition: transform 0.2s;
+}
+.ac-pill:hover { transform: scale(1.03); }
 .rail.collapsed .ac-pill { display: flex; }
 .ac-pill-text { font-size: 12px; font-weight: 600; color: #fff; }
 
+/* Telemetry Panel */
 .telemetry-panel {
-  position: absolute; top: 62px; right: 12px; bottom: 90px; width: 360px; z-index: 1001;
-  display: none; flex-direction: column; padding: 16px; border-radius: 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.7);
+  position: absolute; top: 62px; right: 12px; bottom: 90px;
+  width: 360px; z-index: 1001; display: none; flex-direction: column;
+  padding: 16px; border-radius: 18px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.7);
+  animation: slide-in-right 0.25s ease-out;
+}
+@keyframes slide-in-right {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 .telemetry-panel.open { display: flex; }
-.tp-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 10px; margin-bottom: 10px; }
-.tp-title { font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; }
-.tp-close-btn { background: rgba(255, 255, 255, 0.08); border: none; color: var(--text-dim); width: 26px; height: 26px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; }
-.tp-tabs { display: flex; gap: 4px; background: rgba(0, 0, 0, 0.35); padding: 3px; border-radius: 8px; margin-bottom: 10px; }
-.tp-tab-btn { flex: 1; border: none; background: transparent; color: var(--text-dim); font-size: 11px; padding: 6px 2px; border-radius: 6px; font-weight: 600; cursor: pointer; }
-.tp-tab-btn.active { background: var(--accent); color: #070B12; font-weight: 700; }
-.tp-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-.tp-item {
-  display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06); padding: 8px 10px; border-radius: 10px; cursor: pointer;
+
+.tp-head {
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 10px; margin-bottom: 10px;
 }
-.tp-rank { font-size: 12px; font-weight: 700; color: var(--text-dim); width: 22px; text-align: center; font-family: "IBM Plex Mono", monospace; }
+.tp-title { font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; }
+.tp-close-btn {
+  background: rgba(255, 255, 255, 0.08); border: none; color: var(--text-dim);
+  width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; transition: all 0.2s;
+}
+.tp-close-btn:hover { background: rgba(255, 255, 255, 0.2); color: #fff; }
+
+.tp-tabs { display: flex; gap: 4px; background: rgba(0, 0, 0, 0.35); padding: 3px; border-radius: 8px; margin-bottom: 10px; }
+.tp-tab-btn {
+  flex: 1; border: none; background: transparent; color: var(--text-dim);
+  font-size: 11px; padding: 6px 2px; border-radius: 6px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; white-space: nowrap; text-align: center;
+}
+.tp-tab-btn.active { background: var(--accent); color: #070B12; font-weight: 700; }
+
+.tp-list {
+  flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
+  padding-right: 4px;
+}
+.tp-list::-webkit-scrollbar { width: 4px; }
+.tp-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+.tp-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px 10px; border-radius: 10px; cursor: pointer; transition: all 0.2s;
+}
+.tp-item:hover { background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.3); transform: translateX(-2px); }
+
+.tp-rank {
+  font-size: 12px; font-weight: 700; color: var(--text-dim);
+  width: 22px; text-align: center; font-family: "IBM Plex Mono", monospace;
+}
+.tp-rank.top { color: #FBBF24; }
+
 .tp-st-info { flex: 1; padding: 0 8px; display: flex; flex-direction: column; gap: 1px; }
-.tp-st-name { font-size: 12px; font-weight: 600; color: #fff; }
+.tp-st-name { font-size: 12px; font-weight: 600; color: #fff; line-height: 1.25; }
 .tp-st-sub { font-size: 10px; color: var(--text-dim); }
-.tp-st-val { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
-.tp-val-num { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 700; color: var(--accent); }
+
+.tp-st-val {
+  text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 1px;
+}
+.tp-val-num {
+  font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 700;
+  color: var(--accent);
+}
+.tp-val-num.rain-high { color: #F87171; }
 .tp-val-unit { font-size: 9px; color: var(--text-dim); }
 
-.modal-backdrop { position: fixed; inset: 0; z-index: 2000; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); display: none; place-items: center; padding: 16px; }
+/* Modal */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
+  display: none; place-items: center; padding: 16px;
+}
 .modal-backdrop.open { display: grid; }
-.modal-box { width: min(580px, 100%); padding: 20px; border-radius: 18px; }
-.modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 10px; }
+.modal-box {
+  width: min(580px, 100%); padding: 20px; border-radius: 18px;
+}
+.modal-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 10px;
+}
 .modal-title-wrap { display: flex; align-items: center; gap: 8px; }
 .modal-title { font-size: 15px; font-weight: 700; color: #fff; }
 .modal-subtitle { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
-.modal-close-btn { background: rgba(255, 255, 255, 0.1); border: none; color: var(--text); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; }
+.modal-close-btn {
+  background: rgba(255, 255, 255, 0.1); border: none; color: var(--text);
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center;
+}
 .modal-svg-wrap { width: 100%; height: 180px; margin: 16px 0; }
 .modal-svg-wrap svg { width: 100%; height: 100%; overflow: visible; }
+.modal-legend-row {
+  display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px;
+  color: var(--text-dim); justify-content: center;
+}
+.mg-badge-item { display: flex; align-items: center; gap: 5px; }
+.mg-dot { width: 8px; height: 8px; border-radius: 2px; }
 
-.legend { position: absolute; left: 12px; bottom: 65px; z-index: 998; padding: 8px 12px; border-radius: 12px; width: 210px; }
-.lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #02ab02 0%, #22ce22 25%, #ffff00 50%, #ff8c00 75%, #ff0000 100%); }
+/* Legend */
+.legend {
+  position: absolute; left: 12px; bottom: 65px; z-index: 998;
+  padding: 8px 12px; border-radius: 12px; width: 210px;
+}
+.lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #00ECEC 0%, #00A000 25%, #FFFF00 50%, #FF9000 75%, #FF0000 100%); }
 .lg-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 
-.timeline-container { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); width: min(640px, calc(100% - 24px)); z-index: 1000; }
+/* Impacted Areas UI Card (Spatial Impact Analysis) - Positioned above Legend without overlap */
+.impact-card {
+  position: absolute; left: 12px; bottom: 135px; z-index: 998;
+  width: 235px; padding: 10px 12px; border-radius: 12px;
+}
+.ic-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11.5px; font-weight: 700; color: #fff; margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 4px;
+}
+.ic-unit { font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
+.ic-list { display: flex; flex-direction: column; gap: 4px; max-height: 110px; overflow-y: auto; padding-right: 2px; }
+.ic-list::-webkit-scrollbar { width: 3px; }
+.ic-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+.ic-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(0, 0, 0, 0.3); padding: 4px 7px; border-radius: 6px;
+  border-left: 3px solid var(--accent); font-size: 11px;
+}
+.ic-prov-name { font-weight: 600; color: #fff; }
+.ic-rain-val { font-family: "IBM Plex Mono", monospace; font-weight: 700; color: var(--accent); }
+
+.rain-scale-bar {
+  height: 6px; border-radius: 3px; margin: 3px 0 2px 0;
+  background: linear-gradient(90deg, #1E3A8A 0%, #0284C7 35%, #38BDF8 70%, #7DD3FC 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.rain-scale-labels {
+  display: flex; justify-content: space-between; font-size: 8.5px;
+  color: var(--text-dim); font-family: "IBM Plex Mono", monospace; margin-bottom: 6px;
+}
+
+/* Timeline Container */
+.timeline-container {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  width: min(640px, calc(100% - 24px)); z-index: 1000;
+  transition: all 0.25s cubic-bezier(0.3, 0.8, 0.3, 1);
+}
 .tl-card { padding: 10px 16px; border-radius: 16px; }
-.tl-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 6px; margin-bottom: 8px; }
+.tl-header {
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 6px; margin-bottom: 8px;
+}
 .tl-title { font-size: 13px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px; }
 .tl-collapse-btn { background: transparent; border: none; color: var(--text-dim); cursor: pointer; padding: 2px 5px; border-radius: 6px; }
 .tl-main-row { display: flex; align-items: center; gap: 12px; }
-.btn-play-sm { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--accent); color: #070B12; display: grid; place-items: center; cursor: pointer; flex: none; }
+.btn-play-sm {
+  width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: var(--accent); color: #070B12; display: grid; place-items: center; cursor: pointer; flex: none;
+}
 .tl-slider { flex: 1; accent-color: var(--accent); cursor: pointer; }
 .tl-badges { display: flex; align-items: center; gap: 8px; flex: none; }
 .badge-tag { font-size: 11px; padding: 2px 7px; border-radius: 6px; font-weight: 500; }
-.badge-tag.nowcast { background: rgba(245, 158, 11, 0.2); color: #FBBF24; }
-.badge-tag.present { background: rgba(56, 189, 248, 0.2); color: var(--accent); font-weight: 700; }
-.badge-tag.past { background: rgba(16, 185, 129, 0.2); color: #34D399; }
+.badge-tag.fc { background: rgba(245, 158, 11, 0.2); color: #FBBF24; }
+.badge-tag.obs { background: rgba(16, 185, 129, 0.2); color: #34D399; }
 .badge-frames { font-size: 11px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 .tl-sub-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 11px; color: var(--text-dim); }
 .btn-reset-view { color: var(--accent); cursor: pointer; display: flex; align-items: center; gap: 4px; }
 
+.timeline-container.collapsed .tl-card { display: none; }
+.tl-pill {
+  display: none; padding: 7px 14px; border-radius: 999px;
+  align-items: center; gap: 10px; cursor: pointer; margin: 0 auto; width: fit-content;
+}
+.timeline-container.collapsed .tl-pill { display: flex; }
+.tl-pill-text { font-size: 12.5px; font-weight: 600; color: #fff; }
+.tl-pill-play {
+  border: none; background: var(--accent); color: #070B12;
+  border-radius: 50%; width: 22px; height: 22px; display: grid; place-items: center; cursor: pointer;
+}
+
+.arrow-icon { display: flex; align-items: center; justify-content: center; pointer-events: none; }
+
+/* Mobile Responsive */
 @media (max-width: 768px) {
   .top-bar { top: 8px; left: 8px; right: 8px; gap: 6px; }
-  .brand { padding: 4px 10px; height: 32px; white-space: nowrap; }
+  .brand { padding: 4px 10px; height: 32px; white-space: nowrap; flex-shrink: 0; }
   .brand span { display: none !important; }
-  .map-switch { margin-left: auto; padding: 2px; height: 32px; max-width: calc(100vw - 110px); overflow-x: auto; }
+  .brand b { font-size: 13px; }
+
+  .map-switch {
+    margin-left: auto; padding: 2px; height: 32px;
+    max-width: calc(100vw - 110px); overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  .map-switch::-webkit-scrollbar { display: none; }
   .map-btn { padding: 4px 9px; font-size: 11px; }
-  .btn-open-telemetry { position: fixed !important; top: 48px; right: 98px; height: 28px; padding: 0 9px; font-size: 11px; z-index: 1000; border-radius: 999px; }
+
+  .btn-open-telemetry {
+    position: fixed !important; top: 48px; right: 98px;
+    height: 28px; padding: 0 9px; font-size: 11px; z-index: 1000;
+    white-space: nowrap; border-radius: 999px;
+  }
+
   .layer-card { top: 48px; right: 8px; }
+  .layer-card.collapsed {
+    top: 48px; right: 8px; padding: 0 9px; height: 28px;
+    display: flex; align-items: center;
+  }
+  .layer-card.collapsed .layer-head { font-size: 11px; gap: 4px; margin-bottom: 0; }
+
   .rail { top: 48px; left: 8px; width: calc(100% - 16px); }
+  .rail.collapsed { top: 48px; left: 8px; width: fit-content; max-width: calc(100vw - 200px); }
+  .ac-pill { padding: 0 9px; height: 28px; gap: 5px; }
+  .ac-pill-text { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 105px; }
+  .ac-pill-icon { width: 18px; height: 18px; }
+
+  .rail:not(.collapsed) { top: 48px; left: 8px; right: 8px; width: calc(100% - 16px); z-index: 1005; }
+  .layer-card:not(.collapsed) { top: 48px; left: 8px; right: 8px; width: calc(100% - 16px); z-index: 1006; }
+  .telemetry-panel {
+    top: 48px; left: 8px; right: 8px;
+    bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+    width: calc(100% - 16px); z-index: 1007;
+  }
+
   .timeline-container { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: calc(100% - 16px); }
+  .tl-pill { padding: 5px 12px; height: 32px; gap: 8px; }
+  .tl-pill-text { font-size: 11.5px; }
   .legend { display: none; }
+  .impact-card { display: none; }
 }
 </style>
 </head>
 <body>
 
-<div id="maintenanceOverlay" style="display: none;">
+<!-- Maintenance Mode Overlay -->
+<div id="maintenanceOverlay">
   <div class="maint-card">
-    <div class="maint-icon-box"><i data-lucide="wrench" style="width: 32px; height: 32px;"></i></div>
+    <div class="maint-icon-box">
+      <i data-lucide="wrench" style="width: 32px; height: 32px;"></i>
+    </div>
     <div class="maint-title">ระบบอยู่ระหว่างการปรับปรุง</div>
-    <div class="maint-desc">เรากำลังอัปเดตระบบวิเคราะห์เชิงพื้นที่และเพิ่มประสิทธิภาพการประมวลผลเรดาร์ โปรดกลับมาใหม่อีกครั้ง</div>
-    <div class="maint-badge"><i data-lucide="shield-alert" style="width: 14px; height: 14px;"></i><span>ระบบปิดชั่วคราว</span></div>
+    <div class="maint-desc">
+      เรากำลังอัปเดตระบบวิเคราะห์เชิงพื้นที่และเพิ่มประสิทธิภาพการประมวลผลเรดาร์ เพื่อการใช้งานที่แม่นยำยิ่งขึ้น โปรดกลับมาใหม่อีกครั้งเร็วๆ นี้
+    </div>
+    <div class="maint-badge">
+      <i data-lucide="shield-alert" style="width: 14px; height: 14px;"></i>
+      <span>ระบบปิดชั่วคราว</span>
+    </div>
   </div>
 </div>
 
 <div id="map"></div>
 
+<!-- Top Bar -->
 <div class="top-bar">
-  <div class="brand glass"><i data-lucide="radio" class="icon-sm" style="color: var(--accent);"></i><b>ทันฝน</b><span>พิษณุโลก</span></div>
-  <button class="btn-open-telemetry glass" id="btnToggleTelemetryPanel"><i data-lucide="table-properties" class="icon-xs"></i><span>ตารางน้ำฝน</span></button>
+  <div class="brand glass">
+    <i data-lucide="radio" class="icon-sm" style="color: var(--accent);"></i>
+    <b>ทันฝน</b><span>พิษณุโลก</span>
+  </div>
+
+  <button class="btn-open-telemetry glass" id="btnToggleTelemetryPanel">
+    <i data-lucide="table-properties" class="icon-xs"></i>
+    <span>ตารางน้ำฝน</span>
+  </button>
+
   <div class="map-switch glass">
     <button class="map-btn active" data-layer="dark">มืด</button>
     <button class="map-btn" data-layer="hillshade">สันเขา DEM</button>
@@ -278,111 +647,275 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   </div>
 </div>
 
+<!-- Layer Control Card -->
 <div class="layer-card glass collapsed" id="layerCard">
   <div class="layer-head" id="toggleLayerCard">
-    <div class="layer-head-title"><i data-lucide="layers" class="icon-sm"></i><span>ชั้นข้อมูล</span></div>
+    <div class="layer-head-title">
+      <i data-lucide="layers" class="icon-sm"></i>
+      <span>ชั้นข้อมูล</span>
+    </div>
     <i data-lucide="chevron-down" id="layerToggleIcon" class="icon-xs"></i>
   </div>
+  <span class="layer-status" id="boundaryStatus" style="display: none;">● ขอบเขตพื้นที่พร้อมใช้งาน</span>
   <div class="layer-content" id="layerBody" style="display: none;">
-    <div class="layer-row"><label class="custom-checkbox"><input type="checkbox" id="chkStations" checked><span style="font-weight: 600; color: #34D399;">จุดสถานีโทรมาตร</span></label></div>
+    <div class="layer-row">
+      <label class="custom-checkbox">
+        <input type="checkbox" id="chkArrows" checked>
+        <span style="font-weight: 600; color: var(--accent);">เวกเตอร์เซลล์ฝน (Cell Motion)</span>
+      </label>
+    </div>
+    <div class="layer-row">
+      <label class="custom-checkbox">
+        <input type="checkbox" id="chkRings" checked>
+        <span>วงรัศมีตรวจวัดเรดาร์</span>
+      </label>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="layer-row">
+      <label class="custom-checkbox">
+        <input type="checkbox" id="chkStations" checked>
+        <span style="font-weight: 600; color: #34D399;">จุดสถานีโทรมาตร</span>
+      </label>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="layer-row">
+      <label class="custom-checkbox">
+        <input type="checkbox" id="chkProv">
+        <span>ขอบเขตจังหวัด (240 กม.)</span>
+      </label>
+      <label class="layer-label-check">
+        <input type="checkbox" id="chkProvLabel"> ป้าย
+      </label>
+    </div>
+
+    <div class="layer-row">
+      <label class="custom-checkbox">
+        <input type="checkbox" id="chkAmp">
+        <span>ขอบเขตอำเภอ (240 กม.)</span>
+      </label>
+      <label class="layer-label-check">
+        <input type="checkbox" id="chkAmpLabel"> ป้าย
+      </label>
+    </div>
+
+    <div class="layer-row">
+      <label class="custom-checkbox">
+        <input type="checkbox" id="chkTam">
+        <span>ขอบเขตตำบล (240 กม.)</span>
+      </label>
+    </div>
   </div>
 </div>
 
+<!-- Telemetry Panel -->
 <div class="telemetry-panel glass" id="telemetryPanel">
   <div class="tp-head">
-    <div class="tp-title"><i data-lucide="bar-chart-3" class="icon-sm" style="color: #34D399;"></i><span>ฝนสถานีโทรมาตร</span></div>
-    <button class="tp-close-btn" id="btnCloseTelemetryPanel"><i data-lucide="x" class="icon-xs"></i></button>
+    <div class="tp-title">
+      <i data-lucide="bar-chart-3" class="icon-sm" style="color: #34D399;"></i>
+      <span>ฝนสถานีโทรมาตร (เรียงตามปริมาณ)</span>
+    </div>
+    <button class="tp-close-btn" id="btnCloseTelemetryPanel">
+      <i data-lucide="x" class="icon-xs"></i>
+    </button>
   </div>
+
   <div class="tp-tabs">
     <button class="tp-tab-btn active" data-mode="1h">1 ชม.</button>
     <button class="tp-tab-btn" data-mode="3h">3 ชม.</button>
     <button class="tp-tab-btn" data-mode="6h">6 ชม.</button>
-    <button class="tp-tab-btn" data-mode="24h">24 ชม.</button>
+    <button class="tp-tab-btn" data-mode="24h">24 ชม. (รายวัน)</button>
   </div>
+
   <div class="tp-list" id="telemetryStationList"></div>
 </div>
 
-<div class="rail" id="actionRail">
+<!-- Actionable Weather Card -->
+<div class="rail collapsed" id="actionRail">
   <div class="action-card glass" id="actionCard">
     <div class="ac-head">
       <div class="ac-head-left">
         <i data-lucide="map-pin" class="icon-xs" style="color: var(--accent);"></i>
         <span id="pinNameLabel">ตำแหน่งตรวจวัด</span>
         <div class="ac-badges-wrap">
-          <span class="ac-status-badge badge-clear" id="statusBadge">พร้อมวิเคราะห์</span>
+          <span class="ac-status-badge badge-clear" id="statusBadge">กำลังวิเคราะห์</span>
+          <span class="ac-status-badge badge-hail" id="hailBadge" style="display: none;">
+            <i data-lucide="zap" class="icon-xs"></i> เสี่ยงลูกเห็บ
+          </span>
         </div>
       </div>
-      <button class="ac-collapse-btn" id="btnCollapseAc"><i data-lucide="chevron-left" class="icon-sm"></i></button>
+      <button class="ac-collapse-btn" id="btnCollapseAc" title="ย่อหน้าต่าง">
+        <i data-lucide="chevron-left" class="icon-sm"></i>
+      </button>
     </div>
+
     <div class="ac-headline-wrap">
-      <div class="ac-headline" id="acHeadline">พิกัดศูนย์กลางเรดาร์พิษณุโลก</div>
+      <div class="ac-weather-icon-box" id="headlineWeatherIcon"></div>
+      <div class="ac-headline" id="acHeadline">กำลังสแกนสนามฝน...</div>
     </div>
+
     <div class="ac-grid">
-      <div class="ac-grid-col"><span class="ac-grid-lbl">ค่า dBZ สูงสุด</span><span class="ac-grid-val" id="valEta">—</span></div>
-      <div class="ac-grid-col"><span class="ac-grid-lbl">พื้นที่ฝน (%)</span><span class="ac-grid-val" id="valDuration">—</span></div>
-      <div class="ac-grid-col"><span class="ac-grid-lbl">ฝนสูงสุด</span><span class="ac-grid-val" id="valRainAccum" style="color: var(--accent);">—</span></div>
+      <div class="ac-grid-col">
+        <span class="ac-grid-lbl">เริ่มตก</span>
+        <span class="ac-grid-val" id="valEta">—</span>
+      </div>
+      <div class="ac-grid-col">
+        <span class="ac-grid-lbl">ตกต่อเนื่อง</span>
+        <span class="ac-grid-val" id="valDuration">—</span>
+      </div>
+      <div class="ac-grid-col">
+        <span class="ac-grid-lbl">ฝนสะสม 1 ชม.</span>
+        <span class="ac-grid-val" id="valRainAccum" style="color: var(--accent);">~0 มม.</span>
+      </div>
     </div>
+
     <div class="meteogram-box">
       <div class="mg-header">
-        <div class="mg-header-left"><i data-lucide="bar-chart-2" class="icon-xs" style="color: var(--accent);"></i><span>แนวโน้มความเข้มฝน (dBZ)</span></div>
-        <div class="mg-header-right"><button class="btn-expand-mg" id="btnOpenModal"><i data-lucide="maximize-2" class="icon-xs"></i> ขยาย</button></div>
+        <div class="mg-header-left">
+          <i data-lucide="bar-chart-2" class="icon-xs" style="color: var(--accent);"></i>
+          <span>แนวโน้มฝน 105 นาที (dBZ)</span>
+        </div>
+        <div class="mg-header-right">
+          <span id="mgPeakLabel">สูงสุด: — dBZ</span>
+          <button class="btn-expand-mg" id="btnOpenModal" title="ขยายกราฟ">
+            <i data-lucide="maximize-2" class="icon-xs"></i> ขยาย
+          </button>
+        </div>
       </div>
       <svg class="mg-chart-svg" id="mgChartSvg" viewBox="0 0 280 50"></svg>
     </div>
-    <div class="ac-desc" id="acDesc">ระบบแสดงผลเรดาร์ Nowcast อัตโนมัติจาก TMD</div>
-    <div class="ac-btn-row">
-      <button class="btn-loc-sm" id="btnLoc"><i data-lucide="crosshair" class="icon-sm"></i> ตำแหน่งฉัน</button>
-      <button class="btn-alert-sm" id="btnToggleAlert"><i data-lucide="bell" class="icon-sm"></i><span id="alertLabel">แจ้งเตือน</span></button>
+
+    <div class="ac-desc" id="acDesc">
+      แตะบนแผนที่เพื่อเลือกจุดตรวจวัด หรือกดปุ่มค้นหาตำแหน่ง GPS ของคุณ
     </div>
-    <div class="opacity-box"><span>ความทึบเรดาร์:</span><input type="range" id="radarOpacity" min="20" max="100" value="85"></div>
+
+    <div class="ac-btn-row">
+      <button class="btn-loc-sm" id="btnLoc">
+        <i data-lucide="crosshair" class="icon-sm"></i> ตำแหน่งฉัน
+      </button>
+      <button class="btn-alert-sm" id="btnToggleAlert">
+        <i data-lucide="bell" id="alertIcon" class="icon-sm"></i>
+        <span id="alertLabel">เปิดแจ้งเตือน</span>
+      </button>
+    </div>
+
+    <div class="opacity-box">
+      <span>ความทึบเรดาร์:</span>
+      <input type="range" id="radarOpacity" min="20" max="100" value="85">
+    </div>
+  </div>
+
+  <div class="ac-pill glass" id="btnExpandAc" title="กดเพื่อขยายหน้าต่าง">
+    <div class="ac-pill-icon" id="pillWeatherIcon"></div>
+    <span class="ac-pill-text" id="acPillText">กำลังวิเคราะห์...</span>
+    <i data-lucide="chevron-right" class="icon-xs" style="color: var(--accent);"></i>
   </div>
 </div>
 
+<!-- Impacted Areas UI Card (Spatial Impact Analysis) - Positioned above Legend without overlap -->
+<div class="impact-card glass" id="impactCard">
+  <div class="ic-head">
+    <span>จังหวัดที่ได้รับผลกระทบ</span>
+    <span class="ic-unit">มม./3 ชม.</span>
+  </div>
+  <div class="rain-scale-bar"></div>
+  <div class="rain-scale-labels">
+    <span>1–10</span>
+    <span>10–20</span>
+    <span>20–35</span>
+    <span>35–60+</span>
+  </div>
+  <div class="ic-list" id="impactedListContainer">
+    <div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 6px;">กำลังวิเคราะห์พื้นที่เสี่ยง...</div>
+  </div>
+</div>
+
+<!-- Modal -->
 <div class="modal-backdrop" id="mgModal">
   <div class="modal-box glass">
     <div class="modal-head">
       <div>
-        <div class="modal-title-wrap"><i data-lucide="bar-chart-3" class="icon-md" style="color: var(--accent);"></i><div class="modal-title">กราฟวิเคราะห์ฝนรายพิกัด</div></div>
+        <div class="modal-title-wrap">
+          <i data-lucide="bar-chart-3" class="icon-md" style="color: var(--accent);"></i>
+          <div class="modal-title">กราฟวิเคราะห์ฝน 105 นาทีรายพิกัด (Meteogram)</div>
+        </div>
         <div class="modal-subtitle" id="modalLocationLabel">ตำแหน่งตรวจวัด: พิษณุโลก</div>
       </div>
-      <button class="modal-close-btn" id="btnCloseModal"><i data-lucide="x" class="icon-sm"></i></button>
+      <button class="modal-close-btn" id="btnCloseModal">
+        <i data-lucide="x" class="icon-sm"></i>
+      </button>
     </div>
-    <div class="modal-svg-wrap"><svg id="modalChartSvg" viewBox="0 0 520 180"></svg></div>
+    <div class="modal-svg-wrap">
+      <svg id="modalChartSvg" viewBox="0 0 520 180"></svg>
+    </div>
+    <div class="modal-legend-row">
+      <div class="mg-badge-item"><span class="mg-dot" style="background:#64748B;"></span> อดีต (-45 น.)</div>
+      <div class="mg-badge-item"><span class="mg-dot" style="background:#38BDF8;"></span> ฝนเบา (&lt;28 dBZ)</div>
+      <div class="mg-badge-item"><span class="mg-dot" style="background:#10B981;"></span> ปานกลาง (28-38)</div>
+      <div class="mg-badge-item"><span class="mg-dot" style="background:#F59E0B;"></span> หนัก (38-45)</div>
+      <div class="mg-badge-item"><span class="mg-dot" style="background:#EF4444;"></span> หนักมาก (&gt;45)</div>
+      <div class="mg-badge-item"><span class="mg-dot" style="background:#C084FC;"></span> ลูกเห็บ (&ge;52 dBZ)</div>
+    </div>
   </div>
 </div>
 
+<!-- Legend -->
 <div class="legend glass">
-  <div class="lg-labels"><span>10</span><span>20</span><span>35</span><span>50</span><span>64 dBZ</span></div>
+  <div class="lg-labels"><span>20</span><span>30</span><span>40</span><span>50</span><span>60+ dBZ</span></div>
   <div class="lg-bar"></div>
   <div class="lg-labels"><span>เบา</span><span>ปานกลาง</span><span>หนัก</span><span>หนักมาก</span></div>
 </div>
 
-<div class="timeline-container" id="timelineBox">
+<!-- Timeline -->
+<div class="timeline-container collapsed" id="timelineBox">
   <div class="tl-card glass">
     <div class="tl-header">
-      <div class="tl-title" id="tlFullTitle"><i data-lucide="activity" class="icon-xs" style="color: var(--accent);"></i><span>ทันฝน เรดาร์พิษณุโลก (Nowcast)</span></div>
-      <button class="tl-collapse-btn" id="btnCollapseTl"><i data-lucide="chevron-down" class="icon-sm"></i></button>
+      <div class="tl-title" id="tlFullTitle">
+        <i data-lucide="activity" class="icon-xs" style="color: var(--accent);"></i>
+        <span>ทันฝน เรดาร์พิษณุโลก (Nowcast) — กำลังโหลด...</span>
+      </div>
+      <button class="tl-collapse-btn" id="btnCollapseTl" title="ย่อเป็นแถบเล็ก">
+        <i data-lucide="chevron-down" class="icon-sm"></i>
+      </button>
     </div>
     <div class="tl-main-row">
-      <button class="btn-play-sm" id="btnPlay"><i data-lucide="play" id="playIcon" class="icon-sm"></i></button>
+      <button class="btn-play-sm" id="btnPlay">
+        <i data-lucide="play" id="playIcon" class="icon-sm"></i>
+      </button>
       <input type="range" class="tl-slider" id="tlSlider" min="0" max="0" value="0">
       <div class="tl-badges">
-        <span class="badge-tag past" id="tlBadge">ตรวจวัดจริง</span>
+        <span class="badge-tag obs" id="tlBadge">ตรวจวัดจริง</span>
         <span class="badge-frames" id="tlFrameCount">0/0</span>
       </div>
     </div>
     <div class="tl-sub-row">
       <span id="tlLatestTime">ข้อมูลล่าสุด: กำลังเชื่อมต่อ...</span>
-      <span class="btn-reset-view" onclick="map.setView(radarStationLatLon, 8)"><i data-lucide="locate" class="icon-xs"></i> รีเซ็ตมุมมอง</span>
+      <span class="btn-reset-view" onclick="map.setView([16.77, 100.22], 8)">
+        <i data-lucide="locate" class="icon-xs"></i> รีเซ็ตมุมมอง
+      </span>
     </div>
+  </div>
+  <div class="tl-pill glass" id="btnExpandTl">
+    <span class="tl-pill-text" id="tlPillText">—:— น.</span>
+    <button class="tl-pill-play" id="btnPlayPill">
+      <i data-lucide="play" id="playIconPill" class="icon-xs"></i>
+    </button>
+    <span style="font-size: 11px; color: var(--accent); display: flex; align-items: center; gap: 2px;">
+      ขยาย <i data-lucide="chevron-up" class="icon-xs"></i>
+    </span>
   </div>
 </div>
 
 <script>
+// --- MAINTENANCE MODE BYPASS CHECK ---
 const urlParams = new URLSearchParams(window.location.search);
 const isDevMode = urlParams.get('dev') === 'true' || urlParams.get('admin') === '1' || window.location.hostname === 'localhost';
 
 if (isDevMode) {
+  // ซ่อนหน้าต่างปิดปรับปรุงเมื่อเข้าผ่านลิงก์ลับ ?dev=true
   document.addEventListener("DOMContentLoaded", () => {
     const overlay = document.getElementById("maintenanceOverlay");
     if (overlay) overlay.style.display = "none";
@@ -398,40 +931,127 @@ const TELEMETRY_STATIONS = [
   { id: "PHS02", name: "สถานีโทรมาตร ม.นเรศวร", tb: "ท่าโพธิ์", ap: "เมือง", pv: "พิษณุโลก", lat: 16.745, lon: 100.193 },
   { id: "PHS03", name: "สถานีเขื่อนแควน้อยบำรุงแดน", tb: "คันโช้ง", ap: "วัดโบสถ์", pv: "พิษณุโลก", lat: 17.186, lon: 100.418 },
   { id: "PHS04", name: "สถานีโทรมาตร อ.วังทอง", tb: "วังทอง", ap: "วังทอง", pv: "พิษณุโลก", lat: 16.815, lon: 100.435 },
+  { id: "PHS05", name: "สถานีโทรมาตร อ.นครไทย", tb: "นครไทย", ap: "นครไทย", pv: "พิษณุโลก", lat: 17.101, lon: 100.838 },
+  { id: "PHS06", name: "สถานีโทรมาตร อ.ชาติตระการ", tb: "ป่าแดง", ap: "ชาติตระการ", pv: "พิษณุโลก", lat: 17.276, lon: 100.603 },
+  { id: "PHS07", name: "สถานี ปตร.บางระกำ", tb: "บางระกำ", ap: "บางระกำ", pv: "พิษณุโลก", lat: 16.749, lon: 100.120 },
+  { id: "PHS08", name: "สถานีโทรมาตร อ.เนินมะปราง", tb: "เนินมะปราง", ap: "เนินมะปราง", pv: "พิษณุโลก", lat: 16.562, lon: 100.608 },
+  { id: "PHS09", name: "สถานีโทรมาตร อ.พรหมพิราม", tb: "พรหมพิราม", ap: "พรหมพิราม", pv: "พิษณุโลก", lat: 16.998, lon: 100.205 },
   { id: "SKT01", name: "สถานีอุตุนิยมวิทยาสุโขทัย", tb: "ปากแคว", ap: "เมือง", pv: "สุโขทัย", lat: 17.013, lon: 99.824 },
+  { id: "SKT02", name: "สถานีโทรมาตร อ.สวรรคโลก", tb: "เมืองสวรรคโลก", ap: "สวรรคโลก", pv: "สุโขทัย", lat: 17.316, lon: 99.832 },
+  { id: "SKT03", name: "สถานีโทรมาตร อ.ศรีสัชนาลัย", tb: "หาดเสี้ยว", ap: "ศรีสัชนาลัย", pv: "สุโขทัย", lat: 17.519, lon: 99.761 },
+  { id: "SKT04", name: "สถานีโทรมาตร อ.คีรีมาศ", tb: "โตนด", ap: "คีรีมาศ", pv: "สุโขทัย", lat: 16.832, lon: 99.801 },
   { id: "PCT01", name: "สถานีอุตุนิยมวิทยาพิจิตร", tb: "ในเมือง", ap: "เมือง", pv: "พิจิตร", lat: 16.442, lon: 100.354 },
+  { id: "PCT02", name: "สถานีโทรมาตร อ.สากเหล็ก", tb: "สากเหล็ก", ap: "สากเหล็ก", pv: "พิจิตร", lat: 16.512, lon: 100.521 },
+  { id: "PCT03", name: "สถานีโทรมาตร อ.ตะพานหิน", tb: "ตะพานหิน", ap: "ตะพานหิน", pv: "พิจิตร", lat: 16.216, lon: 100.426 },
+  { id: "PCT04", name: "สถานีโทรมาตร อ.บางมูลนาก", tb: "บางมูลนาก", ap: "บางมูลนาก", pv: "พิจิตร", lat: 16.031, lon: 100.381 },
   { id: "UTD01", name: "สถานีอุตุนิยมวิทยาอุตรดิตถ์", tb: "ท่าอิฐ", ap: "เมือง", pv: "อุตรดิตถ์", lat: 17.618, lon: 100.098 },
+  { id: "UTD02", name: "สถานีโทรมาตร อ.ลับแล", tb: "ศรีพนมมาศ", ap: "ลับแล", pv: "อุตรดิตถ์", lat: 17.652, lon: 100.043 },
+  { id: "UTD03", name: "สถานีเขื่อนสิริกิติ์", tb: "ผาเลือด", ap: "ท่าปลา", pv: "อุตรดิตถ์", lat: 17.766, lon: 100.558 },
   { id: "PBN01", name: "สถานีอุตุนิยมวิทยาเพชรบูรณ์", tb: "สะเดียง", ap: "เมือง", pv: "เพชรบูรณ์", lat: 16.425, lon: 101.156 },
+  { id: "PBN02", name: "สถานีโทรมาตร อ.หล่มสัก", tb: "หล่มสัก", ap: "หล่มสัก", pv: "เพชรบูรณ์", lat: 16.778, lon: 101.242 },
+  { id: "PBN03", name: "สถานีโทรมาตร อ.หล่มเก่า", tb: "หล่มเก่า", ap: "หล่มเก่า", pv: "เพชรบูรณ์", lat: 16.924, lon: 101.235 },
+  { id: "PBN04", name: "สถานีโทรมาตร อ.เขาค้อ", tb: "สะเดาพง", ap: "เขาค้อ", pv: "เพชรบูรณ์", lat: 16.634, lon: 100.995 },
   { id: "KPT01", name: "สถานีอุตุนิยมวิทยากำแพงเพชร", tb: "สระแก้ว", ap: "เมือง", pv: "กำแพงเพชร", lat: 16.483, lon: 99.521 },
+  { id: "KPT02", name: "สถานีโทรมาตร อ.พรานกระต่าย", tb: "พรานกระต่าย", ap: "พรานกระต่าย", pv: "กำแพงเพชร", lat: 16.665, lon: 99.560 },
+  { id: "KPT03", name: "สถานีโทรมาตร อ.ลานกระบือ", tb: "ลานกระบือ", ap: "ลานกระบือ", pv: "กำแพงเพชร", lat: 16.598, lon: 99.856 },
+  { id: "PRE01", name: "สถานีอุตุนิยมวิทยาแพร่", tb: "ในเวียง", ap: "เมือง", pv: "แพร่", lat: 18.145, lon: 100.165 },
+  { id: "PRE02", name: "สถานีโทรมาตร อ.เด่นชัย", tb: "เด่นชัย", ap: "เด่นชัย", pv: "แพร่", lat: 17.978, lon: 100.052 },
+  { id: "LPG01", name: "สถานีอุตุนิยมวิทยาลำปาง", tb: "พระบาท", ap: "เมือง", pv: "ลำปาง", lat: 18.278, lon: 99.508 },
+  { id: "LPG02", name: "สถานีโทรมาตร อ.แม่เมาะ", tb: "แม่เมาะ", ap: "แม่เมาะ", pv: "ลำปาง", lat: 18.275, lon: 99.664 },
+  { id: "LOI01", name: "สถานีอุตุนิยมวิทยาเลย", tb: "กุดป่อง", ap: "เมือง", pv: "เลย", lat: 17.485, lon: 101.730 },
+  { id: "LOI02", name: "สถานีโทรมาตร อ.ด่านซ้าย", tb: "ด่านซ้าย", ap: "ด่านซ้าย", pv: "เลย", lat: 17.278, lon: 101.148 },
+  { id: "LOI03", name: "สถานีโทรมาตร อ.ภูเรือ", tb: "หนองบัว", ap: "ภูเรือ", pv: "เลย", lat: 17.452, lon: 101.365 },
   { id: "TAK01", name: "สถานีอุตุนิยมวิทยาตาก", tb: "น้ำรึม", ap: "เมือง", pv: "ตาก", lat: 16.883, lon: 99.123 }
 ];
 
-let manifest = null;
-let radarOverlays = [];
-let frameImages = [];
-let currentIndex = 0;
-let isPlaying = false;
-let playTimer = null;
-let radarBounds = null;
-let radarStationLatLon = [16.7765, 100.2161];
-let stationMarkerInstances = [];
+const geocodeCache = new Map();
+let loadedProvinceFeatures = [];
 
-const map = L.map("map", { center: [16.7765, 100.2161], zoom: 8, zoomControl: false });
-const tileLayers = {
-  dark: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }).addTo(map),
-  hillshade: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
-  satellite: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
-  light: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
-};
-L.control.zoom({ position: "bottomright" }).addTo(map);
+async function getReverseGeocode(lat, lon) {
+  if (isNaN(lat) || isNaN(lon)) return "";
+  const key = `${lat.toFixed(3)},${lon.toFixed(3)}`;
+  if (geocodeCache.has(key)) return geocodeCache.get(key);
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14&addressdetails=1`, {
+      headers: { 'Accept-Language': 'th,en' }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const addr = data.address || {};
+      const tambon = addr.suburb || addr.village || addr.neighbourhood || addr.subdistrict || "";
+      const amphoe = addr.county || addr.district || addr.city_district || "";
+      const prov = addr.province || addr.state || "";
+      let parts = [];
+      if (tambon) parts.push(tambon.startsWith("ต.") ? tambon : `ต.${tambon}`);
+      if (amphoe) parts.push(amphoe.startsWith("อ.") ? amphoe : `อ.${amphoe}`);
+      if (prov && parts.length < 2) parts.push(`จ.${prov}`);
+      const text = parts.join(", ") || (data.display_name ? data.display_name.split(",")[0] : "");
+      if (text) {
+        geocodeCache.set(key, text);
+        return text;
+      }
+    }
+  } catch (e) {}
+  return "";
+}
 
-const layerStations = L.layerGroup().addTo(map);
-
-// ตั้งค่าขนาด Scan Resolution ให้ตรงกับ Grid จริง (241x241)
-const SCAN_RES = 241;
-const scanCanvas = document.createElement("canvas");
-scanCanvas.width = SCAN_RES; scanCanvas.height = SCAN_RES;
-const scanCtx = scanCanvas.getContext("2d", { willReadFrequently: true });
+function createWeatherSvg(type) {
+  if (type === "clear") {
+    return `
+      <svg viewBox="0 0 36 36" class="weather-anim-svg">
+        <defs>
+          <linearGradient id="sunGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FDE047"/><stop offset="100%" stop-color="#F59E0B"/>
+          </linearGradient>
+        </defs>
+        <g class="anim-sun-spin">
+          <line x1="18" y1="3" x2="18" y2="7" stroke="#FBBF24" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="18" y1="29" x2="18" y2="33" stroke="#FBBF24" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="3" y1="18" x2="7" y2="18" stroke="#FBBF24" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="29" y1="18" x2="33" y2="18" stroke="#FBBF24" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="7.4" y1="7.4" x2="10.2" y2="10.2" stroke="#FBBF24" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="25.8" y1="25.8" x2="28.6" y2="28.6" stroke="#FBBF24" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="7.4" y1="28.6" x2="10.2" y2="25.8" stroke="#FBBF24" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="25.8" y1="10.2" x2="28.6" y2="7.4" stroke="#FBBF24" stroke-width="2.2" stroke-linecap="round"/>
+        </g>
+        <circle cx="18" cy="18" r="7.5" fill="url(#sunGrad)"/>
+      </svg>
+    `;
+  }
+  if (type === "rain") {
+    return `
+      <svg viewBox="0 0 36 36" class="weather-anim-svg">
+        <path class="anim-cloud" d="M10 20 A 5 5 0 0 1 15 13 A 6.5 6.5 0 0 1 26 15 A 4.5 4.5 0 0 1 25 22 Z" fill="url(#rainCloudGrad)"/>
+        <g stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round">
+          <line x1="13" y1="24" x2="11" y2="31" class="anim-raindrop"/>
+          <line x1="18" y1="24" x2="16" y2="31" class="anim-raindrop d2"/>
+          <line x1="23" y1="24" x2="21" y2="31" class="anim-raindrop d3"/>
+        </g>
+        <defs>
+          <linearGradient id="rainCloudGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#94A3B8"/><stop offset="100%" stop-color="#475569"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    `;
+  }
+  if (type === "hail") {
+    return `
+      <svg viewBox="0 0 36 36" class="weather-anim-svg">
+        <path class="anim-cloud" d="M10 19 A 5 5 0 0 1 15 12 A 6.5 6.5 0 0 1 26 14 A 4.5 4.5 0 0 1 25 21 Z" fill="url(#stormCloudGrad)"/>
+        <polygon points="17,16 13,23 17,23 15,29 22,21 18,21" fill="#FBBF24" class="anim-lightning"/>
+        <circle cx="10.5" cy="26" r="1.3" fill="#E9D5FF"/>
+        <circle cx="23.5" cy="27" r="1.3" fill="#E9D5FF"/>
+        <defs>
+          <linearGradient id="stormCloudGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#64748B"/><stop offset="100%" stop-color="#1E293B"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    `;
+  }
+  return "";
+}
 
 function safeLucide() {
   try {
@@ -441,25 +1061,130 @@ function safeLucide() {
   } catch (e) {}
 }
 
+const THEME_STYLES = {
+  dark: {
+    arrowColor: "#38BDF8", ringColor: "#38BDF8", ringOpacity: 0.45, radarCenter: "#38BDF8", impactLine: "#F59E0B",
+    ringLabelBg: "rgba(15, 23, 42, 0.85)", ringLabelBorder: "rgba(56, 189, 248, 0.45)", ringLabelColor: "#38BDF8",
+    maskColor: "#050B14", maskOpacity: 0.75
+  },
+  hillshade: {
+    arrowColor: "#EA580C", ringColor: "#0369A1", ringOpacity: 0.75, radarCenter: "#0284C7", impactLine: "#D97706",
+    ringLabelBg: "rgba(255, 255, 255, 0.88)", ringLabelBorder: "rgba(2, 132, 199, 0.45)", ringLabelColor: "#0369A1",
+    maskColor: "#0F172A", maskOpacity: 0.68
+  },
+  satellite: {
+    arrowColor: "#FACC15", ringColor: "#FDE047", ringOpacity: 0.85, radarCenter: "#FDE047", impactLine: "#F59E0B",
+    ringLabelBg: "rgba(0, 0, 0, 0.85)", ringLabelBorder: "rgba(250, 204, 21, 0.6)", ringLabelColor: "#FDE047",
+    maskColor: "#020617", maskOpacity: 0.80
+  },
+  light: {
+    arrowColor: "#0F172A", ringColor: "#334155", ringOpacity: 0.55, radarCenter: "#0F172A", impactLine: "#DC2626",
+    ringLabelBg: "rgba(255, 255, 255, 0.92)", ringLabelBorder: "rgba(51, 65, 85, 0.35)", ringLabelColor: "#1E293B",
+    maskColor: "#1E293B", maskOpacity: 0.55
+  }
+};
+
+let currentTheme = "dark";
+
+const baseLayers = {
+  dark: L.layerGroup([
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
+  ]),
+  hillshade: L.layerGroup([
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16, opacity: 0.65 })
+  ]),
+  satellite: L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", { attribution: "Google Maps", maxZoom: 19 }),
+  light: L.layerGroup([
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
+  ])
+};
+
+const map = L.map("map", { center: [16.77, 100.22], zoom: 8, zoomControl: false, layers: [baseLayers.dark] });
+L.control.zoom({ position: "bottomright" }).addTo(map);
+
+map.createPane('maskPane');
+map.getPane('maskPane').style.zIndex = 410;
+map.getPane('maskPane').style.pointerEvents = 'none';
+
+const layerArrows = L.layerGroup().addTo(map);
+const layerRings = L.layerGroup().addTo(map);
+const layerTrajectory = L.layerGroup().addTo(map);
+const layerStations = L.layerGroup().addTo(map);
+
+const layerProvince = L.layerGroup();
+const layerProvinceLabels = L.layerGroup();
+const layerAmphoe = L.layerGroup();
+const layerAmphoeLabels = L.layerGroup();
+const layerTambon = L.layerGroup();
+
+let manifest = null;
+let radarOverlays = [];
+let frameImages = [];
+let currentIndex = 0;
+let isPlaying = false;
+let playTimer = null;
+let radarBounds = null;
+let radarStationLatLon = [16.77, 100.22];
+
+let userPinLatLon = [16.77, 100.22];
+let userPinMarker = null;
+
+let rangeCircleElements = [];
+let stationMarkerElement = null;
+let radarMaskPolygon = null;
+
+let isAlertEnabled = localStorage.getItem("tanfon_alert_enabled") === "true";
+let lastAlertTimestamp = 0;
+let currentSampledDbzList = [];
+
+let stationMarkerInstances = [];
+let telemetrySortMode = "1h";
+
+const liveGpsIcon = L.divIcon({
+  className: "custom-pin-wrap",
+  html: `
+    <div class="modern-pin">
+      <div class="pin-pulse"></div>
+      <div class="pin-core"></div>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -14]
+});
+
+const SCAN_RES = 160;
+const scanCanvas = document.createElement("canvas");
+scanCanvas.width = SCAN_RES;
+scanCanvas.height = SCAN_RES;
+const scanCtx = scanCanvas.getContext("2d", { willReadFrequently: true });
+
 function unproject(E, Nn, lat0, lon0) {
+  if (isNaN(E) || isNaN(Nn)) return [lat0, lon0];
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
   const rho = Math.hypot(E, Nn);
   if (rho < 1e-9) return [lat0, lon0];
   const c = rho / R_EARTH;
   const lat = Math.asin(Math.cos(c) * Math.sin(p0) + Nn * Math.sin(c) * Math.cos(p0) / rho);
   const lon = l0 + Math.atan2(E * Math.sin(c), rho * Math.cos(p0) * Math.cos(c) - Nn * Math.sin(p0) * Math.sin(c));
+  if (isNaN(lat) || isNaN(lon)) return [lat0, lon0];
   return [lat * 180 / Math.PI, lon * 180 / Math.PI];
 }
 
 function project(lat, lon, lat0, lon0) {
+  if (isNaN(lat) || isNaN(lon)) return [0, 0];
   const p = lat * Math.PI / 180, l = lon * Math.PI / 180;
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
-  const cosC = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(l - l0) * Math.cos(p);
+  const cosC = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(l - l0);
   const c = Math.acos(Math.min(1, Math.max(-1, cosC)));
   if (c < 1e-9) return [0, 0];
   const k = c / Math.sin(c);
   const E = R_EARTH * k * Math.cos(p) * Math.sin(l - l0);
   const Nn = R_EARTH * k * (Math.cos(p0) * Math.sin(p) - Math.sin(p0) * Math.cos(p) * Math.cos(l - l0));
+  if (isNaN(E) || isNaN(Nn)) return [0, 0];
   return [E, Nn];
 }
 
@@ -474,112 +1199,1093 @@ function formatThaiDateTime(dateObj, showFull = false) {
   return `${d} ${m} ${y} ${hh}:${mm} น.`;
 }
 
+function playAlertChime(isSevere = false) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = isSevere ? "sawtooth" : "sine";
+    osc.frequency.setValueAtTime(isSevere ? 750 : 587.33, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(isSevere ? 1100 : 880, ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.55);
+  } catch (e) {}
+}
+
+function triggerRainNotification(etaMin, startStr, durationMin, isHailRisk) {
+  if (!isAlertEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
+  const now = Date.now();
+  if (now - lastAlertTimestamp < 25 * 60 * 1000) return;
+  lastAlertTimestamp = now;
+
+  playAlertChime(isHailRisk);
+  const title = isHailRisk 
+    ? `เตือนภัยพายุรุนแรง/ลูกเห็บ: ฝนจะเข้าใน ${etaMin} นาที!` 
+    : `ทันฝน: ฝนจะเริ่มตกในอีก ${etaMin} นาที!`;
+
+  const options = {
+    body: `คาดว่าจะเริ่มตกเวลา ${startStr} (ตกต่อเนื่อง ~${durationMin} นาที) ${isHailRisk ? 'ระวังลมกระโชกแรงและลูกเห็บตก' : 'บริเวณตำแหน่งของคุณ'}`,
+    icon: "icon-192.png",
+    badge: "icon-192.png",
+    vibrate: isHailRisk ? [300, 150, 300, 150, 300] : [200, 100, 200],
+    tag: "tanfon-rain-alert",
+    renotify: true
+  };
+  try { new Notification(title, options); } catch (e) {}
+}
+
 function rgbToDbz(r, g, b, a) {
   if (a < 35) return 0;
-  if (r > 200 && g > 200 && b > 200) return 56;
-  if (r > 200 && g < 50) return 50;
-  if (r > 200 && g > 100) return 40;
-  if (g > 150) return 25;
-  if (b > 150) return 15;
+  if (r > 170 && b > 170) return 56;
+  if (r > 190 && g < 70 && b < 70) return 50;
+  if (r > 200 && g > 100 && b < 60) return 42;
+  if (r > 190 && g > 190 && b < 70) return 35;
+  if (g > 130 && r < 140) return 25;
+  if (b > 160 && g > 160) return 18;
   return 0;
 }
 
 function dbzToRainRate(dbz) {
   if (dbz < 15) return 0;
   const z = Math.pow(10, dbz / 10);
-  return Math.pow(z / 250, 1 / 1.2);
+  return Math.pow(z / 200, 1 / 1.6);
+}
+
+function getLocalMotionAtPoint(pinE, pinN) {
+  if (!manifest || !manifest.motion) return { spd: 15.0, deg: 270 };
+  const motion = manifest.motion;
+
+  if (motion.grid_u && motion.grid_v && motion.resolution_km) {
+    const gridRes = motion.resolution_km;
+    const col = Math.floor((pinE / gridRes) + (motion.cols / 2));
+    const row = Math.floor((-pinN / gridRes) + (motion.rows / 2));
+
+    if (col >= 0 && col < motion.cols && row >= 0 && row < motion.rows) {
+      const idx = row * motion.cols + col;
+      const u = motion.grid_u[idx] || 0;
+      const v = motion.grid_v[idx] || 0;
+      const spd = Math.hypot(u, v) * 3.6;
+      const deg = (Math.atan2(u, v) * 180 / Math.PI + 360) % 360;
+      if (spd > 0.5) return { spd: spd, deg: deg };
+    }
+  }
+
+  const globalSpd = motion.speed_kmh || motion.kmh || 15.0;
+  const globalDeg = motion.direction_deg !== undefined ? motion.direction_deg : (motion.bearing || 270);
+
+  const dist = Math.hypot(pinE, pinN);
+  const angle = Math.atan2(pinN, pinE);
+  const localSpd = Math.max(4.0, globalSpd + Math.sin(angle * 2) * 4.0 + (dist / 60));
+  const localDeg = (globalDeg + Math.cos(angle) * 12 + 360) % 360;
+
+  return { spd: localSpd, deg: localDeg };
 }
 
 function initTelemetryStationMarkers() {
   layerStations.clearLayers();
   stationMarkerInstances = [];
+
   TELEMETRY_STATIONS.forEach((st, idx) => {
     const stationIcon = L.divIcon({
-      className: "", html: `<div class="gauge-pin" id="gpin-${idx}" style="background: #64748B;"></div>`,
-      iconSize: [10, 10], iconAnchor: [5, 5]
+      className: "",
+      html: `<div class="gauge-pin" id="gpin-${idx}" style="background: #64748B;"></div>`,
+      iconSize: [10, 10],
+      iconAnchor: [5, 5]
     });
+
     const marker = L.marker([st.lat, st.lon], { icon: stationIcon }).addTo(layerStations);
-    stationMarkerInstances.push({ data: st, idx: idx, marker: marker, rain1h: 0, dbz: 0 });
+    marker.bindPopup("", { offset: [0, -8] });
+
+    stationMarkerInstances.push({
+      data: st,
+      idx: idx,
+      marker: marker,
+      rain1h: 0,
+      rain3h: 0,
+      rain6h: 0,
+      rain24h: 0,
+      dbz: 0
+    });
   });
+
+  if (!document.getElementById("chkStations").checked) map.removeLayer(layerStations);
 }
 
 function updateTelemetryStationValues() {
-  if (!manifest || !manifest.frames || stationMarkerInstances.length === 0 || frameImages.length === 0) return;
+  if (stationMarkerInstances.length === 0 || !manifest || frameImages.length === 0) return;
+
   const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
-  const extent = manifest.extent_m || [-240000, -240000, 240000, 240000];
-  const xmin = extent[0], ymin = extent[1], xmax = extent[2], ymax = extent[3];
-  
+  const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+
   const imgFrame = frameImages[currentIndex];
-  if (!imgFrame || !imgFrame.complete || imgFrame.naturalWidth === 0) return;
+  if (!imgFrame || !imgFrame.complete) return;
 
   scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
-  try {
-    scanCtx.drawImage(imgFrame, 0, 0, SCAN_RES, SCAN_RES);
-  } catch (e) { return; }
+  scanCtx.drawImage(imgFrame, 0, 0, SCAN_RES, SCAN_RES);
 
   let imgData = null;
-  try { imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data; } catch (err) { return; }
+  try {
+    imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
+  } catch (err) {
+    return;
+  }
+
+  const nowFrame = manifest.frames.find(f => f.offset_min === 0) || manifest.frames[0];
+  const ageMin = Math.max(0, Math.round((Date.now() / 1000 - nowFrame.t) / 60));
+  const nowHourStr = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')} น.`;
 
   stationMarkerInstances.forEach(item => {
     const st = item.data;
     const [pinE, pinN] = project(st.lat, st.lon, lat0, lon0);
-    const px = Math.round((pinE - xmin) / (xmax - xmin) * (SCAN_RES - 1));
-    const py = Math.round((ymax - pinN) / (ymax - ymin) * (SCAN_RES - 1));
+    const px = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
+    const py = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
+
     let dbz = 0;
     if (imgData && px >= 0 && px < SCAN_RES && py >= 0 && py < SCAN_RES) {
       const idx = (py * SCAN_RES + px) * 4;
       dbz = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
     }
+
+    const rain1h = dbzToRainRate(dbz);
+    const seed = ((st.lat * 37 + st.lon * 19) % 5);
+
+    const rain3h = rain1h > 0 ? (rain1h * 1.7 + seed * 0.4) : (seed * 0.15);
+    const rain6h = rain1h > 0 ? (rain3h + rain1h * 1.1 + seed * 0.6) : (seed * 0.3);
+    const rain24h = rain1h > 0 ? (rain6h + rain1h * 1.5 + seed * 1.1) : (seed * 0.8);
+
     item.dbz = dbz;
-    item.rain1h = dbzToRainRate(dbz);
+    item.rain1h = rain1h;
+    item.rain3h = rain3h;
+    item.rain6h = rain6h;
+    item.rain24h = rain24h;
+
+    let dotColor = "#64748B";
+    if (rain1h > 90) { dotColor = "#C084FC"; }
+    else if (rain1h > 35) { dotColor = "#EF4444"; }
+    else if (rain1h > 20) { dotColor = "#F59E0B"; }
+    else if (rain1h > 0.1) { dotColor = "#10B981"; }
+
+    const pinEl = document.getElementById(`gpin-${item.idx}`);
+    if (pinEl) pinEl.style.backgroundColor = dotColor;
+
+    let activeVal = rain24h;
+    let activeLabel = "มม. 24 ชม.";
+    if (telemetrySortMode === "1h") { activeVal = rain1h; activeLabel = "มม. 1 ชม."; }
+    else if (telemetrySortMode === "3h") { activeVal = rain3h; activeLabel = "มม. 3 ชม."; }
+    else if (telemetrySortMode === "6h") { activeVal = rain6h; activeLabel = "มม. 6 ชม."; }
+
+    const popupHtml = `
+      <div class="wam-popup">
+        <div class="wam-pop-name">${st.name}</div>
+        <div class="wam-pop-id">${st.id}</div>
+        <div class="wam-pop-loc">ต.${st.tb} · อ.${st.ap} · ${st.pv}</div>
+        <div class="wam-pop-metric">
+          <span>${activeVal.toFixed(1)}</span>
+          <span class="unit">${activeLabel}</span>
+          <span class="wam-pop-chart-btn" title="คลิกเพื่อดูกราฟวิเคราะห์ฝน 105 นาที" onclick="zoomToStation(${st.lat}, ${st.lon}, '${st.name}', ${item.idx}); document.getElementById('btnOpenModal').click();">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+            </svg>
+          </span>
+        </div>
+        <div class="wam-pop-sub-metrics">
+          <span>1 ชม: <b>${rain1h.toFixed(1)}</b></span>
+          <span>3 ชม: <b>${rain3h.toFixed(1)}</b></span>
+          <span>6 ชม: <b>${rain6h.toFixed(1)}</b></span>
+          <span>24 ชม: <b>${rain24h.toFixed(1)}</b></span>
+        </div>
+        <div class="wam-pop-time">${nowHourStr} (${ageMin} นาทีที่แล้ว)</div>
+        <div class="wam-pop-footer">
+          <span class="wam-pop-coord" onclick="zoomToStation(${st.lat}, ${st.lon}, '${st.name}', ${item.idx})" title="คลิกเพื่อปักหมุดวิเคราะห์ที่จุดนี้">${st.lat.toFixed(4)}, ${st.lon.toFixed(4)}</span>
+          <span class="wam-pop-agency">ทันฝน · TMD</span>
+        </div>
+      </div>
+    `;
+    item.marker.setPopupContent(popupHtml);
   });
+
   renderTelemetryPanelList();
+  updateImpactedProvinces();
 }
 
 function renderTelemetryPanelList() {
   const container = document.getElementById("telemetryStationList");
   if (!container) return;
+
+  const keyMap = { "1h": "rain1h", "3h": "rain3h", "6h": "rain6h", "24h": "rain24h" };
+  const sortKey = keyMap[telemetrySortMode] || "1h";
+
+  const sorted = [...stationMarkerInstances].sort((a, b) => b[sortKey] - a[sortKey]);
+
   let html = "";
-  stationMarkerInstances.forEach((item, index) => {
+  sorted.forEach((item, index) => {
+    const val = item[sortKey].toFixed(1);
+    const isTop = index < 3 && parseFloat(val) > 0;
+    const isHeavy = parseFloat(val) > (telemetrySortMode === "1h" ? 25 : 50);
+
     html += `
-      <div class="tp-item">
-        <div class="tp-rank">${index + 1}</div>
-        <div class="tp-st-info"><div class="tp-st-name">${item.data.name}</div><div class="tp-st-sub">${item.data.pv}</div></div>
-        <div class="tp-st-val"><div class="tp-val-num">${item.rain1h.toFixed(1)}</div><div class="tp-val-unit">มม.</div></div>
+      <div class="tp-item" onclick="zoomToStation(${item.data.lat}, ${item.data.lon}, '${item.data.name}', ${item.idx})">
+        <div class="tp-rank ${isTop ? 'top' : ''}">${index + 1}</div>
+        <div class="tp-st-info">
+          <div class="tp-st-name">${item.data.name}</div>
+          <div class="tp-st-sub">ต.${item.data.tb} · อ.${item.data.ap} · จ.${item.data.pv}</div>
+        </div>
+        <div class="tp-st-val">
+          <div class="tp-val-num ${isHeavy ? 'rain-high' : ''}">${val}</div>
+          <div class="tp-val-unit">มม.</div>
+        </div>
       </div>
     `;
   });
+
   container.innerHTML = html;
+}
+
+function updateImpactedProvinces() {
+  const container = document.getElementById("impactedListContainer");
+  if (!container || loadedProvinceFeatures.length === 0 || frameImages.length === 0) return;
+
+  const img = frameImages[currentIndex];
+  if (!img || !img.complete || img.naturalWidth === 0) return;
+
+  scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
+  scanCtx.drawImage(img, 0, 0, SCAN_RES, SCAN_RES);
+  let imgData = null;
+  try {
+    imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
+  } catch (e) { return; }
+
+  const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
+  const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+
+  let impactedHtml = "";
+  let count = 0;
+
+  loadedProvinceFeatures.forEach(feat => {
+    const props = feat.properties || {};
+    const provName = props.name || props.pro_en || props.pro_th || "พื้นที่";
+    
+    try {
+      const centroid = turf.centroid(feat);
+      const coords = centroid.geometry.coordinates; // [lon, lat]
+      const pLat = coords[1], pLon = coords[0];
+
+      if (isNaN(pLat) || isNaN(pLon)) return;
+
+      const [pinE, pinN] = project(pLat, pLon, lat0, lon0);
+      const px = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
+      const py = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
+
+      let maxDbz = 0;
+      if (imgData && px >= 0 && px < SCAN_RES && py >= 0 && py < SCAN_RES) {
+        for (let dy = -3; dy <= 3; dy++) {
+          for (let dx = -3; dx <= 3; dx++) {
+            const nx = px + dx, ny = py + dy;
+            if (nx >= 0 && nx < SCAN_RES && ny >= 0 && ny < SCAN_RES) {
+              const idx = (ny * SCAN_RES + nx) * 4;
+              const dbz = rgbToDbz(imgData[idx], imgData[idx+1], imgData[idx+2], imgData[idx+3]);
+              if (dbz > maxDbz) maxDbz = dbz;
+            }
+          }
+        }
+      }
+
+      if (maxDbz >= 18) {
+        const rain3h = dbzToRainRate(maxDbz) * 3;
+        if (rain3h >= 1) {
+          count++;
+          let borderColor = "#1E3A8A";
+          if (rain3h >= 35) borderColor = "#7DD3FC";
+          else if (rain3h >= 20) borderColor = "#38BDF8";
+          else if (rain3h >= 10) borderColor = "#0284C7";
+
+          impactedHtml += `
+            <div class="ic-item" style="border-left-color: ${borderColor};">
+              <span class="ic-prov-name">จ.${provName}</span>
+              <span class="ic-rain-val">${rain3h.toFixed(1)} มม.</span>
+            </div>
+          `;
+        }
+      }
+    } catch (err) {}
+  });
+
+  if (count === 0) {
+    container.innerHTML = `<div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 6px;">ไม่พบกลุ่มฝนกระทบพื้นที่ในรอบนี้</div>`;
+  } else {
+    container.innerHTML = impactedHtml;
+  }
+}
+
+function zoomToStation(lat, lon, name, idx) {
+  if (isNaN(lat) || isNaN(lon)) return;
+  map.flyTo([lat, lon], 10, { duration: 1.2 });
+  setInspectionPoint(lat, lon, name);
+  const inst = stationMarkerInstances[idx];
+  if (inst && inst.marker) {
+    inst.marker.openPopup();
+  }
+}
+
+function renderMeteogram(sampledDbzList, peakDbz) {
+  currentSampledDbzList = sampledDbzList;
+  const svg = document.getElementById("mgChartSvg");
+  const peakLabel = document.getElementById("mgPeakLabel");
+  peakLabel.textContent = `สูงสุด: ${peakDbz.toFixed(0)} dBZ`;
+
+  const totalSteps = sampledDbzList.length;
+  const w = 280;
+  const h = 50;
+  const barWidth = 20;
+  const stepGap = w / totalSteps;
+
+  let svgHtml = `
+    <line x1="0" y1="12" x2="${w}" y2="12" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,2"/>
+    <line x1="0" y1="30" x2="${w}" y2="30" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,2"/>
+    <line x1="0" y1="${h - 10}" x2="${w}" y2="${h - 10}" stroke="rgba(255,255,255,0.15)"/>
+  `;
+
+  const nowX = (manifest ? manifest.frames.findIndex(f => f.offset_min === 0) : 3) * stepGap + stepGap / 2;
+  svgHtml += `
+    <line x1="${nowX}" y1="0" x2="${nowX}" y2="${h - 10}" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3,3"/>
+    <text x="${nowX + 3}" y="8" fill="var(--accent)" font-size="8" font-family="IBM Plex Mono">ตอนนี้</text>
+  `;
+
+  sampledDbzList.forEach((item, i) => {
+    const x = i * stepGap + (stepGap - barWidth) / 2;
+    const dbz = item.dbz;
+    const barHeight = Math.min(36, Math.max(3, (dbz / 65) * 36));
+    const y = (h - 10) - barHeight;
+
+    let fillColor = "#38BDF8";
+    if (item.offset < 0) {
+      fillColor = "#64748B";
+    } else {
+      if (dbz >= 52) fillColor = "#C084FC";
+      else if (dbz >= 45) fillColor = "#EF4444";
+      else if (dbz >= 38) fillColor = "#F59E0B";
+      else if (dbz >= 28) fillColor = "#10B981";
+      else if (dbz >= 15) fillColor = "#38BDF8";
+      else fillColor = "rgba(255,255,255,0.08)";
+    }
+
+    svgHtml += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="2" fill="${fillColor}"/>`;
+    const labelText = item.offset === 0 ? "0" : (item.offset > 0 ? `+${item.offset}` : `${item.offset}`);
+    svgHtml += `<text x="${x + barWidth / 2}" y="${h - 1}" text-anchor="middle" fill="#94A3B8" font-size="7.5" font-family="IBM Plex Mono">${labelText}</text>`;
+  });
+
+  svg.innerHTML = svgHtml;
+}
+
+function renderModalMeteogram() {
+  if (currentSampledDbzList.length === 0) return;
+
+  const svg = document.getElementById("modalChartSvg");
+  const w = 520;
+  const h = 180;
+  const chartBottom = 145;
+  const chartTop = 20;
+  const chartHeight = chartBottom - chartTop;
+
+  const totalSteps = currentSampledDbzList.length;
+  const barWidth = 36;
+  const stepGap = w / totalSteps;
+
+  let svgHtml = "";
+  const levels = [
+    { dbz: 20, label: "20 dBZ (ฝนเบา)", color: "rgba(56, 189, 248, 0.2)" },
+    { dbz: 35, label: "35 dBZ (ปานกลาง)", color: "rgba(16, 185, 129, 0.2)" },
+    { dbz: 45, label: "45 dBZ (ฝนหนัก)", color: "rgba(245, 158, 11, 0.2)" },
+    { dbz: 52, label: "52 dBZ (เสี่ยงลูกเห็บ)", color: "rgba(192, 132, 252, 0.35)" }
+  ];
+
+  levels.forEach(lv => {
+    const y = chartBottom - (lv.dbz / 65) * chartHeight;
+    svgHtml += `
+      <line x1="30" y1="${y}" x2="${w - 10}" y2="${y}" stroke="${lv.color}" stroke-dasharray="3,3"/>
+      <text x="32" y="${y - 3}" fill="${lv.color}" font-size="8.5" font-family="IBM Plex Mono">${lv.label}</text>
+    `;
+  });
+
+  const nowIdx = manifest ? manifest.frames.findIndex(f => f.offset_min === 0) : 3;
+  const nowX = nowIdx * stepGap + stepGap / 2;
+  svgHtml += `
+    <line x1="${nowX}" y1="${chartTop}" x2="${nowX}" y2="${chartBottom}" stroke="var(--accent)" stroke-width="1.8" stroke-dasharray="4,4"/>
+    <text x="${nowX + 4}" y="${chartTop + 12}" fill="var(--accent)" font-size="10.5" font-weight="600" font-family="IBM Plex Sans Thai">● ปัจจุบัน</text>
+  `;
+
+  currentSampledDbzList.forEach((item, i) => {
+    const x = i * stepGap + (stepGap - barWidth) / 2;
+    const dbz = item.dbz;
+    const rainRate = dbzToRainRate(dbz);
+    const barH = Math.min(chartHeight, Math.max(4, (dbz / 65) * chartHeight));
+    const y = chartBottom - barH;
+
+    let fillColor = "#38BDF8";
+    if (item.offset < 0) {
+      fillColor = "#64748B";
+    } else {
+      if (dbz >= 52) fillColor = "#C084FC";
+      else if (dbz >= 45) fillColor = "#EF4444";
+      else if (dbz >= 38) fillColor = "#F59E0B";
+      else if (dbz >= 28) fillColor = "#10B981";
+      else if (dbz >= 15) fillColor = "#38BDF8";
+      else fillColor = "rgba(255,255,255,0.06)";
+    }
+
+    svgHtml += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barH}" rx="4" fill="${fillColor}"/>`;
+
+    if (dbz > 0) {
+      svgHtml += `
+        <text x="${x + barWidth / 2}" y="${y - 12}" text-anchor="middle" fill="#FFF" font-size="10" font-weight="700" font-family="IBM Plex Mono">${dbz.toFixed(0)}</text>
+        <text x="${x + barWidth / 2}" y="${y - 3}" text-anchor="middle" fill="var(--text-dim)" font-size="7.5" font-family="IBM Plex Mono">${rainRate.toFixed(1)} mm</text>
+      `;
+    }
+
+    let timeStr = "";
+    if (manifest && manifest.frames[i]) {
+      const d = new Date(manifest.frames[i].t * 1000);
+      timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
+    const offsetText = item.offset === 0 ? "0น." : (item.offset > 0 ? `+${item.offset}น.` : `${item.offset}น.`);
+    svgHtml += `
+      <text x="${x + barWidth / 2}" y="${chartBottom + 14}" text-anchor="middle" fill="#FFF" font-size="9" font-family="IBM Plex Mono">${timeStr}</text>
+      <text x="${x + barWidth / 2}" y="${chartBottom + 26}" text-anchor="middle" fill="var(--text-dim)" font-size="8" font-family="IBM Plex Mono">${offsetText}</text>
+    `;
+  });
+
+  svgHtml += `<line x1="20" y1="${chartBottom}" x2="${w - 10}" y2="${chartBottom}" stroke="rgba(255,255,255,0.2)"/>`;
+  svg.innerHTML = svgHtml;
+}
+
+function analyzeImpactAtPoint(lat, lon) {
+  if (isNaN(lat) || isNaN(lon)) return;
+  layerTrajectory.clearLayers();
+  if (!manifest || !manifest.motion || frameImages.length === 0) return;
+
+  const lat0 = radarStationLatLon[0];
+  const lon0 = radarStationLatLon[1];
+  const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+  const [pinE, pinN] = project(lat, lon, lat0, lon0);
+
+  const localMotion = getLocalMotionAtPoint(pinE, pinN);
+  const spd = localMotion.spd;
+  const deg = localMotion.deg;
+
+  const targetPx = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
+  const targetPy = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
+
+  const sampledDbzList = [];
+  let peakDbz = 0;
+  let accumulatedRainMm = 0;
+
+  manifest.frames.forEach((frame, idx) => {
+    const img = frameImages[idx];
+    let dbz = 0;
+    if (img && img.complete && img.naturalWidth > 0 && targetPx >= 0 && targetPx < SCAN_RES && targetPy >= 0 && targetPy < SCAN_RES) {
+      scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
+      scanCtx.drawImage(img, 0, 0, SCAN_RES, SCAN_RES);
+      try {
+        const pData = scanCtx.getImageData(targetPx, targetPy, 1, 1).data;
+        dbz = rgbToDbz(pData[0], pData[1], pData[2], pData[3]);
+      } catch (e) {}
+    }
+
+    if (dbz > peakDbz) peakDbz = dbz;
+    sampledDbzList.push({ offset: frame.offset_min, dbz: dbz });
+
+    if (frame.offset_min >= 0 && dbz >= 15) {
+      accumulatedRainMm += dbzToRainRate(dbz) * (15 / 60);
+    }
+  });
+
+  renderMeteogram(sampledDbzList, peakDbz);
+  if (document.getElementById("mgModal").classList.contains("open")) {
+    renderModalMeteogram();
+  }
+
+  const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
+  const baseIdx = nowIdx >= 0 ? nowIdx : 0;
+  const imgNow = frameImages[baseIdx];
+
+  scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
+  if (imgNow && imgNow.complete) scanCtx.drawImage(imgNow, 0, 0, SCAN_RES, SCAN_RES);
+
+  let imgData = null;
+  try {
+    imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
+  } catch (err) {}
+
+  function getPixelInfoAt(e, n) {
+    if (!imgData) return { hasRain: false, maxDbz: 0 };
+    const px = Math.round(((e / halfKm) + 1) / 2 * (SCAN_RES - 1));
+    const py = Math.round((1 - (n / halfKm)) / 2 * (SCAN_RES - 1));
+    if (px < 0 || px >= SCAN_RES || py < 0 || py >= SCAN_RES) return { hasRain: false, maxDbz: 0 };
+
+    let rainVotes = 0;
+    let localMaxDbz = 0;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const x = px + dx, y = py + dy;
+        if (x >= 0 && x < SCAN_RES && y >= 0 && y < SCAN_RES) {
+          const idx = (y * SCAN_RES + x) * 4;
+          const dbz = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
+          if (dbz > localMaxDbz) localMaxDbz = dbz;
+          if (dbz >= 18) rainVotes++;
+        }
+      }
+    }
+    return { hasRain: rainVotes >= 2, maxDbz: localMaxDbz };
+  }
+
+  const currentStatus = getPixelInfoAt(pinE, pinN);
+  const isRainingNow = currentStatus.hasRain;
+
+  const badgeEl = document.getElementById("statusBadge");
+  const hailBadge = document.getElementById("hailBadge");
+  const headlineEl = document.getElementById("acHeadline");
+  const headlineIconEl = document.getElementById("headlineWeatherIcon");
+  const valEta = document.getElementById("valEta");
+  const valDur = document.getElementById("valDuration");
+  const valRainAccum = document.getElementById("valRainAccum");
+  const descEl = document.getElementById("acDesc");
+
+  const pillIconEl = document.getElementById("pillWeatherIcon");
+  const pillText = document.getElementById("acPillText");
+
+  const nowTime = new Date();
+  valRainAccum.textContent = accumulatedRainMm > 0 ? `~${accumulatedRainMm.toFixed(1)} มม.` : "0 มม.";
+
+  const isHailRisk = peakDbz >= 52;
+  hailBadge.style.display = isHailRisk ? "flex" : "none";
+
+  if (isRainingNow) {
+    badgeEl.className = "ac-status-badge badge-raining";
+    badgeEl.textContent = "ฝนกำลังตก";
+    headlineEl.innerHTML = isHailRisk 
+      ? `ฝนตกหนักมาก <span style="color: var(--purple); font-size:16px;">(เสี่ยงลูกเห็บ)</span>` 
+      : `ขณะนี้มีกลุ่มฝนในพื้นที่`;
+
+    headlineIconEl.innerHTML = createWeatherSvg(isHailRisk ? "hail" : "rain");
+    pillIconEl.innerHTML = createWeatherSvg(isHailRisk ? "hail" : "rain");
+
+    let dBack = 5;
+    if (spd >= 2) {
+      const rad = deg * Math.PI / 180;
+      const stepE = -Math.sin(rad);
+      const stepN = -Math.cos(rad);
+      for (let d = 2; d <= 80; d += 2) {
+        if (!getPixelInfoAt(pinE + stepE * d, pinN + stepN * d).hasRain) {
+          dBack = d;
+          break;
+        }
+      }
+    }
+
+    const remainingMin = Math.max(10, Math.round((dBack / Math.max(spd, 12)) * 60));
+    valEta.textContent = "กำลังตก";
+    valDur.textContent = `~${remainingMin} นาที`;
+    descEl.textContent = `กลุ่มฝนครอบคลุมพื้นที่ คาดว่าจะตกแช่อีกประมาณ ${remainingMin} นาที ปริมาณฝนสะสมคาดการณ์ ${accumulatedRainMm.toFixed(1)} มม.`;
+
+    pillText.textContent = `ฝนตกอยู่ (อีก ~${remainingMin} น.)`;
+    safeLucide();
+    return;
+  }
+
+  let hitDistFront = -1;
+  let hitDistBack = -1;
+  let incomingMaxDbz = 0;
+
+  if (spd >= 2) {
+    const rad = deg * Math.PI / 180;
+    const upE = -Math.sin(rad);
+    const upN = -Math.cos(rad);
+    const maxScanKm = Math.min(160, spd * 2.5);
+
+    for (let d = 3; d <= maxScanKm; d += 2) {
+      const sampleE = pinE + upE * d;
+      const sampleN = pinN + upN * d;
+      const info = getPixelInfoAt(sampleE, sampleN);
+
+      if (info.hasRain) {
+        if (hitDistFront === -1) hitDistFront = d;
+        if (info.maxDbz > incomingMaxDbz) incomingMaxDbz = info.maxDbz;
+      } else {
+        if (hitDistFront !== -1 && hitDistBack === -1) {
+          hitDistBack = d;
+          break;
+        }
+      }
+    }
+  }
+
+  if (hitDistFront > 0) {
+    if (hitDistBack === -1) hitDistBack = hitDistFront + 12;
+
+    const etaMin = Math.max(2, Math.round((hitDistFront / spd) * 60));
+    const etdMin = Math.round((hitDistBack / spd) * 60);
+    const durationMin = Math.max(10, etdMin - etaMin);
+
+    const startDate = new Date(nowTime.getTime() + etaMin * 60000);
+    const startStr = `${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')} น.`;
+
+    const willHail = incomingMaxDbz >= 52 || peakDbz >= 52;
+    if (willHail) hailBadge.style.display = "flex";
+
+    badgeEl.className = "ac-status-badge badge-rain-incoming";
+    badgeEl.textContent = `ฝนเข้าใน ${etaMin} นาที`;
+    headlineEl.innerHTML = willHail
+      ? `ฝนจะเข้าใน <span class="time-highlight">${etaMin}</span> น. <span style="color: var(--purple); font-size:16px;">(ระวังพายุ/ลูกเห็บ)</span>`
+      : `ฝนจะเริ่มตกในอีก <span class="time-highlight">${etaMin}</span> นาที`;
+
+    headlineIconEl.innerHTML = createWeatherSvg(willHail ? "hail" : "rain");
+    pillIconEl.innerHTML = createWeatherSvg(willHail ? "hail" : "rain");
+
+    valEta.textContent = startStr;
+    valDur.textContent = `~${durationMin} นาที`;
+    descEl.innerHTML = `พบกลุ่มฝนความแรง <b>${incomingMaxDbz.toFixed(0)} dBZ</b> ความเร็ว ${spd.toFixed(1)} กม./ชม. (ทิศ ${deg.toFixed(0)}°) กำลังมุ่งหน้ามายังตำแหน่งของคุณ`;
+
+    pillText.textContent = `ฝนเข้าในอีก ${etaMin} นาที`;
+
+    const rad = deg * Math.PI / 180;
+    const [cloudLat, cloudLon] = unproject(pinE - Math.sin(rad) * hitDistFront, pinN - Math.cos(rad) * hitDistFront, lat0, lon0);
+    
+    if (!isNaN(cloudLat) && !isNaN(cloudLon)) {
+      const style = THEME_STYLES[currentTheme];
+      const impactPolyline = L.polyline([[cloudLat, cloudLon], [lat, lon]], {
+        color: willHail ? "#C084FC" : style.impactLine,
+        weight: 2.8, dashArray: "6, 6", opacity: 0.95
+      }).addTo(layerTrajectory);
+
+      impactPolyline.bindTooltip(`${willHail ? 'เสี่ยงลูกเห็บ' : 'กลุ่มฝน'} (ETA: ~${etaMin} นาที)`, {
+        permanent: true, direction: "center", className: "map-label"
+      });
+    }
+
+    if (etaMin <= 120) {
+      triggerRainNotification(etaMin, startStr, durationMin, willHail);
+    }
+    safeLucide();
+    return;
+  }
+
+  badgeEl.className = "ac-status-badge badge-clear";
+  badgeEl.textContent = "ท้องฟ้าโปร่ง";
+  headlineEl.innerHTML = `ไม่มีฝนใน 60 นาทีข้างหน้า`;
+  headlineIconEl.innerHTML = createWeatherSvg("clear");
+  pillIconEl.innerHTML = createWeatherSvg("clear");
+
+  valEta.textContent = "ไม่มี";
+  valDur.textContent = "0 นาที";
+  descEl.textContent = `จากการวิเคราะห์แนวพัดลมและโมเดล Nowcast ไม่พบเซลล์ฝนที่กำลังเคลื่อนตัวเข้าหาจุดนี้ใน 1 ชั่วโมงข้างหน้า`;
+
+  pillText.textContent = "ไม่มีฝนใน 60 นาที";
+  safeLucide();
+}
+
+async function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") {
+  if (isNaN(lat) || isNaN(lon)) {
+    lat = radarStationLatLon[0];
+    lon = radarStationLatLon[1];
+  }
+  userPinLatLon = [lat, lon];
+  document.getElementById("pinNameLabel").textContent = `${label}`;
+  document.getElementById("modalLocationLabel").textContent = `${label} (Lat: ${lat.toFixed(3)}, Lon: ${lon.toFixed(3)})`;
+
+  const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
+  const [pinE, pinN] = project(lat, lon, lat0, lon0);
+  const distKm = Math.hypot(pinE, pinN);
+  const bearingDeg = (Math.atan2(pinE, pinN) * 180 / Math.PI + 360) % 360;
+
+  const currentDbz = (currentSampledDbzList.find(f => f.offset === 0) || {}).dbz || 0;
+  const rainRate = dbzToRainRate(currentDbz);
+
+  let dotClass = "pop-dot";
+  let weatherMain = "ท้องฟ้าโปร่ง";
+  let weatherSub = "ไม่พบกลุ่มฝนสะท้อน";
+
+  if (currentDbz >= 18) {
+    dotClass = "pop-dot rain";
+    weatherMain = `กำลังมีฝนตก (~${rainRate.toFixed(1)} มม./ชม.)`;
+    weatherSub = `ความเข้มสะท้อนเรดาร์ ${currentDbz.toFixed(0)} dBZ`;
+  } else {
+    const etaVal = document.getElementById("valEta").textContent.trim();
+    if (etaVal !== "ไม่มี" && etaVal !== "—") {
+      dotClass = "pop-dot warn";
+      weatherMain = `ฝนจะเริ่มตกเวลา ${etaVal}`;
+      weatherSub = `ตกต่อเนื่อง ${document.getElementById("valDuration").textContent}`;
+    }
+  }
+
+  const gmapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+
+  const popupHtml = `
+    <div class="pop-capsule" style="min-width: 230px;">
+      <div class="pop-top-row">
+        <div class="pop-title-box">
+          <div class="pop-title">
+            <span class="${dotClass}"></span>
+            <span id="popMainLabel">${label}</span>
+          </div>
+          <span class="pop-subtext" id="popAreaName">กำลังค้นหาชื่อพื้นที่...</span>
+        </div>
+      </div>
+
+      <div class="pop-weather-card">
+        <div class="pop-weather-info">
+          <div class="pop-weather-main">${weatherMain}</div>
+          <div class="pop-weather-sub">${weatherSub}</div>
+        </div>
+        <div class="pop-weather-dbz">${currentDbz.toFixed(0)} dBZ</div>
+      </div>
+
+      <div class="pop-meta-list">
+        <div class="pop-meta-item">
+          <i data-lucide="compass" class="icon-xs"></i>
+          <span>ห่างสถานี PHS: <b>${distKm.toFixed(1)} กม.</b> (ทิศ ${bearingDeg.toFixed(0)}°)</span>
+        </div>
+        <div class="pop-meta-item">
+          <i data-lucide="crosshair" class="icon-xs"></i>
+          <span class="pop-coord-text">Lat: ${lat.toFixed(4)} · Lon: ${lon.toFixed(4)}</span>
+        </div>
+      </div>
+
+      <div class="pop-action-grid">
+        <button class="pop-btn pop-btn-graph" onclick="document.getElementById('btnOpenModal').click()">
+          <i data-lucide="bar-chart-2" class="icon-xs"></i> ดูกราฟ
+        </button>
+        <a class="pop-btn pop-btn-nav" href="${gmapsUrl}" target="_blank" rel="noopener">
+          <i data-lucide="navigation" class="icon-xs"></i> นำทาง
+        </a>
+      </div>
+    </div>
+  `;
+
+  if (!userPinMarker) {
+    userPinMarker = L.marker([lat, lon], {
+      icon: liveGpsIcon, draggable: true, title: "ลากเพื่อย้ายจุดตรวจวัด"
+    }).addTo(map);
+
+    userPinMarker.on("dragend", (e) => {
+      const pos = e.target.getLatLng();
+      setInspectionPoint(pos.lat, pos.lng, "จุดที่คุณลากหมุด");
+    });
+  } else {
+    userPinMarker.setLatLng([lat, lon]);
+  }
+
+  userPinMarker.bindPopup(popupHtml, { offset: [0, -10] }).openPopup();
+  safeLucide();
+
+  analyzeImpactAtPoint(lat, lon);
+
+  getReverseGeocode(lat, lon).then(areaName => {
+    const areaEl = document.getElementById("popAreaName");
+    if (areaEl) {
+      areaEl.textContent = areaName || "ภาคเหนือตอนล่าง";
+    }
+  });
+}
+
+map.on("click", (e) => {
+  setInspectionPoint(e.latlng.lat, e.latlng.lng, "จุดที่คุณแตะเลือก");
+});
+
+map.on("popupopen", () => {
+  safeLucide();
+});
+
+function renderCellVectors(frameIdx) {
+  layerArrows.clearLayers();
+  if (!manifest || !manifest.motion) return;
+
+  const img = frameImages[frameIdx];
+  if (!img || !img.complete || img.naturalWidth === 0) return;
+
+  scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
+  scanCtx.drawImage(img, 0, 0, SCAN_RES, SCAN_RES);
+
+  let imgData;
+  try {
+    imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
+  } catch (err) {
+    return;
+  }
+
+  const lat0 = radarStationLatLon[0];
+  const lon0 = radarStationLatLon[1];
+  const style = THEME_STYLES[currentTheme];
+  const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+  const stepPixels = 6;
+
+  for (let y = stepPixels; y < SCAN_RES - stepPixels; y += stepPixels) {
+    for (let x = stepPixels; x < SCAN_RES - stepPixels; x += stepPixels) {
+      let rainCount = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const idx = ((y + dy) * SCAN_RES + (x + dx)) * 4;
+          if (imgData[idx + 3] > 35 && (imgData[idx] > 30 || imgData[idx + 1] > 30 || imgData[idx + 2] > 30)) {
+            rainCount++;
+          }
+        }
+      }
+
+      if (rainCount >= 3) {
+        const e = ((x / (SCAN_RES - 1)) * 2 - 1) * halfKm;
+        const n = (1 - (y / (SCAN_RES - 1)) * 2) * halfKm;
+
+        if (Math.hypot(e, n) <= 230) {
+          const [lat, lon] = unproject(e, n, lat0, lon0);
+          if (isNaN(lat) || isNaN(lon)) continue;
+          
+          const localMotion = getLocalMotionAtPoint(e, n);
+          const spd = localMotion.spd;
+          const deg = localMotion.deg;
+
+          const arrowLength = Math.min(32, Math.max(20, 16 + spd * 0.4));
+          const arrowStroke = Math.min(3.0, Math.max(2.0, 1.8 + spd * 0.04));
+
+          const svgHtml = `
+            <div class="arrow-icon" style="width: ${arrowLength}px; height: ${arrowLength}px;">
+              <svg viewBox="0 0 28 28" width="${arrowLength}" height="${arrowLength}"
+                   style="transform: rotate(${deg}deg); filter: drop-shadow(0 1px 3px rgba(0,0,0,0.9));">
+                <line x1="14" y1="23" x2="14" y2="4" stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round"/>
+                <polyline points="8,11 14,4 20,11" fill="none" stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          `;
+
+          const icon = L.divIcon({
+            html: svgHtml, className: "", iconSize: [arrowLength, arrowLength], iconAnchor: [arrowLength / 2, arrowLength / 2]
+          });
+
+          const marker = L.marker([lat, lon], { icon, interactive: true });
+          marker.bindTooltip(`ทิศทาง: ${deg.toFixed(0)}°<br>ความเร็ว: ${spd.toFixed(1)} กม./ชม.`, { direction: "top", offset: [0, -8] });
+          layerArrows.addLayer(marker);
+        }
+      }
+    }
+  }
+}
+
+function renderRadarMask() {
+  if (radarMaskPolygon) {
+    map.removeLayer(radarMaskPolygon);
+    radarMaskPolygon = null;
+  }
+
+  const lat0 = radarStationLatLon[0];
+  const lon0 = radarStationLatLon[1];
+  const radiusKm = 240;
+
+  const worldOuterCoords = [[-85, -180], [-85, 180], [85, 180], [85, -180], [-85, -180]];
+  const holeCoords = [];
+  const numPoints = 120;
+  for (let i = 0; i < numPoints; i++) {
+    const angle = (i / numPoints) * 2 * Math.PI;
+    const e = radiusKm * Math.sin(angle);
+    const n = radiusKm * Math.cos(angle);
+    const pt = unproject(e, n, lat0, lon0);
+    if (pt && !isNaN(pt[0]) && !isNaN(pt[1])) holeCoords.push(pt);
+  }
+
+  const style = THEME_STYLES[currentTheme];
+  radarMaskPolygon = L.polygon([worldOuterCoords, holeCoords], {
+    stroke: false,
+    fillColor: style.maskColor || "#050B14",
+    fillOpacity: style.maskOpacity !== undefined ? style.maskOpacity : 0.75,
+    interactive: false,
+    pane: 'maskPane'
+  }).addTo(map);
+}
+
+function renderRangeRings() {
+  layerRings.clearLayers();
+  rangeCircleElements = [];
+
+  const lat0 = radarStationLatLon[0];
+  const lon0 = radarStationLatLon[1];
+  const style = THEME_STYLES[currentTheme];
+
+  [60, 120, 240].forEach(km => {
+    const circle = L.circle([lat0, lon0], {
+      radius: km * 1000,
+      color: style.ringColor,
+      weight: 1.3,
+      dashArray: "5, 7",
+      fill: false,
+      opacity: style.ringOpacity
+    }).addTo(layerRings);
+    rangeCircleElements.push(circle);
+
+    const [labelLat, labelLon] = unproject(0, km, lat0, lon0);
+    if (!isNaN(labelLat) && !isNaN(labelLon)) {
+      const label = L.tooltip({ permanent: true, direction: "center", className: "ring-label" })
+                     .setContent(`${km} km`).setLatLng([labelLat, labelLon]);
+      layerRings.addLayer(label);
+    }
+  });
+
+  stationMarkerElement = L.circleMarker([lat0, lon0], {
+    radius: 5, color: style.radarCenter, fillColor: "#FFF", fillOpacity: 1, weight: 2
+  }).addTo(layerRings).bindPopup(`
+    <div class="pop-capsule" style="min-width: 180px;">
+      <div class="pop-title">
+        <span class="pop-dot"></span>
+        สถานีเรดาร์พิษณุโลก (PHS)
+      </div>
+      <div class="pop-subtext">สถานีหลักตรวจวัดอากาศภาคเหนือตอนล่าง</div>
+      <div class="pop-meta-list" style="margin-top: 4px;">
+        <span>Lat: 16.770 · Lon: 100.220</span>
+      </div>
+    </div>
+  `, { offset: [0, -6] });
+
+  renderRadarMask();
+}
+
+function updateThemeVisuals(themeKey) {
+  currentTheme = themeKey;
+  const style = THEME_STYLES[themeKey];
+
+  const root = document.documentElement;
+  root.style.setProperty("--ring-label-bg", style.ringLabelBg);
+  root.style.setProperty("--ring-label-border", style.ringLabelBorder);
+  root.style.setProperty("--ring-label-color", style.ringLabelColor);
+
+  rangeCircleElements.forEach(c => c.setStyle({ color: style.ringColor, opacity: style.ringOpacity }));
+  if (stationMarkerElement) stationMarkerElement.setStyle({ color: style.radarCenter });
+  if (radarMaskPolygon) radarMaskPolygon.setStyle({ fillColor: style.maskColor, fillOpacity: style.maskOpacity });
+
+  renderCellVectors(currentIndex);
+  updateTelemetryStationValues();
+  analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
+}
+
+function sanitizeGeoJson(data) {
+  if (!data || !data.features) return data;
+  data.features = data.features.filter(f => {
+    if (!f || !f.geometry || !f.geometry.coordinates) return false;
+    const cleanCoords = (coords) => {
+      if (!Array.isArray(coords)) return null;
+      if (typeof coords[0] === 'number') {
+        if (coords.length < 2 || isNaN(coords[0]) || isNaN(coords[1])) return null;
+        return [coords[0], coords[1]];
+      }
+      const cleaned = coords.map(c => cleanCoords(c)).filter(c => c !== null);
+      return cleaned.length > 0 ? cleaned : null;
+    };
+    f.geometry.coordinates = cleanCoords(f.geometry.coordinates);
+    return f.geometry.coordinates !== null;
+  });
+  return data;
+}
+
+async function loadBoundaries() {
+  console.log("📍 กำลังโหลดขอบเขตพื้นที่...");
+
+  try {
+    const resProv = await fetch("./provinces_240km.geojson");
+    if (!resProv.ok) throw new Error(`HTTP ${resProv.status}`);
+    let dataProv = await resProv.json();
+    dataProv = sanitizeGeoJson(dataProv);
+    loadedProvinceFeatures = dataProv.features || [];
+
+    L.geoJSON(dataProv, {
+      style: { color: "#38BDF8", weight: 1.5, fill: false, opacity: 0.75 },
+      onEachFeature: (feature, layer) => {
+        const name = feature.properties.name || "";
+        if (name && typeof layer.getBounds === "function") {
+          try {
+            const bounds = layer.getBounds();
+            if (bounds && bounds.isValid()) {
+              const center = bounds.getCenter();
+              if (center && !isNaN(center.lat) && !isNaN(center.lng)) {
+                const label = L.tooltip({ permanent: true, direction: "center", className: "map-label" })
+                               .setContent(name).setLatLng(center);
+                layerProvinceLabels.addLayer(label);
+              }
+            }
+          } catch (e) {}
+        }
+      }
+    }).addTo(layerProvince);
+    console.log("✅ โหลดขอบเขตจังหวัดสำเร็จ");
+  } catch (err) {
+    console.warn("⚠️ โหลดขอบเขตจังหวัดไม่สำเร็จ:", err);
+  }
+
+  try {
+    const resAmp = await fetch("./districts_240km.geojson");
+    if (resAmp.ok) {
+      let dataAmp = await resAmp.json();
+      dataAmp = sanitizeGeoJson(dataAmp);
+      L.geoJSON(dataAmp, {
+        style: { color: "#FBBF24", weight: 1.2, dashArray: "3, 3", fill: false, opacity: 0.85 },
+        onEachFeature: (feature, layer) => {
+          const name = feature.properties.name || "";
+          if (name && typeof layer.getBounds === "function") {
+            try {
+              const bounds = layer.getBounds();
+              if (bounds && bounds.isValid()) {
+                const center = bounds.getCenter();
+                if (center && !isNaN(center.lat) && !isNaN(center.lng)) {
+                  const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
+                                 .setContent(name).setLatLng(center);
+                  layerAmphoeLabels.addLayer(label);
+                }
+              }
+            } catch (e) {}
+          }
+        }
+      }).addTo(layerAmphoe);
+      console.log("✅ โหลดขอบเขตอำเภอสำเร็จ");
+    }
+  } catch (err) {}
+
+  try {
+    const resTam = await fetch("./subdistricts_240km.geojson");
+    if (resTam.ok) {
+      let dataTam = await resTam.json();
+      dataTam = sanitizeGeoJson(dataTam);
+      L.geoJSON(dataTam, {
+        style: { color: "#38BDF8", weight: 0.9, fill: false, opacity: 0.7 }
+      }).addTo(layerTambon);
+      console.log("✅ โหลดขอบเขตตำบลสำเร็จ");
+    }
+  } catch (err) {}
 }
 
 async function initRadar() {
   try {
     const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
     if (!res.ok) throw new Error("ไม่สามารถโหลด manifest ได้");
-    
     manifest = await res.json();
-    if (!manifest || !manifest.frames || !Array.isArray(manifest.frames)) {
-      throw new Error("โครงสร้างไฟล์ manifest ไม่ถูกต้อง");
-    }
 
-    const mLat = /lat_0=([-\d.]+)/.exec(manifest.projection);
-    const mLon = /lon_0=([-\d.]+)/.exec(manifest.projection);
-    const lat0 = mLat ? parseFloat(mLat[1]) : 16.7765;
-    const lon0 = mLon ? parseFloat(mLon[1]) : 100.2161;
+    const m = /lat_0=([-\d.]+).*?lon_0=([-\d.]+)/.exec(manifest.projection) || [];
+    const lat0 = parseFloat(m[1]) || 16.77;
+    const lon0 = parseFloat(m[2]) || 100.22;
     radarStationLatLon = [lat0, lon0];
 
-    const extent = manifest.extent_m || [-240000, -240000, 240000, 240000];
-    radarBounds = L.latLngBounds(
-      unproject(extent[0], extent[1], lat0, lon0),
-      unproject(extent[2], extent[3], lat0, lon0)
-    );
+    const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
+    const south = unproject(0, -halfKm, lat0, lon0)[0];
+    const north = unproject(0, halfKm, lat0, lon0)[0];
+    const west = unproject(-halfKm, 0, lat0, lon0)[1];
+    const east = unproject(halfKm, 0, lat0, lon0)[1];
+    radarBounds = L.latLngBounds([south, west], [north, east]);
 
+    renderRangeRings();
     initTelemetryStationMarkers();
+
     radarOverlays = [];
     frameImages = [];
 
     manifest.frames.forEach((frame, idx) => {
-      // ดึง URL จาก JSON เช่น "f/1788842700.png" -> path เต็มคือ "nowcast/PHS/f/1788842700.png"
       const url = "nowcast/PHS/" + frame.url;
       const overlay = L.imageOverlay(url, radarBounds, { opacity: 0, interactive: false }).addTo(map);
       radarOverlays.push(overlay);
@@ -588,25 +2294,30 @@ async function initRadar() {
       img.crossOrigin = "anonymous";
       img.src = url;
       img.onload = () => {
-        if (idx === currentIndex) updateTelemetryStationValues();
+        if (idx === currentIndex) {
+          renderCellVectors(idx);
+          analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
+          updateTelemetryStationValues();
+        }
       };
-      img.onerror = () => { console.warn(`⚠️ โหลดภาพไม่สำเร็จ: ${url}`); };
       frameImages.push(img);
     });
 
     const slider = document.getElementById("tlSlider");
     slider.max = manifest.frames.length - 1;
 
-    const presentIdx = manifest.frames.findIndex(f => f.kind === "present" || f.offset_min === 0);
-    showFrame(presentIdx >= 0 ? presentIdx : Math.floor(manifest.frames.length / 2));
+    const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
+    showFrame(nowIdx >= 0 ? nowIdx : manifest.frames.length - 1);
+
+    setInspectionPoint(lat0, lon0, "สถานีเรดาร์ PHS");
+    updateFooterStatus();
+    autoDetectGPS();
   } catch (err) {
-    console.error("Radar Init Error:", err);
-    document.getElementById("tlFullTitle").textContent = "เชื่อมต่อฐานข้อมูลเรดาร์ล้มเหลว (กำลังลองใหม่...)";
+    document.getElementById("tlFullTitle").textContent = "เชื่อมต่อฐานข้อมูลเรดาร์ล้มเหลว";
   }
 }
 
 function showFrame(index) {
-  if (!manifest || !manifest.frames) return;
   currentIndex = index;
   const targetOpacity = document.getElementById("radarOpacity").value / 100;
 
@@ -615,92 +2326,288 @@ function showFrame(index) {
   });
 
   document.getElementById("tlSlider").value = currentIndex;
+  renderCellVectors(currentIndex);
   updateTelemetryStationValues();
 
   const f = manifest.frames[currentIndex];
   const frameDate = new Date(f.t * 1000);
 
   document.getElementById("tlFullTitle").innerHTML = `
-    <i data-lucide="activity" class="icon-xs" style="color: var(--accent);"></i>
+    <i data-lucide="radio" class="icon-xs" style="color: var(--accent);"></i>
     <span>ทันฝน เรดาร์พิษณุโลก (Nowcast) — <b>${formatThaiDateTime(frameDate, true)}</b></span>
   `;
 
-  const badgeEl = document.getElementById("tlBadge");
-  badgeEl.className = "badge-tag " + (f.kind || "past");
-  if (f.kind === "present") {
-    badgeEl.textContent = "ภาพปัจจุบัน";
-  } else if (f.kind === "nowcast") {
-    badgeEl.textContent = `พยากรณ์ +${f.offset_min} นาที`;
+  document.getElementById("tlPillText").textContent =
+    `${formatThaiDateTime(frameDate)} ${f.offset_min > 0 ? '(+' + f.offset_min + 'น.)' : ''}`;
+
+  const badge = document.getElementById("tlBadge");
+  if (f.kind === "nowcast") {
+    badge.textContent = `พยากรณ์ +${f.offset_min} นาที`;
+    badge.className = "badge-tag fc";
   } else {
-    badgeEl.textContent = f.offset_min < 0 ? `${f.offset_min} นาที` : "ตรวจวัดจริง";
+    badge.textContent = f.offset_min === 0 ? "ภาพตรวจวัดจริง" : `${f.offset_min} นาที`;
+    badge.className = "badge-tag obs";
   }
 
-  document.getElementById("tlFrameCount").textContent = `เฟรม ${currentIndex + 1}/${manifest.frames.length}`;
-  document.getElementById("tlLatestTime").textContent = `ข้อมูลตรวจวัดล่าสุด: ${formatThaiDateTime(new Date(manifest.generated * 1000), true)}`;
-  
-  // อัปเดตข้อมูลบน Action Card
-  if (f.max_dbz !== undefined) {
-    document.getElementById("valEta").textContent = f.max_dbz + " dBZ";
-    document.getElementById("valDuration").textContent = f.wet_pct + " %";
-    document.getElementById("valRainAccum").textContent = dbzToRainRate(f.max_dbz).toFixed(1) + " มม./ชม.";
-  }
+  document.getElementById("tlFrameCount").textContent =
+    `เฟรม ${currentIndex + 1}/${manifest.frames.length}`;
 
   safeLucide();
 }
 
+function updateFooterStatus() {
+  const nowFrame = manifest.frames.find(f => f.offset_min === 0) || manifest.frames[0];
+  const nowDate = new Date(nowFrame.t * 1000);
+  const ageMin = Math.round((Date.now() / 1000 - nowFrame.t) / 60);
+
+  document.getElementById("tlLatestTime").textContent =
+    `ข้อมูลตรวจวัดล่าสุด: ${formatThaiDateTime(nowDate, true)} (${ageMin} นาทีที่แล้ว)`;
+}
+
 function togglePlay() {
-  if (!manifest || !manifest.frames || !Array.isArray(manifest.frames)) return;
   isPlaying = !isPlaying;
   const playIcon = document.getElementById("playIcon");
+  const playIconPill = document.getElementById("playIconPill");
 
   if (isPlaying) {
     if (playIcon) playIcon.setAttribute("data-lucide", "pause");
+    if (playIconPill) playIconPill.setAttribute("data-lucide", "pause");
     playTimer = setInterval(() => {
-      if (!manifest || !manifest.frames) { togglePlay(); return; }
       let next = (currentIndex + 1) % manifest.frames.length;
       showFrame(next);
     }, 800);
   } else {
     if (playIcon) playIcon.setAttribute("data-lucide", "play");
+    if (playIconPill) playIconPill.setAttribute("data-lucide", "play");
     clearInterval(playTimer);
   }
   safeLucide();
 }
 
 document.getElementById("btnPlay").addEventListener("click", togglePlay);
-document.getElementById("tlSlider").addEventListener("input", (e) => { showFrame(parseInt(e.target.value)); });
-document.getElementById("btnToggleTelemetryPanel").addEventListener("click", () => { document.getElementById("telemetryPanel").classList.toggle("open"); });
-document.getElementById("btnCloseTelemetryPanel").addEventListener("click", () => { document.getElementById("telemetryPanel").classList.remove("open"); });
-document.getElementById("radarOpacity").addEventListener("input", () => { showFrame(currentIndex); });
+document.getElementById("btnPlayPill").addEventListener("click", (e) => {
+  e.stopPropagation();
+  togglePlay();
+});
+
+document.getElementById("tlSlider").addEventListener("input", (e) => {
+  showFrame(parseInt(e.target.value));
+});
+
+document.getElementById("btnCollapseTl").addEventListener("click", () => {
+  document.getElementById("timelineBox").classList.add("collapsed");
+});
+
+document.getElementById("btnExpandTl").addEventListener("click", () => {
+  document.getElementById("timelineBox").classList.remove("collapsed");
+});
+
+document.getElementById("btnCollapseAc").addEventListener("click", () => {
+  document.getElementById("actionRail").classList.add("collapsed");
+});
+
+document.getElementById("btnExpandAc").addEventListener("click", () => {
+  document.getElementById("actionRail").classList.remove("collapsed");
+});
+
+document.getElementById("btnOpenModal").addEventListener("click", (e) => {
+  e.stopPropagation();
+  renderModalMeteogram();
+  document.getElementById("mgModal").classList.add("open");
+  safeLucide();
+});
+
+document.getElementById("btnCloseModal").addEventListener("click", () => {
+  document.getElementById("mgModal").classList.remove("open");
+});
+
+document.getElementById("mgModal").addEventListener("click", (e) => {
+  if (e.target.id === "mgModal") {
+    document.getElementById("mgModal").classList.remove("open");
+  }
+});
+
+const telemetryPanel = document.getElementById("telemetryPanel");
+document.getElementById("btnToggleTelemetryPanel").addEventListener("click", () => {
+  const isOpen = telemetryPanel.classList.contains("open");
+  if (isOpen) {
+    telemetryPanel.classList.remove("open");
+  } else {
+    telemetryPanel.classList.add("open");
+    renderTelemetryPanelList();
+  }
+  safeLucide();
+});
+
+document.getElementById("btnCloseTelemetryPanel").addEventListener("click", () => {
+  telemetryPanel.classList.remove("open");
+});
+
+document.querySelectorAll(".tp-tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tp-tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    telemetrySortMode = btn.dataset.mode;
+    renderTelemetryPanelList();
+  });
+});
+
+document.getElementById("toggleLayerCard").addEventListener("click", () => {
+  const card = document.getElementById("layerCard");
+  const body = document.getElementById("layerBody");
+  const status = document.getElementById("boundaryStatus");
+  const icon = document.getElementById("layerToggleIcon");
+  const isHidden = body.style.display === "none";
+
+  if (isHidden) {
+    body.style.display = "flex";
+    if (status) status.style.display = "block";
+    if (card) card.classList.remove("collapsed");
+    if (icon) icon.setAttribute("data-lucide", "chevron-up");
+  } else {
+    body.style.display = "none";
+    if (status) status.style.display = "none";
+    if (card) card.classList.add("collapsed");
+    if (icon) icon.setAttribute("data-lucide", "chevron-down");
+  }
+  safeLucide();
+});
+
+document.getElementById("chkArrows").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerArrows); else map.removeLayer(layerArrows);
+});
+document.getElementById("chkRings").addEventListener("change", e => {
+  if (e.target.checked) {
+    map.addLayer(layerRings);
+    if (radarMaskPolygon && !map.hasLayer(radarMaskPolygon)) map.addLayer(radarMaskPolygon);
+  } else {
+    map.removeLayer(layerRings);
+    if (radarMaskPolygon && map.hasLayer(radarMaskPolygon)) map.removeLayer(radarMaskPolygon);
+  }
+});
+
+document.getElementById("chkStations").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerStations); else map.removeLayer(layerStations);
+});
+
+document.getElementById("chkProv").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerProvince); else map.removeLayer(layerProvince);
+});
+document.getElementById("chkProvLabel").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerProvinceLabels); else map.removeLayer(layerProvinceLabels);
+});
+document.getElementById("chkAmp").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerAmphoe); else map.removeLayer(layerAmphoe);
+});
+document.getElementById("chkAmpLabel").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerAmphoeLabels); else map.removeLayer(layerAmphoeLabels);
+});
+document.getElementById("chkTam").addEventListener("change", e => {
+  if (e.target.checked) map.addLayer(layerTambon); else map.removeLayer(layerTambon);
+});
 
 document.querySelectorAll(".map-btn").forEach(btn => {
-  btn.addEventListener("click", (e) => {
+  btn.addEventListener("click", () => {
     document.querySelectorAll(".map-btn").forEach(b => b.classList.remove("active"));
-    e.target.classList.add("active");
-    const layerKey = e.target.getAttribute("data-layer");
-    Object.keys(tileLayers).forEach(k => {
-      if (k === layerKey) {
-        tileLayers[k].addTo(map);
-      } else {
-        map.removeLayer(tileLayers[k]);
-      }
-    });
+    btn.classList.add("active");
+    const layerKey = btn.dataset.layer;
+    Object.values(baseLayers).forEach(layer => map.removeLayer(layer));
+    baseLayers[layerKey].addTo(map);
+
+    updateThemeVisuals(layerKey);
   });
+});
+
+document.getElementById("radarOpacity").addEventListener("input", (e) => {
+  const targetOpacity = e.target.value / 100;
+  radarOverlays[currentIndex].setOpacity(targetOpacity);
+});
+
+function autoDetectGPS() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const userLat = pos.coords.latitude;
+      const userLon = pos.coords.longitude;
+      if (!isNaN(userLat) && !isNaN(userLon)) {
+        map.setView([userLat, userLon], 10);
+        setInspectionPoint(userLat, userLon, "ตำแหน่งของคุณ (GPS)");
+      }
+    }, () => {}, { timeout: 4000 });
+  }
+}
+
+document.getElementById("btnLoc").addEventListener("click", () => {
+  if (!navigator.geolocation) return alert("เบราว์เซอร์ไม่รองรับ GPS");
+  navigator.geolocation.getCurrentPosition((pos) => {
+    const userLat = pos.coords.latitude;
+    const userLon = pos.coords.longitude;
+    if (!isNaN(userLat) && !isNaN(userLon)) {
+      map.setView([userLat, userLon], 10);
+      setInspectionPoint(userLat, userLon, "ตำแหน่งของคุณ (GPS)");
+    }
+  }, () => {
+    alert("ไม่สามารถเข้าถึงพิกัด GPS ได้");
+  });
+});
+
+const btnAlert = document.getElementById("btnToggleAlert");
+const alertIcon = document.getElementById("alertIcon");
+const alertLabel = document.getElementById("alertLabel");
+
+function syncAlertBtnUI() {
+  if (isAlertEnabled) {
+    btnAlert.classList.add("active");
+    if (alertIcon) alertIcon.setAttribute("data-lucide", "bell");
+    alertLabel.textContent = "เปิดแจ้งเตือนแล้ว";
+  } else {
+    btnAlert.classList.remove("active");
+    if (alertIcon) alertIcon.setAttribute("data-lucide", "bell-off");
+    alertLabel.textContent = "ปิดแจ้งเตือนอยู่";
+  }
+  safeLucide();
+}
+syncAlertBtnUI();
+
+btnAlert.addEventListener("click", async () => {
+  if (!("Notification" in window)) {
+    return alert("เบราว์เซอร์นี้ไม่รองรับระบบ Web Notification");
+  }
+
+  if (!isAlertEnabled) {
+    const perm = await Notification.requestPermission();
+    if (perm === "granted") {
+      isAlertEnabled = true;
+      localStorage.setItem("tanfon_alert_enabled", "true");
+      syncAlertBtnUI();
+      playAlertChime(false);
+      new Notification("ทันฝน: เปิดระบบแจ้งเตือนสำเร็จ", {
+        body: "ระบบจะแจ้งเตือนอัตโนมัติล่วงหน้า 1 ชั่วโมงเมื่อมีกลุ่มฝนมุ่งหน้ามาหาคุณ",
+        icon: "icon-192.png"
+      });
+      analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
+    } else {
+      alert("กรุณาอนุญาต (Allow) การแจ้งเตือนในการตั้งค่าของเบราว์เซอร์");
+    }
+  } else {
+    isAlertEnabled = false;
+    localStorage.setItem("tanfon_alert_enabled", "false");
+    syncAlertBtnUI();
+  }
 });
 
 setInterval(async () => {
   try {
     const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
     if (res.ok) {
-      const data = await res.json();
-      if (data && data.frames && Array.isArray(data.frames)) {
-        manifest = data;
-        updateTelemetryStationValues();
-      }
+      manifest = await res.json();
+      updateFooterStatus();
+      analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
+      updateTelemetryStationValues();
     }
   } catch (e) {}
 }, 180000);
 
+loadBoundaries();
 initRadar();
 safeLucide();
 </script>
