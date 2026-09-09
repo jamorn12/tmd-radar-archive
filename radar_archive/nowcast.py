@@ -50,7 +50,7 @@ from .config import CONFIG_PATH, get_station
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 
-LEADS_MIN = (15, 30, 45, 60)     # ไม่เกิน 60 — extrapolation ไม่สร้างและไม่สลายก้อนฝน
+LEADS_MIN = (15, 30, 45, 60, 75, 90, 105, 120)    # ไม่เกิน 60 — extrapolation ไม่สร้างและไม่สลายก้อนฝน
 N_INPUT = 4                      # เฟรมย้อนหลังที่ใช้หา motion (3 คู่)
 SEARCH_PX = 14                   # ระยะค้น block matching (14 px @ 2 กม. = 112 กม./ชม.)
 DESPECKLE_JUMP = 12.0            # dBZ ที่สูงกว่าเพื่อนบ้านเกินนี้ = ไม่ใช่ฝน
