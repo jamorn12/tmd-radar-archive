@@ -1658,58 +1658,21 @@ function renderModalMeteogram() {
 }
 
 function analyzeImpactAtPoint(lat, lon) {
-  if (isNaN(lat) || isNaN(lon)) return;
   layerTrajectory.clearLayers();
   if (!manifest || !manifest.motion || frameImages.length === 0) return;
 
-  const lat0 = (manifest && radarStationLatLon) ? radarStationLatLon[0] : 16.770;
-  const lon0 = (manifest && radarStationLatLon) ? radarStationLatLon[1] : 100.220;
+  const motion = manifest.motion;
+  const spd = motion.speed_kmh || motion.kmh || 0;
+  const deg = motion.direction_deg !== undefined ? motion.direction_deg : (motion.bearing || 0);
+
+  const lat0 = radarStationLatLon[0] || 16.77;
+  const lon0 = radarStationLatLon[1] || 100.22;
   const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
   const [pinE, pinN] = project(lat, lon, lat0, lon0);
 
-  const localMotion = getLocalMotionAtPoint(pinE, pinN);
-  const spd = Math.max(localMotion.spd, 5.0); // ป้องกัน spd เป็น 0
-  const deg = localMotion.deg;
-
-  // วาดและเก็บภาพจากเฟรมทั้งหมดลง Canvas เพื่ออ่านพิกเซล
   const targetPx = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
   const targetPy = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
 
-  function sampleDbzAt(ctx, e, n) {
-    const px = Math.round(((e / halfKm) + 1) / 2 * (SCAN_RES - 1));
-    const py = Math.round((1 - (n / halfKm)) / 2 * (SCAN_RES - 1));
-    if (px < 0 || px >= SCAN_RES || py < 0 || py >= SCAN_RES) return 0;
-    
-    let maxD = 0;
-    // สุ่มรัศมีรอบข้าง 2 พิกเซล เพื่อกันตำแหน่งหลุดกริด
-    for (let dy = -2; dy <= 2; dy++) {
-      for (let dx = -2; dx <= 2; dx++) {
-        const nx = px + dx, ny = py + dy;
-        if (nx >= 0 && nx < SCAN_RES && ny >= 0 && ny < SCAN_RES) {
-          const idx = (ny * SCAN_RES + nx) * 4;
-          const d = rgbToDbz(ctx[idx], ctx[idx + 1], ctx[idx + 2], ctx[idx + 3]);
-          if (d > maxD) maxD = d;
-        }
-      }
-    }
-    return maxD;
-  }
-
-  // ดึง Canvas Data ของเฟรมปัจจุบัน (offset_min === 0)
-  const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
-  const baseIdx = nowIdx >= 0 ? nowIdx : 0;
-  const imgNow = frameImages[currentIndex] || frameImages[0];
-  
-  let curImgData = null;
-  if (imgNow && imgNow.complete && imgNow.naturalWidth > 0) {
-    scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
-    scanCtx.drawImage(imgNow, 0, 0, SCAN_RES, SCAN_RES);
-    try {
-      curImgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
-    } catch (e) {}
-  }
-
-  // คำนวณแนวโน้มฝน 105 นาที (Meteogram)
   const sampledDbzList = [];
   let peakDbz = 0;
   let accumulatedRainMm = 0;
@@ -1717,12 +1680,12 @@ function analyzeImpactAtPoint(lat, lon) {
   manifest.frames.forEach((frame, idx) => {
     const img = frameImages[idx];
     let dbz = 0;
-    if (img && img.complete && img.naturalWidth > 0) {
+    if (img && img.complete && img.naturalWidth > 0 && targetPx >= 0 && targetPx < SCAN_RES && targetPy >= 0 && targetPy < SCAN_RES) {
       scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
       scanCtx.drawImage(img, 0, 0, SCAN_RES, SCAN_RES);
       try {
-        const fData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
-        dbz = sampleDbzAt(fData, pinE, pinN);
+        const pData = scanCtx.getImageData(targetPx, targetPy, 1, 1).data;
+        dbz = rgbToDbz(pData[0], pData[1], pData[2], pData[3]);
       } catch (e) {}
     }
 
@@ -1739,9 +1702,42 @@ function analyzeImpactAtPoint(lat, lon) {
     renderModalMeteogram();
   }
 
-  // วิเคราะห์สถานะฝน ณ ปัจจุบัน
-  const currentDbzAtPoint = curImgData ? sampleDbzAt(curImgData, pinE, pinN) : 0;
-  const isRainingNow = currentDbzAtPoint >= 18;
+  const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
+  const baseIdx = nowIdx >= 0 ? nowIdx : 0;
+  const imgNow = frameImages[baseIdx];
+
+  scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
+  if (imgNow && imgNow.complete) scanCtx.drawImage(imgNow, 0, 0, SCAN_RES, SCAN_RES);
+
+  let imgData = null;
+  try {
+    imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
+  } catch (err) {}
+
+  function getPixelInfoAt(e, n) {
+    if (!imgData) return { hasRain: false, maxDbz: 0 };
+    const px = Math.round(((e / halfKm) + 1) / 2 * (SCAN_RES - 1));
+    const py = Math.round((1 - (n / halfKm)) / 2 * (SCAN_RES - 1));
+    if (px < 0 || px >= SCAN_RES || py < 0 || py >= SCAN_RES) return { hasRain: false, maxDbz: 0 };
+
+    let rainVotes = 0;
+    let localMaxDbz = 0;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const x = px + dx, y = py + dy;
+        if (x >= 0 && x < SCAN_RES && y >= 0 && y < SCAN_RES) {
+          const idx = (y * SCAN_RES + x) * 4;
+          const dbz = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
+          if (dbz > localMaxDbz) localMaxDbz = dbz;
+          if (dbz >= 18) rainVotes++;
+        }
+      }
+    }
+    return { hasRain: rainVotes >= 2, maxDbz: localMaxDbz };
+  }
+
+  const currentStatus = getPixelInfoAt(pinE, pinN);
+  const isRainingNow = currentStatus.hasRain;
 
   const badgeEl = document.getElementById("statusBadge");
   const hailBadge = document.getElementById("hailBadge");
@@ -1751,13 +1747,14 @@ function analyzeImpactAtPoint(lat, lon) {
   const valDur = document.getElementById("valDuration");
   const valRainAccum = document.getElementById("valRainAccum");
   const descEl = document.getElementById("acDesc");
+
   const pillIconEl = document.getElementById("pillWeatherIcon");
   const pillText = document.getElementById("acPillText");
 
   const nowTime = new Date();
   valRainAccum.textContent = accumulatedRainMm > 0 ? `~${accumulatedRainMm.toFixed(1)} มม.` : "0 มม.";
 
-  const isHailRisk = peakDbz >= 52 || currentDbzAtPoint >= 52;
+  const isHailRisk = peakDbz >= 52;
   hailBadge.style.display = isHailRisk ? "flex" : "none";
 
   if (isRainingNow) {
@@ -1770,50 +1767,47 @@ function analyzeImpactAtPoint(lat, lon) {
     headlineIconEl.innerHTML = createWeatherSvg(isHailRisk ? "hail" : "rain");
     pillIconEl.innerHTML = createWeatherSvg(isHailRisk ? "hail" : "rain");
 
-    // คำนวณระยะท้ายกลุ่มฝนเพื่อหาระยะเวลาตกคงเหลือ
-    const rad = deg * Math.PI / 180;
-    const stepE = -Math.sin(rad);
-    const stepN = -Math.cos(rad);
-    let dBack = 6;
-    if (curImgData) {
+    let dBack = 5;
+    if (spd >= 2) {
+      const rad = deg * Math.PI / 180;
+      const stepE = -Math.sin(rad);
+      const stepN = -Math.cos(rad);
       for (let d = 2; d <= 80; d += 2) {
-        if (sampleDbzAt(curImgData, pinE + stepE * d, pinN + stepN * d) < 15) {
+        if (!getPixelInfoAt(pinE + stepE * d, pinN + stepN * d).hasRain) {
           dBack = d;
           break;
         }
       }
     }
 
-    const remainingMin = Math.max(10, Math.round((dBack / spd) * 60));
+    const remainingMin = Math.max(10, Math.round((dBack / Math.max(spd, 12)) * 60));
     valEta.textContent = "กำลังตก";
     valDur.textContent = `~${remainingMin} นาที`;
-    descEl.textContent = `กลุ่มฝนครอบคลุมพื้นที่ (${currentDbzAtPoint.toFixed(0)} dBZ) คาดว่าจะตกแช่อีกประมาณ ${remainingMin} นาที ปริมาณฝนสะสมคาดการณ์ ${accumulatedRainMm.toFixed(1)} มม.`;
+    descEl.textContent = `กลุ่มฝนครอบคลุมพื้นที่ คาดว่าจะตกแช่อีกประมาณ ${remainingMin} นาที ปริมาณฝนสะสมคาดการณ์ ${accumulatedRainMm.toFixed(1)} มม.`;
 
     pillText.textContent = `ฝนตกอยู่ (อีก ~${remainingMin} น.)`;
     safeLucide();
     return;
   }
 
-  // ตรวจสอบการเคลื่อนตัวของกลุ่มฝนที่กำลังมุ่งหน้ามา (Scan Upwind)
   let hitDistFront = -1;
   let hitDistBack = -1;
   let incomingMaxDbz = 0;
 
-  if (curImgData && spd >= 2) {
+  if (spd >= 2) {
     const rad = deg * Math.PI / 180;
-    // สแกนย้อนแนวทางลม (Wind Origin)
     const upE = -Math.sin(rad);
     const upN = -Math.cos(rad);
-    const maxScanKm = Math.min(150, spd * 2.0); // ตรวจล่วงหน้าตามความเร็วลม
+    const maxScanKm = Math.min(160, spd * 2.5);
 
-    for (let d = 2; d <= maxScanKm; d += 1.5) {
+    for (let d = 3; d <= maxScanKm; d += 2) {
       const sampleE = pinE + upE * d;
       const sampleN = pinN + upN * d;
-      const dbzVal = sampleDbzAt(curImgData, sampleE, sampleN);
+      const info = getPixelInfoAt(sampleE, sampleN);
 
-      if (dbzVal >= 18) {
+      if (info.hasRain) {
         if (hitDistFront === -1) hitDistFront = d;
-        if (dbzVal > incomingMaxDbz) incomingMaxDbz = dbzVal;
+        if (info.maxDbz > incomingMaxDbz) incomingMaxDbz = info.maxDbz;
       } else {
         if (hitDistFront !== -1 && hitDistBack === -1) {
           hitDistBack = d;
@@ -1824,7 +1818,7 @@ function analyzeImpactAtPoint(lat, lon) {
   }
 
   if (hitDistFront > 0) {
-    if (hitDistBack === -1) hitDistBack = hitDistFront + 10;
+    if (hitDistBack === -1) hitDistBack = hitDistFront + 12;
 
     const etaMin = Math.max(2, Math.round((hitDistFront / spd) * 60));
     const etdMin = Math.round((hitDistBack / spd) * 60);
@@ -1839,7 +1833,7 @@ function analyzeImpactAtPoint(lat, lon) {
     badgeEl.className = "ac-status-badge badge-rain-incoming";
     badgeEl.textContent = `ฝนเข้าใน ${etaMin} นาที`;
     headlineEl.innerHTML = willHail
-      ? `ฝนจะเข้าใน <span class="time-highlight">${etaMin}</span> น. <span style="color: var(--purple); font-size:16px;">(ระวังลูกเห็บ)</span>`
+      ? `ฝนจะเข้าใน <span class="time-highlight">${etaMin}</span> น. <span style="color: var(--purple); font-size:16px;">(ระวังพายุ/ลูกเห็บ)</span>`
       : `ฝนจะเริ่มตกในอีก <span class="time-highlight">${etaMin}</span> นาที`;
 
     headlineIconEl.innerHTML = createWeatherSvg(willHail ? "hail" : "rain");
@@ -1847,34 +1841,30 @@ function analyzeImpactAtPoint(lat, lon) {
 
     valEta.textContent = startStr;
     valDur.textContent = `~${durationMin} นาที`;
-    descEl.innerHTML = `พบกลุ่มฝนความแรง <b>${incomingMaxDbz.toFixed(0)} dBZ</b> เคลื่อนที่ความเร็ว ${spd.toFixed(1)} กม./ชม. (ทิศ ${deg.toFixed(0)}°) คาดว่าจะเข้าถึงพื้นที่เวลา ${startStr}`;
+    descEl.innerHTML = `พบกลุ่มฝนความแรง <b>${incomingMaxDbz.toFixed(0)} dBZ</b> ความเร็ว ${spd.toFixed(1)} กม./ชม. กำลังมุ่งหน้ามายังตำแหน่งของคุณ`;
 
     pillText.textContent = `ฝนเข้าในอีก ${etaMin} นาที`;
 
-    // วาดเส้นแนววิถีการเคลื่อนตัวของกลุ่มฝนบนแผนที่
     const rad = deg * Math.PI / 180;
     const [cloudLat, cloudLon] = unproject(pinE - Math.sin(rad) * hitDistFront, pinN - Math.cos(rad) * hitDistFront, lat0, lon0);
-    
-    if (!isNaN(cloudLat) && !isNaN(cloudLon)) {
-      const style = THEME_STYLES[currentTheme];
-      const impactPolyline = L.polyline([[cloudLat, cloudLon], [lat, lon]], {
-        color: willHail ? "#C084FC" : style.impactLine,
-        weight: 2.5, dashArray: "5, 5", opacity: 0.9
-      }).addTo(layerTrajectory);
+    const style = THEME_STYLES[currentTheme];
 
-      impactPolyline.bindTooltip(`แนวฝน (ETA: ~${etaMin} น.)`, {
-        permanent: true, direction: "center", className: "map-label"
-      });
-    }
+    const impactPolyline = L.polyline([[cloudLat, cloudLon], [lat, lon]], {
+      color: willHail ? "#C084FC" : style.impactLine,
+      weight: 2.8, dashArray: "6, 6", opacity: 0.95
+    }).addTo(layerTrajectory);
 
-    if (etaMin <= 90) {
+    impactPolyline.bindTooltip(`${willHail ? 'เสี่ยงลูกเห็บ' : 'กลุ่มฝน'} (ETA: ~${etaMin} นาที)`, {
+      permanent: true, direction: "center", className: "map-label"
+    });
+
+    if (etaMin <= 120) {
       triggerRainNotification(etaMin, startStr, durationMin, willHail);
     }
     safeLucide();
     return;
   }
 
-  // ไม่พบกลุ่มฝน
   badgeEl.className = "ac-status-badge badge-clear";
   badgeEl.textContent = "ท้องฟ้าโปร่ง";
   headlineEl.innerHTML = `ไม่มีฝนใน 60 นาทีข้างหน้า`;
