@@ -1698,7 +1698,7 @@ function analyzeImpactAtPoint(lat, lon) {
   // ดึง Canvas Data ของเฟรมปัจจุบัน (offset_min === 0)
   const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
   const baseIdx = nowIdx >= 0 ? nowIdx : 0;
-  const imgNow = frameImages[baseIdx];
+  const imgNow = frameImages[currentIndex] || frameImages[0];
   
   let curImgData = null;
   if (imgNow && imgNow.complete && imgNow.naturalWidth > 0) {
