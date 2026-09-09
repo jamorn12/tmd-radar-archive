@@ -1169,16 +1169,15 @@ function unproject(E, Nn, lat0, lon0) {
 }
 
 function project(lat, lon, lat0, lon0) {
-  if (isNaN(lat) || isNaN(lon)) return [0, 0];
   const p = lat * Math.PI / 180, l = lon * Math.PI / 180;
   const p0 = lat0 * Math.PI / 180, l0 = lon0 * Math.PI / 180;
-  const cosC = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(l - l0);
+  // เพิ่ม * Math.cos(p) เข้าไปในพจน์ที่สองให้ครบถ้วนตามหลักตรีโกณมิติบนทรงกลม
+  const cosC = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(p) * Math.cos(l - l0);
   const c = Math.acos(Math.min(1, Math.max(-1, cosC)));
   if (c < 1e-9) return [0, 0];
   const k = c / Math.sin(c);
   const E = R_EARTH * k * Math.cos(p) * Math.sin(l - l0);
   const Nn = R_EARTH * k * (Math.cos(p0) * Math.sin(p) - Math.sin(p0) * Math.cos(p) * Math.cos(l - l0));
-  if (isNaN(E) || isNaN(Nn)) return [0, 0];
   return [E, Nn];
 }
 
