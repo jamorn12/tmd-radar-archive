@@ -776,7 +776,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
       <div class="mg-header">
         <div class="mg-header-left">
           <i data-lucide="bar-chart-2" class="icon-xs" style="color: var(--accent);"></i>
-          <span>แนวโน้มฝน 105 นาที (dBZ)</span>
+          <span>แนวโน้มฝน 165 นาที (dBZ)</span>
         </div>
         <div class="mg-header-right">
           <span id="mgPeakLabel">สูงสุด: — dBZ</span>
@@ -1534,7 +1534,7 @@ function renderMeteogram(sampledDbzList, peakDbz) {
   const totalSteps = sampledDbzList.length;
   const w = 280;
   const h = 50;
-  const barWidth = 20;
+  const barWidth = 14;
   const stepGap = w / totalSteps;
 
   let svgHtml = `
