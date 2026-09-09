@@ -2585,16 +2585,75 @@ btnAlert.addEventListener("click", async () => {
   }
 });
 
+// ฟังก์ชันสำหรับรีโหลดภาพเรดาร์เมื่อมีรอบข้อมูลใหม่เข้ามา
+async function reloadRadarData(newManifest) {
+  // 1. นำเลเยอร์ภาพเรดาร์เดิมออกจากแผนที่เพื่อไม่ให้ภาพซ้อนทับกัน
+  if (radarOverlays && radarOverlays.length > 0) {
+    radarOverlays.forEach(ov => map.removeLayer(ov));
+  }
+
+  manifest = newManifest;
+  radarOverlays = [];
+  frameImages = [];
+
+  const targetOpacity = document.getElementById("radarOpacity").value / 100;
+
+  // 2. โหลดภาพเรดาร์และสร้าง Image Overlay ชุดใหม่
+  manifest.frames.forEach((frame, idx) => {
+    const url = "nowcast/PHS/" + frame.url;
+    const overlay = L.imageOverlay(url, radarBounds, { opacity: 0, interactive: false }).addTo(map);
+    radarOverlays.push(overlay);
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = url;
+    img.onload = () => {
+      if (idx === currentIndex) {
+        renderCellVectors(idx);
+        analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
+        updateTelemetryStationValues();
+      }
+    };
+    frameImages.push(img);
+  });
+
+  // 3. ปรับค่า Slider สูงสุดให้ตรงกับจำนวนเฟรมใหม่
+  const slider = document.getElementById("tlSlider");
+  slider.max = manifest.frames.length - 1;
+
+  // 4. สลับไปแสดงผลที่เฟรมตรวจวัดจริงล่าสุด (offset 0)
+  const nowIdx = manifest.frames.findIndex(f => f.offset_min === 0);
+  showFrame(nowIdx >= 0 ? nowIdx : manifest.frames.length - 1);
+
+  // 5. คำนวณสถานะข้อความและวิเคราะห์พื้นที่ปักหมุดเดิม
+  updateFooterStatus();
+  analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
+  updateTelemetryStationValues();
+}
+
+// ระบบ Auto-polling ตรวจสอบข้อมูลใหม่ทุกๆ 3 นาที (180,000 ms)
 setInterval(async () => {
   try {
     const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
-    if (res.ok) {
-      manifest = await res.json();
+    if (!res.ok) return;
+    const newManifest = await res.json();
+
+    // ดึง Timestamp ของเฟรมปัจจุบันมาเปรียบเทียบ
+    const currentFrameTime = manifest?.frames?.find(f => f.offset_min === 0)?.t || manifest?.frames?.[0]?.t;
+    const newFrameTime = newManifest?.frames?.find(f => f.offset_min === 0)?.t || newManifest?.frames?.[0]?.t;
+
+    // ถ้ามีข้อมูลภาพชุดใหม่เข้ามา (Timestamp เปลี่ยน)
+    if (currentFrameTime !== newFrameTime) {
+      console.log("🔄 ตรวจพบภาพเรดาร์รอบใหม่ กำลังอัปเดตระบบ...");
+      await reloadRadarData(newManifest);
+    } else {
+      // ถ้าเวลายังเป็นรอบเดิม ให้อัปเดตเฉพาะข้อความอายุข้อมูล (เช่น "... นาทีที่แล้ว")
+      manifest = newManifest;
       updateFooterStatus();
-      analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
-      updateTelemetryStationValues();
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn("Auto-refresh skipped due to network/fetch error:", e);
+  }
 }, 180000);
 
 loadBoundaries();
