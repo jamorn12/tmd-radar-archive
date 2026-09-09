@@ -1079,7 +1079,7 @@ const THEME_STYLES = {
   }
 };
 
-let currentTheme = "dark";
+let currentTheme = "hillshade";
 
 const baseLayers = {
   dark: L.layerGroup([
@@ -1097,7 +1097,7 @@ const baseLayers = {
   ])
 };
 
-const map = L.map("map", { center: [16.77, 100.22], zoom: 8, zoomControl: false, layers: [baseLayers.dark] });
+const map = L.map("map", { center: [16.77, 100.22], zoom: 8, zoomControl: false, layers: [baseLayers.hillshade] });
 L.control.zoom({ position: "bottomright" }).addTo(map);
 
 map.createPane('maskPane');
