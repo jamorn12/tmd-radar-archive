@@ -1696,7 +1696,6 @@ function analyzeImpactAtPoint(lat, lon) {
     if (dbz > peakDbz) peakDbz = dbz;
     sampledDbzList.push({ offset: frame.offset_min, dbz: dbz });
 
-    // คำนวณฝนสะสมล่วงหน้า (เฉพาะเฟรมอนาคตที่มีฝน >= 15 dBZ)
     if (frame.offset_min >= 0 && dbz >= 15) {
       accumulatedRainMm += dbzToRainRate(dbz) * (15 / 60);
     }
@@ -1722,45 +1721,58 @@ function analyzeImpactAtPoint(lat, lon) {
   } catch (err) {}
 
   const currentDbz = sampledDbzList[baseIdx]?.dbz || 0;
-  const badge = document.getElementById("heroBadge");
-  const heroTitle = document.getElementById("heroTitle");
-  const heroSub = document.getElementById("heroSub");
-  const startEl = document.getElementById("kpiStart");
-  const durEl = document.getElementById("kpiDuration");
-  const rainEl = document.getElementById("kpiRain");
-  const hailBadge = document.getElementById("hailBadge");
-
-  // เกณฑ์พายุรุนแรง/ลูกเห็บใหม่: >= 50 dBZ
+  const isRainingNow = currentDbz >= 15;
   const isHailRisk = peakDbz >= 50;
-  if (hailBadge) hailBadge.style.display = isHailRisk ? "flex" : "none";
 
-  // กรณีที่ 1: ขณะนี้มีฝนตก ณ จุดที่เลือก
-  if (currentDbz >= 15) {
-    badge.className = "status-badge rain";
-    badge.innerHTML = isHailRisk ? "⚠️ เสี่ยงลูกเห็บ/ลมแรง" : "ฝนกำลังตก";
-    heroTitle.textContent = "ขณะนี้มีกลุ่มฝนในพื้นที่";
-    startEl.textContent = "กำลังตก";
+  const badgeEl = document.getElementById("statusBadge");
+  const hailBadge = document.getElementById("hailBadge");
+  const headlineEl = document.getElementById("acHeadline");
+  const headlineIconEl = document.getElementById("headlineWeatherIcon");
+  const valEta = document.getElementById("valEta");
+  const valDur = document.getElementById("valDuration");
+  const valRainAccum = document.getElementById("valRainAccum");
+  const descEl = document.getElementById("acDesc");
+  const pillIconEl = document.getElementById("pillWeatherIcon");
+  const pillText = document.getElementById("acPillText");
+
+  if (hailBadge) hailBadge.style.display = isHailRisk ? "flex" : "none";
+  if (valRainAccum) valRainAccum.textContent = accumulatedRainMm > 0 ? `~${accumulatedRainMm.toFixed(1)} มม.` : "0 มม.";
+
+  // กรณีที่ 1: กำลังมีฝนตก ณ จุดที่เลือก
+  if (isRainingNow) {
+    if (badgeEl) {
+      badgeEl.className = "ac-status-badge badge-raining";
+      badgeEl.textContent = "ฝนกำลังตก";
+    }
+    if (headlineEl) {
+      headlineEl.innerHTML = isHailRisk 
+        ? `ฝนตกหนักมาก <span style="color: var(--purple); font-size:16px;">(เสี่ยงลูกเห็บ)</span>` 
+        : `ขณะนี้มีกลุ่มฝนในพื้นที่`;
+    }
+    if (headlineIconEl) headlineIconEl.innerHTML = createWeatherSvg(isHailRisk ? "hail" : "rain");
+    if (pillIconEl) pillIconEl.innerHTML = createWeatherSvg(isHailRisk ? "hail" : "rain");
 
     let durationMin = 0;
     for (let i = baseIdx; i < sampledDbzList.length; i++) {
       if (sampledDbzList[i].dbz >= 15) durationMin += 15;
       else break;
     }
-    durEl.textContent = `~${durationMin || 15} นาที`;
-    rainEl.textContent = `~${accumulatedRainMm.toFixed(1)} มม.`;
-    heroSub.textContent = `กลุ่มฝนครอบคลุมพื้นที่ คาดว่าจะตกแช่อีกประมาณ ${durationMin || 15} นาที ปริมาณฝนสะสมคาดการณ์ ${accumulatedRainMm.toFixed(1)} มม.`;
+    if (valEta) valEta.textContent = "กำลังตก";
+    if (valDur) valDur.textContent = `~${durationMin || 15} นาที`;
+    if (descEl) descEl.textContent = `กลุ่มฝนครอบคลุมพื้นที่ คาดว่าจะตกแช่อีกประมาณ ${durationMin || 15} นาที ปริมาณฝนสะสมคาดการณ์ ${accumulatedRainMm.toFixed(1)} มม.`;
+    if (pillText) pillText.textContent = `ฝนตกอยู่ (อีก ~${durationMin || 15} น.)`;
+
+    safeLucide();
     return;
   }
 
-  // กรณีที่ 2: ขณะนี้ยังไม่มีฝน ให้ลากเวกเตอร์ตรวจหาต้นลมย้อนหลัง (Upwind Trajectory Search)
+  // กรณีที่ 2: ยังไม่มีฝน ให้ลากเวกเตอร์ตรวจหาต้นลมย้อนหลัง (Upwind Search)
   let incomingMin = -1;
   let incomingMaxDbz = 0;
   let trajectoryCoords = [];
 
   if (spd > 3 && imgData) {
     const oppRad = ((deg + 180) % 360) * Math.PI / 180;
-    const stepKm = (spd * 1000 / 3600) * 60; // ระยะทางที่เมฆเดินทางใน 1 นาที (เมตร)
-
     for (let m = 3; m <= 60; m += 3) {
       const distM = (spd * 1000 / 3600) * (m * 60);
       const testE = pinE + distM * Math.sin(oppRad);
@@ -1773,7 +1785,6 @@ function analyzeImpactAtPoint(lat, lon) {
         const idx = (py * SCAN_RES + px) * 4;
         const d = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
         
-        // จุดเริ่มนับว่าเป็นฝนคือ >= 15 dBZ
         if (d >= 15 && incomingMin === -1) {
           incomingMin = m;
           incomingMaxDbz = d;
@@ -1786,209 +1797,64 @@ function analyzeImpactAtPoint(lat, lon) {
     }
   }
 
-  // วาดเส้นแนวพายุ/กลุ่มฝนที่กำลังลอยเข้าหา
   if (trajectoryCoords.length > 0 && incomingMin !== -1) {
     const trajColor = incomingMaxDbz >= 50 ? "#C084FC" : (incomingMaxDbz >= 38 ? "#F59E0B" : "var(--accent)");
     L.polyline([[lat, lon], ...trajectoryCoords], {
       color: trajColor,
-      weight: 2,
+      weight: 2.2,
       dashArray: "4, 6",
-      opacity: 0.8
+      opacity: 0.85
     }).addTo(layerTrajectory);
   }
 
-  // อัปเดตการแสดงผลแจ้งเตือน
   if (incomingMin !== -1) {
     const willHail = incomingMaxDbz >= 50 || peakDbz >= 50;
     if (hailBadge) hailBadge.style.display = willHail ? "flex" : "none";
 
-    badge.className = "status-badge rain";
-    badge.innerHTML = willHail ? "⚠️ เสี่ยงลูกเห็บ" : "ฝนใกล้เข้ามา";
-    heroTitle.textContent = `ฝนจะเริ่มตกในอีก ~${incomingMin} นาที`;
-    startEl.textContent = `อีก ${incomingMin} น.`;
-    
-    // ประเมินระยะเวลาที่ตกต่อเนื่อง
+    if (badgeEl) {
+      badgeEl.className = "ac-status-badge badge-rain-incoming";
+      badgeEl.textContent = `ฝนเข้าใน ${incomingMin} นาที`;
+    }
+    if (headlineEl) {
+      headlineEl.innerHTML = willHail
+        ? `ฝนจะเข้าใน <span class="time-highlight">${incomingMin}</span> น. <span style="color: var(--purple); font-size:16px;">(ระวังพายุ/ลูกเห็บ)</span>`
+        : `ฝนจะเริ่มตกในอีก <span class="time-highlight">${incomingMin}</span> นาที`;
+    }
+    if (headlineIconEl) headlineIconEl.innerHTML = createWeatherSvg(willHail ? "hail" : "rain");
+    if (pillIconEl) pillIconEl.innerHTML = createWeatherSvg(willHail ? "hail" : "rain");
+
+    const nowTime = new Date();
+    const startDate = new Date(nowTime.getTime() + incomingMin * 60000);
+    const startStr = `${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')} น.`;
+
     let durEst = 15;
     sampledDbzList.forEach(item => {
       if (item.offset > 0 && item.dbz >= 15) durEst += 15;
     });
-    durEl.textContent = `~${durEst} นาที`;
-    rainEl.textContent = accumulatedRainMm > 0 ? `~${accumulatedRainMm.toFixed(1)} มม.` : `~${dbzToRainRate(incomingMaxDbz).toFixed(1)} มม./ชม.`;
-    heroSub.textContent = `ตรวจพบกลุ่มฝนความแรงสูงสุด ${incomingMaxDbz.toFixed(0)} dBZ กำลังเคลื่อนตัวเข้าหาจุดนี้ด้วยความเร็ว ${spd.toFixed(0)} กม./ชม.`;
+
+    if (valEta) valEta.textContent = startStr;
+    if (valDur) valDur.textContent = `~${durEst} นาที`;
+    if (descEl) descEl.innerHTML = `ตรวจพบกลุ่มฝนความแรงสูงสุด <b>${incomingMaxDbz.toFixed(0)} dBZ</b> ความเร็ว ${spd.toFixed(1)} กม./ชม. กำลังมุ่งหน้ามายังจุดนี้`;
+    if (pillText) pillText.textContent = `ฝนเข้าในอีก ${incomingMin} นาที`;
+
+    if (incomingMin <= 60) {
+      triggerRainNotification(incomingMin, startStr, durEst, willHail);
+    }
   } else {
-    // ปลอดฝน
-    badge.className = "status-badge clear";
-    badge.textContent = "ท้องฟ้าโปร่ง";
-    heroTitle.textContent = "ไม่มีฝนใน 60 นาทีข้างหน้า";
-    startEl.textContent = "ไม่มี";
-    durEl.textContent = "0 นาที";
-    rainEl.textContent = "0 มม.";
-    heroSub.textContent = "จากการวิเคราะห์แนวพัดลมและโมเดล Nowcast ไม่พบเซลล์ฝนที่กำลังเคลื่อนตัวเข้าหาจุดนี้ใน 1 ชั่วโมงข้างหน้า";
-  }
-}
-
-  function getPixelInfoAt(e, n) {
-    if (!imgData) return { hasRain: false, maxDbz: 0 };
-    const px = Math.round(((e / halfKm) + 1) / 2 * (SCAN_RES - 1));
-    const py = Math.round((1 - (n / halfKm)) / 2 * (SCAN_RES - 1));
-    if (px < 0 || px >= SCAN_RES || py < 0 || py >= SCAN_RES) return { hasRain: false, maxDbz: 0 };
-
-    let rainVotes = 0;
-    let localMaxDbz = 0;
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        const x = px + dx, y = py + dy;
-        if (x >= 0 && x < SCAN_RES && y >= 0 && y < SCAN_RES) {
-          const idx = (y * SCAN_RES + x) * 4;
-          const dbz = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
-          if (dbz > localMaxDbz) localMaxDbz = dbz;
-          if (dbz >= 18) rainVotes++;
-        }
-      }
+    if (badgeEl) {
+      badgeEl.className = "ac-status-badge badge-clear";
+      badgeEl.textContent = "ท้องฟ้าโปร่ง";
     }
-    return { hasRain: rainVotes >= 2, maxDbz: localMaxDbz };
+    if (headlineEl) headlineEl.innerHTML = `ไม่มีฝนใน 60 นาทีข้างหน้า`;
+    if (headlineIconEl) headlineIconEl.innerHTML = createWeatherSvg("clear");
+    if (pillIconEl) pillIconEl.innerHTML = createWeatherSvg("clear");
+
+    if (valEta) valEta.textContent = "ไม่มี";
+    if (valDur) valDur.textContent = "0 นาที";
+    if (descEl) descEl.textContent = `จากการวิเคราะห์แนวพัดลมและโมเดล Nowcast ไม่พบเซลล์ฝนที่กำลังเคลื่อนตัวเข้าหาจุดนี้ใน 1 ชั่วโมงข้างหน้า`;
+    if (pillText) pillText.textContent = "ไม่มีฝนใน 60 นาที";
   }
 
-  const currentStatus = getPixelInfoAt(pinE, pinN);
-  const isRainingNow = currentStatus.hasRain;
-
-  const badgeEl = document.getElementById("statusBadge");
-  const hailBadge = document.getElementById("hailBadge");
-  const headlineEl = document.getElementById("acHeadline");
-  const headlineIconEl = document.getElementById("headlineWeatherIcon");
-  const valEta = document.getElementById("valEta");
-  const valDur = document.getElementById("valDuration");
-  const valRainAccum = document.getElementById("valRainAccum");
-  const descEl = document.getElementById("acDesc");
-
-  const pillIconEl = document.getElementById("pillWeatherIcon");
-  const pillText = document.getElementById("acPillText");
-
-  const nowTime = new Date();
-  valRainAccum.textContent = accumulatedRainMm > 0 ? `~${accumulatedRainMm.toFixed(1)} มม.` : "0 มม.";
-
-  const isHailRisk = peakDbz >= 52;
-  hailBadge.style.display = isHailRisk ? "flex" : "none";
-
-  if (isRainingNow) {
-    badgeEl.className = "ac-status-badge badge-raining";
-    badgeEl.textContent = "ฝนกำลังตก";
-    headlineEl.innerHTML = isHailRisk 
-      ? `ฝนตกหนักมาก <span style="color: var(--purple); font-size:16px;">(เสี่ยงลูกเห็บ)</span>` 
-      : `ขณะนี้มีกลุ่มฝนในพื้นที่`;
-
-    headlineIconEl.innerHTML = createWeatherSvg(isHailRisk ? "hail" : "rain");
-    pillIconEl.innerHTML = createWeatherSvg(isHailRisk ? "hail" : "rain");
-
-    let dBack = 5;
-    if (spd >= 2) {
-      const rad = deg * Math.PI / 180;
-      const stepE = -Math.sin(rad);
-      const stepN = -Math.cos(rad);
-      for (let d = 2; d <= 80; d += 2) {
-        if (!getPixelInfoAt(pinE + stepE * d, pinN + stepN * d).hasRain) {
-          dBack = d;
-          break;
-        }
-      }
-    }
-
-    const remainingMin = Math.max(10, Math.round((dBack / Math.max(spd, 12)) * 60));
-    valEta.textContent = "กำลังตก";
-    valDur.textContent = `~${remainingMin} นาที`;
-    descEl.textContent = `กลุ่มฝนครอบคลุมพื้นที่ คาดว่าจะตกแช่อีกประมาณ ${remainingMin} นาที ปริมาณฝนสะสมคาดการณ์ ${accumulatedRainMm.toFixed(1)} มม.`;
-
-    pillText.textContent = `ฝนตกอยู่ (อีก ~${remainingMin} น.)`;
-    safeLucide();
-    return;
-  }
-
-  let hitDistFront = -1;
-  let hitDistBack = -1;
-  let incomingMaxDbz = 0;
-
-  if (spd >= 2) {
-    const rad = deg * Math.PI / 180;
-    const upE = -Math.sin(rad);
-    const upN = -Math.cos(rad);
-    const maxScanKm = Math.min(160, spd * 2.5);
-
-    for (let d = 3; d <= maxScanKm; d += 2) {
-      const sampleE = pinE + upE * d;
-      const sampleN = pinN + upN * d;
-      const info = getPixelInfoAt(sampleE, sampleN);
-
-      if (info.hasRain) {
-        if (hitDistFront === -1) hitDistFront = d;
-        if (info.maxDbz > incomingMaxDbz) incomingMaxDbz = info.maxDbz;
-      } else {
-        if (hitDistFront !== -1 && hitDistBack === -1) {
-          hitDistBack = d;
-          break;
-        }
-      }
-    }
-  }
-
-  if (hitDistFront > 0) {
-    if (hitDistBack === -1) hitDistBack = hitDistFront + 12;
-
-    const etaMin = Math.max(2, Math.round((hitDistFront / spd) * 60));
-    const etdMin = Math.round((hitDistBack / spd) * 60);
-    const durationMin = Math.max(10, etdMin - etaMin);
-
-    const startDate = new Date(nowTime.getTime() + etaMin * 60000);
-    const startStr = `${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')} น.`;
-
-    const willHail = incomingMaxDbz >= 52 || peakDbz >= 52;
-    if (willHail) hailBadge.style.display = "flex";
-
-    badgeEl.className = "ac-status-badge badge-rain-incoming";
-    badgeEl.textContent = `ฝนเข้าใน ${etaMin} นาที`;
-    headlineEl.innerHTML = willHail
-      ? `ฝนจะเข้าใน <span class="time-highlight">${etaMin}</span> น. <span style="color: var(--purple); font-size:16px;">(ระวังพายุ/ลูกเห็บ)</span>`
-      : `ฝนจะเริ่มตกในอีก <span class="time-highlight">${etaMin}</span> นาที`;
-
-    headlineIconEl.innerHTML = createWeatherSvg(willHail ? "hail" : "rain");
-    pillIconEl.innerHTML = createWeatherSvg(willHail ? "hail" : "rain");
-
-    valEta.textContent = startStr;
-    valDur.textContent = `~${durationMin} นาที`;
-    descEl.innerHTML = `พบกลุ่มฝนความแรง <b>${incomingMaxDbz.toFixed(0)} dBZ</b> ความเร็ว ${spd.toFixed(1)} กม./ชม. กำลังมุ่งหน้ามายังตำแหน่งของคุณ`;
-
-    pillText.textContent = `ฝนเข้าในอีก ${etaMin} นาที`;
-
-    const rad = deg * Math.PI / 180;
-    const [cloudLat, cloudLon] = unproject(pinE - Math.sin(rad) * hitDistFront, pinN - Math.cos(rad) * hitDistFront, lat0, lon0);
-    const style = THEME_STYLES[currentTheme];
-
-    const impactPolyline = L.polyline([[cloudLat, cloudLon], [lat, lon]], {
-      color: willHail ? "#C084FC" : style.impactLine,
-      weight: 2.8, dashArray: "6, 6", opacity: 0.95
-    }).addTo(layerTrajectory);
-
-    impactPolyline.bindTooltip(`${willHail ? 'เสี่ยงลูกเห็บ' : 'กลุ่มฝน'} (ETA: ~${etaMin} นาที)`, {
-      permanent: true, direction: "center", className: "map-label"
-    });
-
-    if (etaMin <= 120) {
-      triggerRainNotification(etaMin, startStr, durationMin, willHail);
-    }
-    safeLucide();
-    return;
-  }
-
-  badgeEl.className = "ac-status-badge badge-clear";
-  badgeEl.textContent = "ท้องฟ้าโปร่ง";
-  headlineEl.innerHTML = `ไม่มีฝนใน 60 นาทีข้างหน้า`;
-  headlineIconEl.innerHTML = createWeatherSvg("clear");
-  pillIconEl.innerHTML = createWeatherSvg("clear");
-
-  valEta.textContent = "ไม่มี";
-  valDur.textContent = "0 นาที";
-  descEl.textContent = `จากการวิเคราะห์แนวพัดลมและโมเดล Nowcast ไม่พบเซลล์ฝนที่กำลังเคลื่อนตัวเข้าหาจุดนี้ใน 1 ชั่วโมงข้างหน้า`;
-
-  pillText.textContent = "ไม่มีฝนใน 60 นาที";
   safeLucide();
 }
 
