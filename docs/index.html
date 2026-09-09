@@ -1662,8 +1662,8 @@ function analyzeImpactAtPoint(lat, lon) {
   layerTrajectory.clearLayers();
   if (!manifest || !manifest.motion || frameImages.length === 0) return;
 
-  const lat0 = radarStationLatLon[0];
-  const lon0 = radarStationLatLon[1];
+  const lat0 = (manifest && radarStationLatLon) ? radarStationLatLon[0] : 16.770;
+  const lon0 = (manifest && radarStationLatLon) ? radarStationLatLon[1] : 100.220;
   const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
   const [pinE, pinN] = project(lat, lon, lat0, lon0);
 
