@@ -11,8 +11,8 @@ on:
         options: [fetch, repair]
         default: fetch
       repeat:
-        description: 'วนเช็กกี่รอบใน job เดียว (เฉพาะโหมด fetch)'
-        default: '4'
+        description: 'วนเช็กกี่รอบใน job เดียว (เฉพาะรันมือถือ/manual)'
+        default: '1'
 
 permissions:
   contents: write
@@ -21,7 +21,7 @@ jobs:
   fetch-and-archive:
     runs-on: ubuntu-latest
     if: vars.PIPELINE_ENABLED != 'false' || github.event.inputs.mode == 'repair'
-    timeout-minutes: 14
+    timeout-minutes: 10
     concurrency:
       group: radar-archive
       cancel-in-progress: false
@@ -30,15 +30,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1 # ดึงเฉพาะ commit ล่าสุด ประหยัดเวลาดาวน์โหลด
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip" # บรรทัดนี้จะจำแพ็กเกจไว้ รันรอบหน้าจะดึงแคชมาใช้ทันทีใน 5 วินาที
+          cache: "pip"
 
-      # แคชไฟล์ติดตั้งของ tesseract-ocr ไม่ต้องดาวน์โหลดใหม่ทุกรอบ
       - name: Cache APT Packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -49,12 +48,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      # โหมดอัตโนมัติจะสั่ง fetch 1 รอบแล้วไปทำ Nowcast ทันที ไม่ต้อง sleep แช่ 9 นาที
       - name: Fetch and Process Radar Frame
         if: ${{ github.event.inputs.mode != 'repair' }}
         run: |
           python -m radar_archive.cli --station PHS fetch \
-            --repeat "${{ github.event.inputs.repeat || 4 }}" \
-            --interval 180 \
+            --repeat "${{ github.event.inputs.repeat || 1 }}" \
+            --interval 15 \
             --outputs alpha,solid \
             --background 0,0,0
 
@@ -63,8 +64,6 @@ jobs:
         run: |
           python -m radar_archive.cli --station PHS repair --apply
 
-      # nowcast ล้มไม่ควรทำให้การเก็บคลังล้มตาม — คลังคือของที่กู้คืนไม่ได้
-      # ส่วน nowcast รอบหน้า (อีก 15 นาที) คำนวณใหม่ได้อยู่แล้ว
       - name: Nowcast (extrapolation, 60 min)
         if: ${{ github.event.inputs.mode != 'repair' }}
         continue-on-error: true
