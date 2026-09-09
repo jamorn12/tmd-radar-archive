@@ -1680,7 +1680,7 @@ function analyzeImpactAtPoint(lat, lon) {
   let peakDbz = 0;
   let accumulatedRainMm = 0;
 
-  // 1. สแกนอ่านค่าทุกเฟรมตามพิกัดหมุด (-45 ถึง +60 นาที)
+  // 1. สแกนอ่านค่าทุกเฟรมตามพิกัดหมุด (-45 ถึง +120 นาที)
   manifest.frames.forEach((frame, idx) => {
     const img = frameImages[idx];
     let dbz = 0;
@@ -1701,7 +1701,7 @@ function analyzeImpactAtPoint(lat, lon) {
     }
   });
 
-  // 2. เรนเดอร์กราฟ Meteogram 105 นาที
+  // 2. เรนเดอร์กราฟ Meteogram
   renderMeteogram(sampledDbzList, peakDbz);
   if (document.getElementById("mgModal").classList.contains("open")) {
     renderModalMeteogram();
@@ -1766,14 +1766,15 @@ function analyzeImpactAtPoint(lat, lon) {
     return;
   }
 
-  // กรณีที่ 2: ยังไม่มีฝน ให้ลากเวกเตอร์ตรวจหาต้นลมย้อนหลัง (Upwind Search)
+  // กรณีที่ 2: ยังไม่มีฝน ตรวจหาต้นลมย้อนหลังล่วงหน้า 120 นาที (Upwind Search)
   let incomingMin = -1;
   let incomingMaxDbz = 0;
   let trajectoryCoords = [];
 
   if (spd > 3 && imgData) {
     const oppRad = ((deg + 180) % 360) * Math.PI / 180;
-    for (let m = 3; m <= 60; m += 3) {
+    // ขยายลูปจาก 60 เป็น 120 นาที
+    for (let m = 3; m <= 120; m += 3) {
       const distM = (spd * 1000 / 3600) * (m * 60);
       const testE = pinE + distM * Math.sin(oppRad);
       const testN = pinN + distM * Math.cos(oppRad);
@@ -1837,7 +1838,8 @@ function analyzeImpactAtPoint(lat, lon) {
     if (descEl) descEl.innerHTML = `ตรวจพบกลุ่มฝนความแรงสูงสุด <b>${incomingMaxDbz.toFixed(0)} dBZ</b> ความเร็ว ${spd.toFixed(1)} กม./ชม. กำลังมุ่งหน้ามายังจุดนี้`;
     if (pillText) pillText.textContent = `ฝนเข้าในอีก ${incomingMin} นาที`;
 
-    if (incomingMin <= 60) {
+    // ขยายเงื่อนไขแจ้งเตือนเป็นภายใน 120 นาที
+    if (incomingMin <= 120) {
       triggerRainNotification(incomingMin, startStr, durEst, willHail);
     }
   } else {
@@ -1845,14 +1847,15 @@ function analyzeImpactAtPoint(lat, lon) {
       badgeEl.className = "ac-status-badge badge-clear";
       badgeEl.textContent = "ท้องฟ้าโปร่ง";
     }
-    if (headlineEl) headlineEl.innerHTML = `ไม่มีฝนใน 60 นาทีข้างหน้า`;
+    // ปรับเป็น 2 ชั่วโมง (120 นาที)
+    if (headlineEl) headlineEl.innerHTML = `ไม่มีฝนใน 2 ชั่วโมงข้างหน้า`;
     if (headlineIconEl) headlineIconEl.innerHTML = createWeatherSvg("clear");
     if (pillIconEl) pillIconEl.innerHTML = createWeatherSvg("clear");
 
     if (valEta) valEta.textContent = "ไม่มี";
     if (valDur) valDur.textContent = "0 นาที";
-    if (descEl) descEl.textContent = `จากการวิเคราะห์แนวพัดลมและโมเดล Nowcast ไม่พบเซลล์ฝนที่กำลังเคลื่อนตัวเข้าหาจุดนี้ใน 1 ชั่วโมงข้างหน้า`;
-    if (pillText) pillText.textContent = "ไม่มีฝนใน 60 นาที";
+    if (descEl) descEl.textContent = `จากการวิเคราะห์แนวพัดลมและโมเดล Nowcast ไม่พบเซลล์ฝนที่กำลังเคลื่อนตัวเข้าหาจุดนี้ใน 2 ชั่วโมงข้างหน้า`;
+    if (pillText) pillText.textContent = "ไม่มีฝนใน 2 ชม.";
   }
 
   safeLucide();
