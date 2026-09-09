@@ -824,17 +824,22 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 </div>
 
 <!-- Impacted Areas UI Card (Spatial Impact Analysis) - Positioned above Legend without overlap -->
+<!-- Impacted Areas UI Card (Spatial Impact Analysis) -->
 <div class="impact-card glass" id="impactCard">
   <div class="ic-head">
-    <span>จังหวัดที่ได้รับผลกระทบ</span>
+    <div class="ic-tabs">
+      <button class="ic-tab-btn active" data-level="prov">จังหวัด</button>
+      <button class="ic-tab-btn" data-level="amp">อำเภอ</button>
+      <button class="ic-tab-btn" data-level="tam">ตำบล</button>
+    </div>
     <span class="ic-unit">มม./3 ชม.</span>
   </div>
   <div class="rain-scale-bar"></div>
   <div class="rain-scale-labels">
-    <span>1–10</span>
-    <span>10–20</span>
-    <span>20–35</span>
-    <span>35–60+</span>
+    <span>0.5–5</span>
+    <span>5–15</span>
+    <span>15–30</span>
+    <span>30+</span>
   </div>
   <div class="ic-list" id="impactedListContainer">
     <div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 6px;">กำลังวิเคราะห์พื้นที่เสี่ยง...</div>
@@ -969,6 +974,9 @@ const TELEMETRY_STATIONS = [
 
 const geocodeCache = new Map();
 let loadedProvinceFeatures = [];
+let loadedAmphoeFeatures = [];
+let loadedTambonFeatures = [];
+let currentImpactLevel = "prov";
 
 async function getReverseGeocode(lat, lon) {
   if (isNaN(lat) || isNaN(lon)) return "";
@@ -1449,7 +1457,7 @@ function renderTelemetryPanelList() {
 
 function updateImpactedProvinces() {
   const container = document.getElementById("impactedListContainer");
-  if (!container || loadedProvinceFeatures.length === 0 || frameImages.length === 0) return;
+  if (!container || frameImages.length === 0) return;
 
   const img = frameImages[currentIndex];
   if (!img || !img.complete || img.naturalWidth === 0) return;
@@ -1464,18 +1472,35 @@ function updateImpactedProvinces() {
   const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
   const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
 
-  let impactedHtml = "";
-  let count = 0;
+  // เลือกลิสต์ข้อมูลตามแท็บที่กดเลือก (จังหวัด / อำเภอ / ตำบล)
+  let targetFeatures = loadedProvinceFeatures;
+  let prefix = "จ.";
+  if (currentImpactLevel === "amp") {
+    targetFeatures = loadedAmphoeFeatures;
+    prefix = "อ.";
+  } else if (currentImpactLevel === "tam") {
+    targetFeatures = loadedTambonFeatures;
+    prefix = "ต.";
+  }
 
-  loadedProvinceFeatures.forEach(feat => {
+  if (!targetFeatures || targetFeatures.length === 0) {
+    container.innerHTML = `<div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 6px;">กำลังโหลดฐานข้อมูลพื้นที่...</div>`;
+    return;
+  }
+
+  const impactedList = [];
+
+  targetFeatures.forEach(feat => {
     const props = feat.properties || {};
-    const provName = props.name || props.pro_en || props.pro_th || "พื้นที่";
-    
-    try {
-      const centroid = turf.centroid(feat);
-      const coords = centroid.geometry.coordinates; // [lon, lat]
-      const pLat = coords[1], pLon = coords[0];
+    const name = props.name || props.dname || props.tname || props.pro_th || props.amp_th || props.tam_th || "";
+    if (!name) return;
 
+    try {
+      if (!feat._centroidCoord) {
+        const c = turf.centroid(feat);
+        feat._centroidCoord = [c.geometry.coordinates[1], c.geometry.coordinates[0]];
+      }
+      const [pLat, pLon] = feat._centroidCoord;
       if (isNaN(pLat) || isNaN(pLon)) return;
 
       const [pinE, pinN] = project(pLat, pLon, lat0, lon0);
@@ -1484,8 +1509,8 @@ function updateImpactedProvinces() {
 
       let maxDbz = 0;
       if (imgData && px >= 0 && px < SCAN_RES && py >= 0 && py < SCAN_RES) {
-        for (let dy = -3; dy <= 3; dy++) {
-          for (let dx = -3; dx <= 3; dx++) {
+        for (let dy = -2; dy <= 2; dy++) {
+          for (let dx = -2; dx <= 2; dx++) {
             const nx = px + dx, ny = py + dy;
             if (nx >= 0 && nx < SCAN_RES && ny >= 0 && ny < SCAN_RES) {
               const idx = (ny * SCAN_RES + nx) * 4;
@@ -1496,33 +1521,57 @@ function updateImpactedProvinces() {
         }
       }
 
-      if (maxDbz >= 18) {
+      // เกณฑ์ฝนตกสะสมรอบ 3 ชม. มาตรฐาน TMD (เริ่มที่ 15 dBZ / 0.5 มม.)
+      if (maxDbz >= 15) {
         const rain3h = dbzToRainRate(maxDbz) * 3;
-        if (rain3h >= 1) {
-          count++;
-          let borderColor = "#1E3A8A";
-          if (rain3h >= 35) borderColor = "#7DD3FC";
-          else if (rain3h >= 20) borderColor = "#38BDF8";
-          else if (rain3h >= 10) borderColor = "#0284C7";
-
-          impactedHtml += `
-            <div class="ic-item" style="border-left-color: ${borderColor};">
-              <span class="ic-prov-name">จ.${provName}</span>
-              <span class="ic-rain-val">${rain3h.toFixed(1)} มม.</span>
-            </div>
-          `;
+        if (rain3h >= 0.5) {
+          impactedList.push({
+            name: `${prefix}${name}`,
+            rain3h: rain3h,
+            lat: pLat,
+            lon: pLon
+          });
         }
       }
     } catch (err) {}
   });
 
-  if (count === 0) {
+  // เรียงลำดับฝนตกหนักสุดขึ้นก่อน ตัดมาแสดง 15 อันดับ
+  impactedList.sort((a, b) => b.rain3h - a.rain3h);
+  const displayItems = impactedList.slice(0, 15);
+
+  if (displayItems.length === 0) {
     container.innerHTML = `<div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 6px;">ไม่พบกลุ่มฝนกระทบพื้นที่ในรอบนี้</div>`;
-  } else {
-    container.innerHTML = impactedHtml;
+    return;
   }
+
+  let impactedHtml = "";
+  displayItems.forEach(item => {
+    let borderColor = "#00ECEC";
+    if (item.rain3h >= 30) borderColor = "#EF4444";       // หนักมาก
+    else if (item.rain3h >= 15) borderColor = "#F59E0B";  // หนัก
+    else if (item.rain3h >= 5) borderColor = "#10B981";   // ปานกลาง
+
+    impactedHtml += `
+      <div class="ic-item" style="border-left-color: ${borderColor};" onclick="setInspectionPoint(${item.lat}, ${item.lon}, '${item.name}'); map.flyTo([${item.lat}, ${item.lon}], 11, { duration: 1.0 });" title="คลิกเพื่อตรวจวัดจุดนี้">
+        <span class="ic-prov-name">${item.name}</span>
+        <span class="ic-rain-val">${item.rain3h.toFixed(1)} มม.</span>
+      </div>
+    `;
+  });
+
+  container.innerHTML = impactedHtml;
 }
 
+// ผูก Event Listener ปุ่มแท็บสลับ จังหวัด / อำเภอ / ตำบล
+document.querySelectorAll(".ic-tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".ic-tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentImpactLevel = btn.dataset.level;
+    updateImpactedProvinces();
+  });
+});
 function zoomToStation(lat, lon, name, idx) {
   if (isNaN(lat) || isNaN(lon)) return;
   map.flyTo([lat, lon], 10, { duration: 1.2 });
@@ -2171,13 +2220,12 @@ async function loadBoundaries() {
   console.log("📍 กำลังโหลดขอบเขตพื้นที่...");
 
   try {
-    const resProv = await fetch("./provinces_240km.geojson");
-    if (!resProv.ok) throw new Error(`HTTP ${resProv.status}`);
-    let dataProv = await resProv.json();
-    dataProv = sanitizeGeoJson(dataProv);
-    loadedProvinceFeatures = dataProv.features || [];
-
-    L.geoJSON(dataProv, {
+    const resAmp = await fetch("./districts_240km.geojson");
+    if (resAmp.ok) {
+      let dataAmp = await resAmp.json();
+      dataAmp = sanitizeGeoJson(dataAmp);
+      loadedAmphoeFeatures = dataAmp.features || []; // <-- เพิ่มบรรทัดนี้
+      L.geoJSON(dataAmp, {
       style: { color: "#38BDF8", weight: 1.5, fill: false, opacity: 0.75 },
       onEachFeature: (feature, layer) => {
         const name = feature.properties.name || "";
@@ -2234,6 +2282,7 @@ async function loadBoundaries() {
     if (resTam.ok) {
       let dataTam = await resTam.json();
       dataTam = sanitizeGeoJson(dataTam);
+      loadedTambonFeatures = dataTam.features || []; // <-- เพิ่มบรรทัดนี้
       L.geoJSON(dataTam, {
         style: { color: "#38BDF8", weight: 0.9, fill: false, opacity: 0.7 }
       }).addTo(layerTambon);
