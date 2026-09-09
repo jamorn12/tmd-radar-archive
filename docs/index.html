@@ -2251,7 +2251,7 @@ async function loadBoundaries() {
   } catch (err) {
     console.warn("⚠️ โหลดขอบเขตจังหวัดไม่สำเร็จ:", err);
   }
-
+}
   // 2. ขอบเขตอำเภอ (Districts)
   try {
     const resAmp = await fetch("./districts_240km.geojson");
