@@ -2219,35 +2219,86 @@ function sanitizeGeoJson(data) {
 async function loadBoundaries() {
   console.log("📍 กำลังโหลดขอบเขตพื้นที่...");
 
+  // 1. ขอบเขตจังหวัด (Provinces)
+  try {
+    const resProv = await fetch("./provinces_240km.geojson");
+    if (resProv.ok) {
+      let dataProv = await resProv.json();
+      dataProv = sanitizeGeoJson(dataProv);
+      loadedProvinceFeatures = dataProv.features || [];
+      L.geoJSON(dataProv, {
+        style: { color: "#38BDF8", weight: 1.5, fill: false, opacity: 0.75 },
+        onEachFeature: (feature, layer) => {
+          const name = feature.properties.name || "";
+          if (name && typeof layer.getBounds === "function") {
+            try {
+              const bounds = layer.getBounds();
+              if (bounds && bounds.isValid()) {
+                const center = bounds.getCenter();
+                if (center && !isNaN(center.lat) && !isNaN(center.lng)) {
+                  const label = L.tooltip({ permanent: true, direction: "center", className: "map-label" })
+                                 .setContent(name).setLatLng(center);
+                  layerProvinceLabels.addLayer(label);
+                }
+              }
+            } catch (e) {}
+          }
+        }
+      }).addTo(layerProvince);
+      console.log("✅ โหลดขอบเขตจังหวัดสำเร็จ");
+    }
+  } catch (err) {
+    console.warn("⚠️ โหลดขอบเขตจังหวัดไม่สำเร็จ:", err);
+  }
+
+  // 2. ขอบเขตอำเภอ (Districts)
   try {
     const resAmp = await fetch("./districts_240km.geojson");
     if (resAmp.ok) {
       let dataAmp = await resAmp.json();
       dataAmp = sanitizeGeoJson(dataAmp);
-      loadedAmphoeFeatures = dataAmp.features || []; // <-- เพิ่มบรรทัดนี้
+      loadedAmphoeFeatures = dataAmp.features || [];
       L.geoJSON(dataAmp, {
-      style: { color: "#38BDF8", weight: 1.5, fill: false, opacity: 0.75 },
-      onEachFeature: (feature, layer) => {
-        const name = feature.properties.name || "";
-        if (name && typeof layer.getBounds === "function") {
-          try {
-            const bounds = layer.getBounds();
-            if (bounds && bounds.isValid()) {
-              const center = bounds.getCenter();
-              if (center && !isNaN(center.lat) && !isNaN(center.lng)) {
-                const label = L.tooltip({ permanent: true, direction: "center", className: "map-label" })
-                               .setContent(name).setLatLng(center);
-                layerProvinceLabels.addLayer(label);
+        style: { color: "#FBBF24", weight: 1.2, dashArray: "3, 3", fill: false, opacity: 0.85 },
+        onEachFeature: (feature, layer) => {
+          const name = feature.properties.name || "";
+          if (name && typeof layer.getBounds === "function") {
+            try {
+              const bounds = layer.getBounds();
+              if (bounds && bounds.isValid()) {
+                const center = bounds.getCenter();
+                if (center && !isNaN(center.lat) && !isNaN(center.lng)) {
+                  const label = L.tooltip({ permanent: true, direction: "center", className: "map-label amphoe" })
+                                 .setContent(name).setLatLng(center);
+                  layerAmphoeLabels.addLayer(label);
+                }
               }
-            }
-          } catch (e) {}
+            } catch (e) {}
+          }
         }
-      }
-    }).addTo(layerProvince);
-    console.log("✅ โหลดขอบเขตจังหวัดสำเร็จ");
+      }).addTo(layerAmphoe);
+      console.log("✅ โหลดขอบเขตอำเภอสำเร็จ");
+    }
   } catch (err) {
-    console.warn("⚠️ โหลดขอบเขตจังหวัดไม่สำเร็จ:", err);
+    console.warn("⚠️ โหลดขอบเขตอำเภอไม่สำเร็จ:", err);
   }
+
+  // 3. ขอบเขตตำบล (Subdistricts)
+  try {
+    const resTam = await fetch("./subdistricts_240km.geojson");
+    if (resTam.ok) {
+      let dataTam = await resTam.json();
+      dataTam = sanitizeGeoJson(dataTam);
+      loadedTambonFeatures = dataTam.features || [];
+      L.geoJSON(dataTam, {
+        style: { color: "#38BDF8", weight: 0.9, fill: false, opacity: 0.7 }
+      }).addTo(layerTambon);
+      console.log("✅ โหลดขอบเขตตำบลสำเร็จ");
+    }
+  } catch (err) {
+    console.warn("⚠️ โหลดขอบเขตตำบลไม่สำเร็จ:", err);
+  }
+}
 
   try {
     const resAmp = await fetch("./districts_240km.geojson");
