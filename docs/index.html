@@ -2546,6 +2546,14 @@ async function initRadar() {
   } catch (err) {
     document.getElementById("tlFullTitle").textContent = "เชื่อมต่อฐานข้อมูลเรดาร์ล้มเหลว";
   }
+  // สั่งย่อการ์ดสรุปทางซ้ายอัตโนมัติเมื่อเริ่มระบบ เพื่อให้แผนที่โล่งเต็มจอ
+  const toggleBtn = document.querySelector("#cardNowcast .toggle-btn, .nowcast-panel .toggle-btn, #btnToggleNowcast, .nowcast-card button");
+  if (toggleBtn) {
+    toggleBtn.click();
+  } else {
+    const nowcastCard = document.getElementById("cardNowcast") || document.querySelector(".nowcast-panel");
+    if (nowcastCard) nowcastCard.classList.add("collapsed");
+  }
 }
 
 function showFrame(index) {
