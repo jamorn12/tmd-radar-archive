@@ -2147,17 +2147,19 @@ async function setInspectionPoint(lat, lon, label = null) {
   }
 
   // 4. วาดหรือย้าย Marker
-  if (inspectMarker) {
-    inspectMarker.setLatLng([lat, lon]);
+  if (userPinMarker) {
+    userPinMarker.setLatLng([lat, lon]);
   } else {
-    inspectMarker = L.circleMarker([lat, lon], {
-      radius: 6,
-      color: "#38BDF8",
-      weight: 2.5,
-      fillColor: "#FFFFFF",
-      fillOpacity: 1.0,
-      zIndexOffset: 1000
+    userPinMarker = L.marker([lat, lon], {
+      icon: liveGpsIcon,
+      draggable: true,
+      title: "ลากเพื่อย้ายจุดตรวจวัด"
     }).addTo(map);
+
+    userPinMarker.on("dragend", (e) => {
+      const pos = e.target.getLatLng();
+      setInspectionPoint(pos.lat, pos.lng, "จุดที่คุณลากหมุด");
+    });
   }
 
   // 5. ข้อมูลสภาพอากาศและไอคอน
