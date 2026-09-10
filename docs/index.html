@@ -488,7 +488,22 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .impact-card {
   position: absolute; left: 12px; bottom: 135px; z-index: 998;
   width: 250px; padding: 10px 12px; border-radius: 14px;
+  transition: all 0.25s cubic-bezier(0.3, 0.8, 0.3, 1);
 }
+.impact-card.collapsed {
+  width: fit-content; padding: 6px 12px; border-radius: 999px; cursor: pointer;
+}
+.impact-card.collapsed .ic-card-body { display: none; }
+.impact-card .ic-pill { display: none; }
+.impact-card.collapsed .ic-pill { display: flex; align-items: center; gap: 7px; user-select: none; }
+.ic-pill-text { font-size: 11.5px; font-weight: 600; color: #fff; white-space: nowrap; }
+
+.ic-collapse-btn {
+  background: transparent; border: none; color: var(--text-dim); cursor: pointer;
+  padding: 2px 4px; border-radius: 4px; display: grid; place-items: center; transition: all 0.2s;
+}
+.ic-collapse-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.12); }
+
 .ic-head {
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 5px;
@@ -523,7 +538,6 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .ic-item:hover { background: rgba(56, 189, 248, 0.15); transform: translateX(2px); }
 .ic-prov-name { font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 155px; }
 .ic-rain-val { font-family: "IBM Plex Mono", monospace; font-weight: 700; color: #fff; flex-shrink: 0; }
-
 /* Timeline Container */
 .timeline-container {
   position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
@@ -827,23 +841,38 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 <!-- Impacted Areas UI Card (Spatial Impact Analysis) - Positioned above Legend without overlap -->
 <!-- Impacted Areas UI Card (Spatial Impact Analysis) -->
 <div class="impact-card glass" id="impactCard">
-  <div class="ic-head">
-    <div class="ic-tabs">
-      <button class="ic-tab-btn active" data-level="prov">จังหวัด</button>
-      <button class="ic-tab-btn" data-level="amp">อำเภอ</button>
-      <button class="ic-tab-btn" data-level="tam">ตำบล</button>
+  <!-- ส่วนเนื้อหาเต็มของการ์ด -->
+  <div class="ic-card-body" id="icCardBody">
+    <div class="ic-head">
+      <div class="ic-tabs">
+        <button class="ic-tab-btn active" data-level="prov">จังหวัด</button>
+        <button class="ic-tab-btn" data-level="amp">อำเภอ</button>
+        <button class="ic-tab-btn" data-level="tam">ตำบล</button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 5px;">
+        <span class="ic-unit">มม./3 ชม.</span>
+        <button class="ic-collapse-btn" id="btnCollapseIc" title="ย่อหน้าต่าง">
+          <i data-lucide="chevron-down" class="icon-xs"></i>
+        </button>
+      </div>
     </div>
-    <span class="ic-unit">มม./3 ชม.</span>
+    <div class="rain-scale-bar"></div>
+    <div class="rain-scale-labels">
+      <span>0.5–5</span>
+      <span>5–15</span>
+      <span>15–30</span>
+      <span>30+</span>
+    </div>
+    <div class="ic-list" id="impactedListContainer">
+      <div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 6px;">กำลังวิเคราะห์พื้นที่เสี่ยง...</div>
+    </div>
   </div>
-  <div class="rain-scale-bar"></div>
-  <div class="rain-scale-labels">
-    <span>0.5–5</span>
-    <span>5–15</span>
-    <span>15–30</span>
-    <span>30+</span>
-  </div>
-  <div class="ic-list" id="impactedListContainer">
-    <div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 6px;">กำลังวิเคราะห์พื้นที่เสี่ยง...</div>
+
+  <!-- ส่วนแสดงผลแบบแถบเล็กเมื่อย่อ (Pill) -->
+  <div class="ic-pill" id="btnExpandIc" title="กดเพื่อขยายหน้าต่าง">
+    <i data-lucide="cloud-rain" class="icon-xs" style="color: var(--accent);"></i>
+    <span class="ic-pill-text">พื้นที่เสี่ยงฝน</span>
+    <i data-lucide="chevron-up" class="icon-xs" style="color: var(--accent);"></i>
   </div>
 </div>
 
@@ -2470,6 +2499,16 @@ document.getElementById("btnCollapseAc").addEventListener("click", () => {
 
 document.getElementById("btnExpandAc").addEventListener("click", () => {
   document.getElementById("actionRail").classList.remove("collapsed");
+});
+
+document.getElementById("btnCollapseIc")?.addEventListener("click", () => {
+  document.getElementById("impactCard").classList.add("collapsed");
+  safeLucide();
+});
+
+document.getElementById("btnExpandIc")?.addEventListener("click", () => {
+  document.getElementById("impactCard").classList.remove("collapsed");
+  safeLucide();
 });
 
 document.getElementById("btnOpenModal").addEventListener("click", (e) => {
