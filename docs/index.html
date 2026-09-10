@@ -2104,8 +2104,13 @@ async function setInspectionPoint(lat, lon, label = null) {
   const distKm = Math.hypot(pinE, pinN);
   const bearingDeg = (Math.atan2(pinE, pinN) * 180 / Math.PI + 360) % 360;
 
+  // สแกนพิกเซลเรดาร์ก่อนเพื่อดึงค่า dBZ จริงมาใส่ตัวแปร
+  if (typeof analyzeImpactAtPoint === "function") {
+    await analyzeImpactAtPoint(lat, lon);
+  }
+
   // 1. คำนวณ dBZ และอัตราฝน
-  const currentDbz = (currentSampledDbzList.find(f => f.offset === 0) || {}).dbz || 0;
+  const currentDbz = (currentSampledDbzList && currentSampledDbzList.find(f => f.offset === 0) || {}).dbz || 0;
   const rainRate = dbzToRainRate(currentDbz);
 
   // 2. ค้นหาขอบเขตพื้นที่อัตโนมัติ (Reverse Polygon Lookup) จาก GeoJSON ท้องถิ่น
