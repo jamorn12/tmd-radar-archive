@@ -2225,20 +2225,9 @@ async function setInspectionPoint(lat, lon, label = null) {
   } else {
     userPinMarker.setLatLng([lat, lon]);
   }
-
   userPinMarker.bindPopup(popupHtml, { offset: [0, -10] }).openPopup();
   safeLucide();
-
-  analyzeImpactAtPoint(lat, lon);
-
-  getReverseGeocode(lat, lon).then(areaName => {
-    const areaEl = document.getElementById("popAreaName");
-    if (areaEl) {
-      areaEl.textContent = areaName || "ภาคเหนือตอนล่าง";
-    }
-  });
 }
-
 map.on("click", (e) => {
   setInspectionPoint(e.latlng.lat, e.latlng.lng, "จุดที่คุณแตะเลือก");
 });
