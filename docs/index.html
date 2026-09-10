@@ -1154,12 +1154,54 @@ const layerArrows = L.layerGroup().addTo(map);
 const layerRings = L.layerGroup().addTo(map);
 const layerTrajectory = L.layerGroup().addTo(map);
 const layerStations = L.layerGroup().addTo(map);
-
+const layerHighlight = L.layerGroup().addTo(map);
 const layerProvince = L.layerGroup();
 const layerProvinceLabels = L.layerGroup();
 const layerAmphoe = L.layerGroup();
 const layerAmphoeLabels = L.layerGroup();
 const layerTambon = L.layerGroup();
+  let currentImpactedList = [];
+
+// ฟังก์ชันวาดเส้นขอบเขตและซูมพอดีแปลงพื้นที่ (Spotlight Mode)
+function highlightBoundary(feature, rain3h) {
+  layerHighlight.clearLayers();
+  if (!feature) return;
+
+  // กำหนดสีไฮไลต์ตามเกณฑ์ TMD
+  let color = "#38BDF8";                        // ฝนเบา (< 5 มม.)
+  if (rain3h >= 30) color = "#EF4444";          // หนักมาก (แดง)
+  else if (rain3h >= 15) color = "#F59E0B";     // หนัก (ส้ม)
+  else if (rain3h >= 5) color = "#10B981";      // ปานกลาง (เขียว)
+  if (rain3h === 0) color = "#94A3B8";
+
+  const geoLayer = L.geoJSON(feature, {
+    style: {
+      color: color,
+      weight: 2.8,
+      dashArray: "4, 5",
+      opacity: 0.95,
+      fillColor: color,
+      fillOpacity: 0.22 // โปร่งแสงเพื่อให้มองเห็นเรดาร์และสันเขาด้านล่าง
+    }
+  }).addTo(layerHighlight);
+
+  // ซูมแบบ Smart FitBounds รับขนาดพื้นที่จริง (จังหวัด/อำเภอ/ตำบล)
+  try {
+    const bounds = geoLayer.getBounds();
+    if (bounds && bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13, animate: true, duration: 1.0 });
+    }
+  } catch (e) {}
+}
+
+// ฟังก์ชันเมื่อผู้ใช้คลิกเลือกพื้นที่ในการ์ด
+function selectImpactedArea(idx) {
+  const item = currentImpactedList[idx];
+  if (!item) return;
+
+  setInspectionPoint(item.lat, item.lon, item.name);
+  highlightBoundary(item.feature, item.rain3h);
+}
 
 let manifest = null;
 let radarOverlays = [];
@@ -1537,15 +1579,12 @@ function updateImpactedProvinces() {
   targetFeatures.forEach(feat => {
     const props = feat.properties || {};
     
-    // 1. ดึงชื่อที่เป็นภาษาไทยก่อน ถ้าไม่มีค่อยสลับไปดึงภาษาอังกฤษ
     let rawName = props.pro_th || props.name_th || props.pv_th || props.changwat_t ||
                   props.amp_th || props.tam_th || props.dname || props.tname || props.name || "";
     if (!rawName) return;
 
-    // ตัดคำนำหน้า จ./อ./ต. ที่อาจติดมาในฐานข้อมูลออกก่อน
     rawName = rawName.replace(/^(จ\.|อ\.|ต\.)\s*/, "").trim();
 
-    // 2. ถ้าเป็นระดับจังหวัดและชื่อเป็นภาษาอังกฤษ ให้แปลงเป็นภาษาไทยผ่านพจนานุกรม
     const displayName = (currentImpactLevel === "prov" && PROV_THAI_MAP[rawName]) 
       ? PROV_THAI_MAP[rawName] 
       : rawName;
@@ -1583,7 +1622,8 @@ function updateImpactedProvinces() {
             name: `${prefix}${displayName}`,
             rain3h: rain3h,
             lat: pLat,
-            lon: pLon
+            lon: pLon,
+            feature: feat
           });
         }
       }
@@ -1591,22 +1631,22 @@ function updateImpactedProvinces() {
   });
 
   impactedList.sort((a, b) => b.rain3h - a.rain3h);
-  const displayItems = impactedList.slice(0, 15);
+  currentImpactedList = impactedList.slice(0, 15);
 
-  if (displayItems.length === 0) {
+  if (currentImpactedList.length === 0) {
     container.innerHTML = `<div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 6px;">ไม่พบกลุ่มฝนกระทบพื้นที่ในรอบนี้</div>`;
     return;
   }
 
   let impactedHtml = "";
-  displayItems.forEach(item => {
+  currentImpactedList.forEach((item, index) => {
     let borderColor = "#00ECEC";
     if (item.rain3h >= 30) borderColor = "#EF4444";
     else if (item.rain3h >= 15) borderColor = "#F59E0B";
     else if (item.rain3h >= 5) borderColor = "#10B981";
 
     impactedHtml += `
-      <div class="ic-item" style="border-left-color: ${borderColor};" onclick="setInspectionPoint(${item.lat}, ${item.lon}, '${item.name}'); map.flyTo([${item.lat}, ${item.lon}], 11, { duration: 1.0 });" title="คลิกเพื่อตรวจวัดจุดนี้">
+      <div class="ic-item" style="border-left-color: ${borderColor};" onclick="selectImpactedArea(${index})" title="คลิกเพื่อตรวจวัดและแสดงรูปแปลงพื้นที่">
         <span class="ic-prov-name">${item.name}</span>
         <span class="ic-rain-val">${item.rain3h.toFixed(1)} มม.</span>
       </div>
