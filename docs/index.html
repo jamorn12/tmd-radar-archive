@@ -2212,21 +2212,6 @@ async function setInspectionPoint(lat, lon, label = null) {
   inspectMarker.bindPopup(popupHtml, { maxWidth: 280, className: "custom-modern-popup" }).openPopup();
   safeLucide();
 }
-
-  if (!userPinMarker) {
-    userPinMarker = L.marker([lat, lon], {
-      icon: liveGpsIcon, draggable: true, title: "ลากเพื่อย้ายจุดตรวจวัด"
-    }).addTo(map);
-
-    userPinMarker.on("dragend", (e) => {
-      const pos = e.target.getLatLng();
-      setInspectionPoint(pos.lat, pos.lng, "จุดที่คุณลากหมุด");
-    });
-  } else {
-    userPinMarker.setLatLng([lat, lon]);
-  }
-  userPinMarker.bindPopup(popupHtml, { offset: [0, -10] }).openPopup();
-  safeLucide();
 map.on("click", (e) => {
   setInspectionPoint(e.latlng.lat, e.latlng.lng, "จุดที่คุณแตะเลือก");
 });
