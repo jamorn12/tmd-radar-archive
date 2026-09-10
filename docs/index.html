@@ -1455,7 +1455,22 @@ function renderTelemetryPanelList() {
 
   container.innerHTML = html;
 }
-
+// พจนานุกรมแปลงชื่อจังหวัดภาษาอังกฤษเป็นภาษาไทย
+const PROV_THAI_MAP = {
+  "Lamphun": "ลำพูน", "Chainat": "ชัยนาท", "Chai Nat": "ชัยนาท",
+  "Nakhon Sawan": "นครสวรรค์", "Kamphaeng Phet": "กำแพงเพชร",
+  "Phitsanulok": "พิษณุโลก", "Sukhothai": "สุโขทัย", "Phichit": "พิจิตร",
+  "Phetchabun": "เพชรบูรณ์", "Uttaradit": "อุตรดิตถ์", "Phrae": "แพร่",
+  "Nan": "น่าน", "Lampang": "ลำปาง", "Chiang Mai": "เชียงใหม่",
+  "Chiang Rai": "เชียงราย", "Mae Hong Son": "แม่ฮ่องสอน", "Phayao": "พะเยา",
+  "Tak": "ตาก", "Uthai Thani": "อุทัยธานี", "Sing Buri": "สิงห์บุรี",
+  "Singburi": "สิงห์บุรี", "Ang Thong": "อ่างทอง", "Angthong": "อ่างทอง",
+  "Lop Buri": "ลพบุรี", "Lopburi": "ลพบุรี", "Saraburi": "สระบุรี",
+  "Sara Buri": "สระบุรี", "Suphan Buri": "สุพรรณบุรี", "Suphanburi": "สุพรรณบุรี",
+  "Phra Nakhon Si Ayutthaya": "พระนครศรีอยุธยา", "Ayutthaya": "พระนครศรีอยุธยา",
+  "Loei": "เลย", "Chaiyaphum": "ชัยภูมิ", "Khon Kaen": "ขอนแก่น",
+  "Udon Thani": "อุดรธานี", "Nong Bua Lamphu": "หนองบัวลำภู", "Kanchanaburi": "กาญจนบุรี"
+};
 function updateImpactedProvinces() {
   const container = document.getElementById("impactedListContainer");
   if (!container || frameImages.length === 0) return;
@@ -1473,7 +1488,6 @@ function updateImpactedProvinces() {
   const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
   const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
 
-  // เลือกลิสต์ข้อมูลตามแท็บที่กดเลือก (จังหวัด / อำเภอ / ตำบล)
   let targetFeatures = loadedProvinceFeatures;
   let prefix = "จ.";
   if (currentImpactLevel === "amp") {
@@ -1493,8 +1507,19 @@ function updateImpactedProvinces() {
 
   targetFeatures.forEach(feat => {
     const props = feat.properties || {};
-    const name = props.name || props.dname || props.tname || props.pro_th || props.amp_th || props.tam_th || "";
-    if (!name) return;
+    
+    // 1. ดึงชื่อที่เป็นภาษาไทยก่อน ถ้าไม่มีค่อยสลับไปดึงภาษาอังกฤษ
+    let rawName = props.pro_th || props.name_th || props.pv_th || props.changwat_t ||
+                  props.amp_th || props.tam_th || props.dname || props.tname || props.name || "";
+    if (!rawName) return;
+
+    // ตัดคำนำหน้า จ./อ./ต. ที่อาจติดมาในฐานข้อมูลออกก่อน
+    rawName = rawName.replace(/^(จ\.|อ\.|ต\.)\s*/, "").trim();
+
+    // 2. ถ้าเป็นระดับจังหวัดและชื่อเป็นภาษาอังกฤษ ให้แปลงเป็นภาษาไทยผ่านพจนานุกรม
+    const displayName = (currentImpactLevel === "prov" && PROV_THAI_MAP[rawName]) 
+      ? PROV_THAI_MAP[rawName] 
+      : rawName;
 
     try {
       if (!feat._centroidCoord) {
@@ -1522,12 +1547,11 @@ function updateImpactedProvinces() {
         }
       }
 
-      // เกณฑ์ฝนตกสะสมรอบ 3 ชม. มาตรฐาน TMD (เริ่มที่ 15 dBZ / 0.5 มม.)
       if (maxDbz >= 15) {
         const rain3h = dbzToRainRate(maxDbz) * 3;
         if (rain3h >= 0.5) {
           impactedList.push({
-            name: `${prefix}${name}`,
+            name: `${prefix}${displayName}`,
             rain3h: rain3h,
             lat: pLat,
             lon: pLon
@@ -1537,7 +1561,6 @@ function updateImpactedProvinces() {
     } catch (err) {}
   });
 
-  // เรียงลำดับฝนตกหนักสุดขึ้นก่อน ตัดมาแสดง 15 อันดับ
   impactedList.sort((a, b) => b.rain3h - a.rain3h);
   const displayItems = impactedList.slice(0, 15);
 
@@ -1549,9 +1572,9 @@ function updateImpactedProvinces() {
   let impactedHtml = "";
   displayItems.forEach(item => {
     let borderColor = "#00ECEC";
-    if (item.rain3h >= 30) borderColor = "#EF4444";       // หนักมาก
-    else if (item.rain3h >= 15) borderColor = "#F59E0B";  // หนัก
-    else if (item.rain3h >= 5) borderColor = "#10B981";   // ปานกลาง
+    if (item.rain3h >= 30) borderColor = "#EF4444";
+    else if (item.rain3h >= 15) borderColor = "#F59E0B";
+    else if (item.rain3h >= 5) borderColor = "#10B981";
 
     impactedHtml += `
       <div class="ic-item" style="border-left-color: ${borderColor};" onclick="setInspectionPoint(${item.lat}, ${item.lon}, '${item.name}'); map.flyTo([${item.lat}, ${item.lon}], 11, { duration: 1.0 });" title="คลิกเพื่อตรวจวัดจุดนี้">
@@ -1563,7 +1586,6 @@ function updateImpactedProvinces() {
 
   container.innerHTML = impactedHtml;
 }
-
 // ผูก Event Listener ปุ่มแท็บสลับ จังหวัด / อำเภอ / ตำบล
 document.querySelectorAll(".ic-tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
