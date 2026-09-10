@@ -138,40 +138,123 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .leaflet-tooltip.map-label.amphoe { font-size: 10px; color: #FBBF24; text-shadow: 0 1px 3px #000; }
 
 /* Leaflet Custom Modern Popup */
+/* --- Modern Glassmorphic Popup --- */
 .leaflet-popup-content-wrapper {
-  background: rgba(18, 24, 38, 0.96) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7) !important;
+  background: rgba(15, 23, 42, 0.88) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45) !important;
+  color: #fff !important;
   padding: 0 !important;
-  color: var(--text) !important;
-}
-.leaflet-popup-content {
-  margin: 12px 14px !important;
-  line-height: 1.35 !important;
-  font-family: "IBM Plex Sans Thai", sans-serif !important;
+  overflow: hidden;
 }
 .leaflet-popup-tip-container { overflow: visible !important; }
 .leaflet-popup-tip {
-  background: rgba(18, 24, 38, 0.96) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  background: rgba(15, 23, 42, 0.88) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   box-shadow: none !important;
   margin-top: -1px !important;
 }
-.leaflet-popup-close-button {
-  color: var(--text-dim) !important;
+.leaflet-popup-content {
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+.leaflet-container a.leaflet-popup-close-button {
+  color: #94A3B8 !important;
   padding: 8px 10px 0 0 !important;
   font-size: 16px !important;
-  font-weight: 300 !important;
 }
-.leaflet-popup-close-button:hover { color: #fff !important; }
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: #fff !important;
+}
 
-/* WAM ONWR Style Popup */
-.wam-popup {
-  display: flex; flex-direction: column; gap: 3px; min-width: 200px;
-  font-family: "IBM Plex Sans Thai", sans-serif; padding: 2px 2px;
+/* เนื้อหาภายในการ์ดตรวจวัด (Modern Inspection Card) */
+.insp-card {
+  padding: 14px 16px;
+  min-width: 255px;
+  font-family: "IBM Plex Sans Thai", sans-serif;
+}
+.insp-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.insp-header-icon {
+  width: 38px;
+  height: 38px;
+  background: rgba(56, 189, 248, 0.15);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: #38BDF8;
+  flex-shrink: 0;
+}
+.insp-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: -0.2px;
+}
+.insp-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.insp-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.insp-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #E2E8F0;
+}
+.insp-row i, .insp-row svg {
+  color: #94A3B8;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.insp-dbz {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  color: #38BDF8;
+}
+
+.insp-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+.insp-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #F1F5F9;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+.insp-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38BDF8;
+  color: #fff;
 }
 .wam-pop-name { font-size: 14.5px; font-weight: 700; color: #FFFFFF; line-height: 1.25; padding-right: 14px; }
 .wam-pop-id { font-size: 12.5px; font-weight: 700; color: #FFFFFF; font-family: "IBM Plex Mono", monospace; margin: 1px 0; }
@@ -1162,34 +1245,33 @@ const layerAmphoeLabels = L.layerGroup();
 const layerTambon = L.layerGroup();
   let currentImpactedList = [];
 
-// ฟังก์ชันวาดเส้นขอบเขตและซูมพอดีแปลงพื้นที่ (Spotlight Mode)
+// ฟังก์ชันวาดเส้นขอบเขตและซูมพอดีแปลงพื้นที่ (Spotlight Mode - สไตล์ Minimal)
 function highlightBoundary(feature, rain3h) {
   layerHighlight.clearLayers();
   if (!feature) return;
 
-  // กำหนดสีไฮไลต์ตามเกณฑ์ TMD
-  let color = "#38BDF8";                        // ฝนเบา (< 5 มม.)
-  if (rain3h >= 30) color = "#EF4444";          // หนักมาก (แดง)
+  // โทนสีไฮไลต์ตามเกณฑ์ TMD (ค่าเริ่มต้นใช้สีแดงส้มพาสเทลแบบโมเดิร์น)
+  let color = "#F87171";                        // แดงอมส้มพาสเทล
+  if (rain3h >= 30) color = "#EF4444";          // หนักมาก (แดงสด)
   else if (rain3h >= 15) color = "#F59E0B";     // หนัก (ส้ม)
   else if (rain3h >= 5) color = "#10B981";      // ปานกลาง (เขียว)
-  if (rain3h === 0) color = "#94A3B8";
+  else if (rain3h > 0) color = "#38BDF8";       // เบา (ฟ้า)
 
   const geoLayer = L.geoJSON(feature, {
     style: {
       color: color,
-      weight: 2.8,
-      dashArray: "4, 5",
-      opacity: 0.95,
+      weight: 2.0,            // เส้นขอบบางคม 2px สไตล์ Minimal
+      dashArray: "4, 4",      // เส้นประโมเดิร์น
+      opacity: 0.9,
       fillColor: color,
-      fillOpacity: 0.22 // โปร่งแสงเพื่อให้มองเห็นเรดาร์และสันเขาด้านล่าง
+      fillOpacity: 0.15       // เนื้อในโปร่งใส 15% เพื่อให้เห็นสันเขาและเรดาร์ด้านล่างชัดเจน
     }
   }).addTo(layerHighlight);
 
-  // ซูมแบบ Smart FitBounds รับขนาดพื้นที่จริง (จังหวัด/อำเภอ/ตำบล)
   try {
     const bounds = geoLayer.getBounds();
     if (bounds && bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13, animate: true, duration: 1.0 });
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12, animate: true, duration: 1.0 });
     }
   } catch (e) {}
 }
