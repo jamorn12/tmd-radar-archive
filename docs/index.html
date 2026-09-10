@@ -2211,7 +2211,7 @@ async function setInspectionPoint(lat, lon, label = null) {
     </div>
   `;
 
-  inspectMarker.bindPopup(popupHtml, { maxWidth: 280, className: "custom-modern-popup" }).openPopup();
+  userPinMarker.bindPopup(popupHtml, { maxWidth: 280, className: "custom-modern-popup" }).openPopup();
   safeLucide();
 }
 map.on("click", (e) => {
