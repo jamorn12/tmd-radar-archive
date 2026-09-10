@@ -2227,7 +2227,6 @@ async function setInspectionPoint(lat, lon, label = null) {
   }
   userPinMarker.bindPopup(popupHtml, { offset: [0, -10] }).openPopup();
   safeLucide();
-}
 map.on("click", (e) => {
   setInspectionPoint(e.latlng.lat, e.latlng.lng, "จุดที่คุณแตะเลือก");
 });
