@@ -1282,7 +1282,7 @@ function selectImpactedArea(idx) {
   if (!item) return;
 
   setInspectionPoint(item.lat, item.lon, item.name);
-  highlightBoundary(item.feature, item.rain3h);
+  highlightBoundary(item.feature, item.rain3h, true); // เพิ่ม true เพื่อให้ซูมพอดีแปลง
 }
 
 let manifest = null;
@@ -2092,83 +2092,126 @@ function analyzeImpactAtPoint(lat, lon) {
   safeLucide();
 }
 
-async function setInspectionPoint(lat, lon, label = "จุดตรวจวัด") {
+async function setInspectionPoint(lat, lon, label = null) {
   if (isNaN(lat) || isNaN(lon)) {
     lat = radarStationLatLon[0];
     lon = radarStationLatLon[1];
   }
   userPinLatLon = [lat, lon];
-  document.getElementById("pinNameLabel").textContent = `${label}`;
-  document.getElementById("modalLocationLabel").textContent = `${label} (Lat: ${lat.toFixed(3)}, Lon: ${lon.toFixed(3)})`;
 
   const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
   const [pinE, pinN] = project(lat, lon, lat0, lon0);
   const distKm = Math.hypot(pinE, pinN);
   const bearingDeg = (Math.atan2(pinE, pinN) * 180 / Math.PI + 360) % 360;
 
+  // 1. คำนวณ dBZ และอัตราฝน
   const currentDbz = (currentSampledDbzList.find(f => f.offset === 0) || {}).dbz || 0;
   const rainRate = dbzToRainRate(currentDbz);
 
-  let dotClass = "pop-dot";
-  let weatherMain = "ท้องฟ้าโปร่ง";
-  let weatherSub = "ไม่พบกลุ่มฝนสะท้อน";
+  // 2. ค้นหาขอบเขตพื้นที่อัตโนมัติ (Reverse Polygon Lookup) จาก GeoJSON ท้องถิ่น
+  let matchedFeature = null;
+  let areaTitle = label;
 
-  if (currentDbz >= 18) {
-    dotClass = "pop-dot rain";
-    weatherMain = `กำลังมีฝนตก (~${rainRate.toFixed(1)} มม./ชม.)`;
-    weatherSub = `ความเข้มสะท้อนเรดาร์ ${currentDbz.toFixed(0)} dBZ`;
-  } else {
-    const etaVal = document.getElementById("valEta").textContent.trim();
-    if (etaVal !== "ไม่มี" && etaVal !== "—") {
-      dotClass = "pop-dot warn";
-      weatherMain = `ฝนจะเริ่มตกเวลา ${etaVal}`;
-      weatherSub = `ตกต่อเนื่อง ${document.getElementById("valDuration").textContent}`;
+  try {
+    const pt = turf.point([lon, lat]);
+    const searchLayers = (currentImpactLevel === "tam") ? loadedTambonFeatures :
+                         (currentImpactLevel === "amp") ? loadedAmphoeFeatures :
+                         loadedProvinceFeatures;
+    if (searchLayers && searchLayers.length > 0) {
+      for (const feat of searchLayers) {
+        if (turf.booleanPointInPolygon(pt, feat)) {
+          matchedFeature = feat;
+          if (!areaTitle || areaTitle === "จุดตรวจวัด") {
+            const props = feat.properties || {};
+            const raw = props.tam_th || props.amp_th || props.pro_th || props.name_th || props.name || "";
+            const prefix = (currentImpactLevel === "tam") ? "ต." : (currentImpactLevel === "amp") ? "อ." : "จ.";
+            if (raw) areaTitle = `${prefix}${PROV_THAI_MAP[raw] || raw}`;
+          }
+          break;
+        }
+      }
     }
+  } catch (err) {}
+
+  if (!areaTitle) areaTitle = "จุดตรวจวัด";
+
+  // อัปเดตชื่อใน UI หัวข้อการ์ดและ Modal
+  const pinLabelEl = document.getElementById("pinNameLabel");
+  if (pinLabelEl) pinLabelEl.textContent = areaTitle;
+  const modalLabelEl = document.getElementById("modalLocationLabel");
+  if (modalLabelEl) modalLabelEl.textContent = `${areaTitle} (Lat: ${lat.toFixed(3)}, Lon: ${lon.toFixed(3)})`;
+
+  // 3. วาดไฮไลต์ขอบเขตพื้นที่ทันที (คลิกบนแผนที่จะไม่กระชากมุมมอง แต่จะวาดกรอบสีแดงส้มพาสเทลให้ทันที)
+  if (matchedFeature) {
+    highlightBoundary(matchedFeature, rainRate * 3, false);
   }
 
+  // 4. วาดหรือย้าย Marker
+  if (inspectMarker) {
+    inspectMarker.setLatLng([lat, lon]);
+  } else {
+    inspectMarker = L.circleMarker([lat, lon], {
+      radius: 6,
+      color: "#38BDF8",
+      weight: 2.5,
+      fillColor: "#FFFFFF",
+      fillOpacity: 1.0,
+      zIndexOffset: 1000
+    }).addTo(map);
+  }
+
+  // 5. ข้อมูลสภาพอากาศและไอคอน
+  const weatherIcon = (currentDbz >= 18) ? "cloud-rain" : "cloud-sun";
+  const weatherMain = (currentDbz >= 18)
+    ? `กำลังมีฝนตก (~${rainRate.toFixed(1)} มม./ชม.)`
+    : "ท้องฟ้าโปร่ง ไม่พบกลุ่มฝนสะท้อน";
   const gmapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
 
+  // 6. โครงสร้าง Popup สไตล์ Modern Glassmorphism
   const popupHtml = `
-    <div class="pop-capsule" style="min-width: 230px;">
-      <div class="pop-top-row">
-        <div class="pop-title-box">
-          <div class="pop-title">
-            <span class="${dotClass}"></span>
-            <span id="popMainLabel">${label}</span>
+    <div class="insp-card">
+      <div class="insp-header">
+        <div class="insp-header-icon">
+          <i data-lucide="${weatherIcon}" class="icon-sm"></i>
+        </div>
+        <div>
+          <div class="insp-title">${areaTitle}</div>
+          <div class="insp-sub">ข้อมูลตรวจวัดเรดาร์</div>
+        </div>
+      </div>
+
+      <div class="insp-body">
+        <div class="insp-row">
+          <i data-lucide="cloud" class="icon-xs"></i>
+          <div>
+            <div>${weatherMain}</div>
+            <div class="insp-dbz">ความแรง: <b>${currentDbz.toFixed(0)} dBZ</b></div>
           </div>
-          <span class="pop-subtext" id="popAreaName">กำลังค้นหาชื่อพื้นที่...</span>
         </div>
-      </div>
 
-      <div class="pop-weather-card">
-        <div class="pop-weather-info">
-          <div class="pop-weather-main">${weatherMain}</div>
-          <div class="pop-weather-sub">${weatherSub}</div>
-        </div>
-        <div class="pop-weather-dbz">${currentDbz.toFixed(0)} dBZ</div>
-      </div>
-
-      <div class="pop-meta-list">
-        <div class="pop-meta-item">
+        <div class="insp-row">
           <i data-lucide="compass" class="icon-xs"></i>
-          <span>ห่างสถานี PHS: <b>${distKm.toFixed(1)} กม.</b> (ทิศ ${bearingDeg.toFixed(0)}°)</span>
-        </div>
-        <div class="pop-meta-item">
-          <i data-lucide="crosshair" class="icon-xs"></i>
-          <span class="pop-coord-text">Lat: ${lat.toFixed(4)} · Lon: ${lon.toFixed(4)}</span>
+          <div>
+            <div>ห่างสถานี PHS: <b>${distKm.toFixed(1)} กม.</b> (ทิศ ${bearingDeg.toFixed(0)}°)</div>
+            <div style="color: var(--text-dim); font-size: 10.5px;">Lat: ${lat.toFixed(4)} | Lon: ${lon.toFixed(4)}</div>
+          </div>
         </div>
       </div>
 
-      <div class="pop-action-grid">
-        <button class="pop-btn pop-btn-graph" onclick="document.getElementById('btnOpenModal').click()">
+      <div class="insp-actions">
+        <button class="insp-btn" onclick="document.getElementById('btnOpenModal').click();" title="ดูกราฟแนวโน้มฝน">
           <i data-lucide="bar-chart-2" class="icon-xs"></i> ดูกราฟ
         </button>
-        <a class="pop-btn pop-btn-nav" href="${gmapsUrl}" target="_blank" rel="noopener">
+        <a class="insp-btn" href="${gmapsUrl}" target="_blank" rel="noopener" title="เปิด Google Maps นำทาง">
           <i data-lucide="navigation" class="icon-xs"></i> นำทาง
         </a>
       </div>
     </div>
   `;
+
+  inspectMarker.bindPopup(popupHtml, { maxWidth: 280, className: "custom-modern-popup" }).openPopup();
+  safeLucide();
+}
 
   if (!userPinMarker) {
     userPinMarker = L.marker([lat, lon], {
