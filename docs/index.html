@@ -1709,18 +1709,21 @@ function updateTelemetryStationValues() {
       }
     }
     
-    // --- ตัดโค้ดเดิมตรงนี้ทิ้ง ---
-    // 1. ฝั่งเรดาร์: คำนวณฝนเรดาร์เก็บแยกไว้ต่างหาก
-    const radarRate = dbzToRainRate(dbz);
+    // 1. คำนวณฝนเรดาร์ (Rain Rate มม./ชม.) ผ่านสมการ Z-R
+    const radarRainRate = dbzToRainRate(dbz);
     item.dbz = dbz;
-    item.radarRain = radarRate;
+    item.radarRain = radarRainRate;
 
-    // 2. ฝั่งสถานีเกจวัด: ใช้ค่าจากสถานีจริง ไม่ผูกกับเรดาร์
-    // หากมีข้อมูล st.rain_1h จาก API ให้ใช้ค่านั้น หากไม่มีให้ตั้งต้น 0.0
-    item.rain1h = Number(st.rain_1h !== undefined ? st.rain_1h : (item.rain1h || 0.0));
-    item.rain3h = Number(st.rain_3h !== undefined ? st.rain_3h : (item.rain3h || 0.0));
-    item.rain6h = Number(st.rain_6h !== undefined ? st.rain_6h : (item.rain6h || 0.0));
-    item.rain24h = Number(st.rain_24h !== undefined ? st.rain_24h : (item.rain24h || 0.0));
+    // 2. ฝนจากสถานีเกจวัดจริง (ถ้า st มีค่า rain_1h ให้ใช้ค่านั้น ถ้าไม่มีให้เป็น 0.0)
+    const rain1h = Number(st.rain_1h !== undefined ? st.rain_1h : (item.rain1h || 0.0));
+    const rain3h = Number(st.rain_3h !== undefined ? st.rain_3h : (item.rain3h || 0.0));
+    const rain6h = Number(st.rain_6h !== undefined ? st.rain_6h : (item.rain6h || 0.0));
+    const rain24h = Number(st.rain_24h !== undefined ? st.rain_24h : (item.rain24h || 0.0));
+
+    item.rain1h = rain1h;
+    item.rain3h = rain3h;
+    item.rain6h = rain6h;
+    item.rain24h = rain24h;
 
     let dotColor = "#64748B";
     if (rain1h > 90) { dotColor = "#C084FC"; }
