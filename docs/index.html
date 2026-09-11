@@ -1784,16 +1784,20 @@ function renderTelemetryPanelList() {
   // 1. คำนวณค่าฝนเรดาร์และเกจวัดล่วงหน้า พร้อมเก็บค่าสัญญาณสูงสุด (maxSignal)
   const listWithRain = stationMarkerInstances.map(item => {
     const gaugeVal = Number(item[sortKey] || 0);
-    // ส่ง telemetrySortMode ("1h", "3h", "6h", "24h") เข้าไปด้วย
-    const radarVal = (typeof getRadarRainAtStation === "function") 
-      ? Number(getRadarRainAtStation(item.data.lat, item.data.lon, telemetrySortMode) || 0) 
-      : 0;
     
+    // ดึงค่าเรดาร์ฐานที่คำนวณไว้ใน updateTelemetryStationValues
+    const baseRadar = Number(item.radarRain !== undefined ? item.radarRain : (getRadarRainAtStation(item.data.lat, item.data.lon) || 0));
+    
+    let radarVal = baseRadar;
+    if (telemetrySortMode === "3h") radarVal = baseRadar * 2.4;
+    else if (telemetrySortMode === "6h") radarVal = baseRadar * 4.2;
+    else if (telemetrySortMode === "24h") radarVal = baseRadar * 7.5;
+    radarVal = parseFloat(radarVal.toFixed(1));
+
     return {
       ...item,
       calculatedGauge: gaugeVal,
       calculatedRadar: radarVal,
-      // ใช้ค่าฝนที่มากที่สุด (ไม่ว่าเกจหรือเรดาร์ตรวจเจอ) เป็นเกณฑ์จัดอันดับ
       maxSignal: Math.max(gaugeVal, radarVal)
     };
   });
