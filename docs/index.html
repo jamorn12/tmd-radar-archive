@@ -1556,9 +1556,10 @@ function rgbToDbz(r, g, b, a) {
 }
 
 function dbzToRainRate(dbz) {
-  if (dbz < 15) return 0;
-  const z = Math.pow(10, dbz / 10);
-  return Math.pow(z / 200, 1 / 1.6);
+  if (!dbz || dbz < 15) return 0.0;
+  const z = Math.pow(10, dbz / 10.0);
+  const r = Math.pow(z / 200.0, 1.0 / 1.6);
+  return parseFloat(r.toFixed(1));
 }
 /**
  * ดึงค่าฝนประมาณการจากเรดาร์ (QPE) ณ พิกัดสถานี
@@ -1707,15 +1708,16 @@ function updateTelemetryStationValues() {
         }
       }
     }
+    
+    // --- ตัดโค้ดเดิมตรงนี้ทิ้ง ---
     const rain1h = dbzToRainRate(dbz);
     const seed = ((st.lat * 37 + st.lon * 19) % 5);
-
     const rain3h = rain1h > 0 ? (rain1h * 1.7 + seed * 0.4) : (seed * 0.15);
     const rain6h = rain1h > 0 ? (rain3h + rain1h * 1.1 + seed * 0.6) : (seed * 0.3);
     const rain24h = rain1h > 0 ? (rain6h + rain1h * 1.5 + seed * 1.1) : (seed * 0.8);
 
     item.dbz = dbz;
-    item.rain1h = rain1h;
+    item.rain1h = rain1h; // <-- ตัวการที่ทำให้ค่าสถานีเท่ากับเรดาร์
     item.rain3h = rain3h;
     item.rain6h = rain6h;
     item.rain24h = rain24h;
