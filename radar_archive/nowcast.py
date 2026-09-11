@@ -68,11 +68,14 @@ def load_recent(root: Path, st, n: int = N_INPUT, agg: str = "mean"):
     if not frames:
         raise RuntimeError(f"{st.code}: ไม่มีไฟล์ในคลัง")
     last = build_stack.split_runs(frames)[-1]
-    if len(last) < n:
-        raise RuntimeError(
-            f"{st.code}: ช่วงต่อเนื่องล่าสุดมีแค่ {len(last)} เฟรม "
-            f"({last[0][0]:%H:%M}-{last[-1][0]:%H:%M}Z) ต้องการ {n} — ยังพยากรณ์ไม่ได้")
-    stack, times, meta, _ = build_stack.build_run(last[-n:], st, root, agg=agg, verbose=False)
+    min_frames = 2  # กำหนดขั้นต่ำอย่างน้อย 2 เฟรมให้ลองพยากรณ์
+    if len(last) < min_frames:
+        print(f"Warning: {st.code} มีแค่ {len(last)} เฟรม (ต้องการอย่างน้อย {min_frames}) ข้าม Nowcast")
+        import sys
+        sys.exit(0)
+
+    actual_n = min(len(last), n)
+    stack, times, meta, _ = build_stack.build_run(last[-actual_n:], st, root, agg=agg, verbose=False)
     return stack, times, meta
 
 
