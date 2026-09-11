@@ -1563,7 +1563,7 @@ function dbzToRainRate(dbz) {
 /**
  * ดึงค่าฝนประมาณการจากเรดาร์ (QPE) ณ พิกัดสถานี
  */
-function getRadarRainAtStation(lat, lon) {
+function getRadarRainAtStation(lat, lon, mode = "1h") {
   if (typeof scanCtx === "undefined" || !scanCtx || !manifest) return 0.0;
   
   const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
@@ -1573,7 +1573,6 @@ function getRadarRainAtStation(lat, lon) {
   const rKm = Math.hypot(eKm, nKm);
   if (rKm > 240) return 0.0;
 
-  // แปลงพิกัดกิโลเมตรเป็นพิกัดบน Canvas ตามความละเอียดจริง (SCAN_RES)
   const px = Math.round(((eKm / halfKm) + 1) / 2 * (SCAN_RES - 1));
   const py = Math.round((1 - (nKm / halfKm)) / 2 * (SCAN_RES - 1));
 
@@ -1581,7 +1580,6 @@ function getRadarRainAtStation(lat, lon) {
     const imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
     let maxDbz = 0;
 
-    // ตรวจสอบแบบ Buffer 3x3 พิกเซลรอบสถานีเพื่อจับสัญญาณฝนจริง
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
         const nx = px + dx, ny = py + dy;
@@ -1594,7 +1592,15 @@ function getRadarRainAtStation(lat, lon) {
     }
 
     if (maxDbz < 15) return 0.0;
-    return parseFloat(dbzToRainRate(maxDbz).toFixed(1));
+    const r1h = dbzToRainRate(maxDbz);
+
+    // ปรับตัวคูณประเมินฝนสะสมตามแท็บชั่วโมงที่เลือก
+    let factor = 1.0;
+    if (mode === "3h") factor = 2.4;
+    else if (mode === "6h") factor = 4.2;
+    else if (mode === "24h") factor = 7.5;
+
+    return parseFloat((r1h * factor).toFixed(1));
   } catch (e) {
     return 0.0;
   }
@@ -1773,8 +1779,9 @@ function renderTelemetryPanelList() {
   // 1. คำนวณค่าฝนเรดาร์และเกจวัดล่วงหน้า พร้อมเก็บค่าสัญญาณสูงสุด (maxSignal)
   const listWithRain = stationMarkerInstances.map(item => {
     const gaugeVal = Number(item[sortKey] || 0);
+    // ส่ง telemetrySortMode ("1h", "3h", "6h", "24h") เข้าไปด้วย
     const radarVal = (typeof getRadarRainAtStation === "function") 
-      ? Number(getRadarRainAtStation(item.data.lat, item.data.lon) || 0) 
+      ? Number(getRadarRainAtStation(item.data.lat, item.data.lon, telemetrySortMode) || 0) 
       : 0;
     
     return {
