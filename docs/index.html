@@ -1327,6 +1327,40 @@ const layerAmphoe = L.layerGroup();
 const layerAmphoeLabels = L.layerGroup();
 const layerTambon = L.layerGroup();
   let currentImpactedList = [];
+  // --- Dynamic LOD: สลับ จังหวัด / อำเภอ / ตำบล อัตโนมัติตาม Zoom Level ---
+  function handleMapZoomLOD() {
+    if (typeof map === "undefined") return;
+    const zoom = map.getZoom();
+    let newLevel = "prov";
+
+    if (zoom >= 11) {
+      newLevel = "tam";  // ซูมระดับลึก -> แสดงตำบล
+    } else if (zoom >= 9) {
+      newLevel = "amp";  // ซูมระดับกลาง -> แสดงอำเภอ
+    } else {
+      newLevel = "prov"; // ซูมมุมกว้าง -> แสดงจังหวัด
+    }
+
+    if (currentImpactLevel !== newLevel) {
+      currentImpactLevel = newLevel;
+
+      // อัปเดตสถานะปุ่มแท็บ UI
+      document.querySelectorAll(".ic-tab-btn").forEach(btn => {
+        if (btn.dataset.level === newLevel) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+
+      // คำนวณสรุปข้อมูลฝนตามระดับ LOD ใหม่
+      if (typeof updateImpactedProvinces === "function") {
+        updateImpactedProvinces();
+      }
+    }
+  }
+
+  map.on("zoomend", handleMapZoomLOD);
 
 // ฟังก์ชันวาดเส้นขอบเขตและซูมพอดีแปลงพื้นที่ (Spotlight Mode - สไตล์ Minimal)
 function highlightBoundary(feature, rain3h) {
