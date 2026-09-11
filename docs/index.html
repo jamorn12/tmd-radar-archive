@@ -709,6 +709,82 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   .legend { display: none; }
   .impact-card { display: none; }
 }
+  /* --- ตารางเปรียบเทียบ Telemetry vs Radar --- */
+.telemetry-header-grid {
+  display: grid;
+  grid-template-columns: 26px 1fr 56px 56px 50px;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #94a3b8;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  align-items: center;
+}
+
+.telemetry-row {
+  display: grid;
+  grid-template-columns: 26px 1fr 56px 56px 50px;
+  gap: 6px;
+  padding: 9px 12px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  align-items: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.telemetry-row:hover {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(56, 189, 248, 0.35);
+  transform: translateY(-1px);
+}
+
+.telem-col-idx {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-align: center;
+}
+
+.telem-col-info { min-width: 0; }
+.telem-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.telem-sub {
+  font-size: 10px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.telem-val-box {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.telem-num-gauge { font-size: 13px; font-weight: 700; color: #38bdf8; line-height: 1.1; }
+.telem-num-radar { font-size: 13px; font-weight: 700; color: #facc15; line-height: 1.1; }
+.telem-unit { font-size: 9px; color: #64748b; }
+
+.telem-bias-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  padding: 3px 4px;
+  border-radius: 6px;
+}
+.bias-match { background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.25); }
+.bias-over { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+.bias-under { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
 </style>
 </head>
 <body>
@@ -828,17 +904,24 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
       <i data-lucide="x" class="icon-xs"></i>
     </button>
   </div>
-
-  <div class="tp-tabs">
-    <button class="tp-tab-btn active" data-mode="1h">1 ชม.</button>
-    <button class="tp-tab-btn" data-mode="3h">3 ชม.</button>
-    <button class="tp-tab-btn" data-mode="6h">6 ชม.</button>
-    <button class="tp-tab-btn" data-mode="24h">24 ชม. (รายวัน)</button>
-  </div>
-
-  <div class="tp-list" id="telemetryStationList"></div>
-</div>
-
+  <!-- ส่วนปุ่มแท็บ 1 ชม. / 3 ชม. / 6 ชม. / 24 ชม. -->
+    <div class="tp-tabs">
+      <button class="tp-tab-btn active" data-hours="1">1 ชม.</button>
+      <button class="tp-tab-btn" data-hours="3">3 ชม.</button>
+      <button class="tp-tab-btn" data-hours="6">6 ชม.</button>
+      <button class="tp-tab-btn" data-hours="24">24 ชม. (รายวัน)</button>
+    </div>
+    <!-- แทรกโค้ดส่วนที่ 2 ตรงนี้ (ใต้แท็บเวลา แต่อยู่เหนิอกล่องลิสต์รายการ) -->
+    <div class="telemetry-header-grid">
+      <div style="text-align: center;">#</div>
+      <div>สถานีโทรมาตร / พิกัด</div>
+      <div style="text-align: right;">สถานี<br><span style="font-size:9px;">(มม.)</span></div>
+      <div style="text-align: right;">เรดาร์<br><span style="font-size:9px;">(มม.)</span></div>
+      <div style="text-align: center;">ความต่าง<br><span style="font-size:9px;">(Bias)</span></div>
+    </div>
+    <!-- กล่องเดิมที่ใช้บรรจุรายการสถานี -->
+    <div class="tp-list" id="telemetryStationList"></div>
+    </div>
 <!-- Actionable Weather Card -->
 <div class="rail collapsed" id="actionRail">
   <div class="action-card glass" id="actionCard">
@@ -1418,7 +1501,31 @@ function dbzToRainRate(dbz) {
   const z = Math.pow(10, dbz / 10);
   return Math.pow(z / 200, 1 / 1.6);
 }
+/**
+ * ดึงค่าฝนประมาณการจากเรดาร์ (QPE) ณ พิกัดสถานี
+ */
+function getRadarRainAtStation(lat, lon) {
+  if (typeof scanCtx === "undefined" || !scanCtx) return 0.0;
+  const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
+  const [eKm, nKm] = project(lat, lon, lat0, lon0);
+  const rKm = Math.hypot(eKm, nKm);
+  if (rKm > 240) return 0.0;
 
+  // แปลงพิกัดกิโลเมตรเป็นพิกัดบน Canvas
+  const cx = 240 + Math.round(eKm);
+  const cy = 240 - Math.round(nKm);
+
+  try {
+    const pixel = scanCtx.getImageData(cx, cy, 1, 1).data;
+    const dbz = colorToDbz(pixel[0], pixel[1], pixel[2], pixel[3]);
+    if (dbz <= 0) return 0.0;
+
+    // คำนวณ Rain Rate (มม./ชม.) ด้วยสูตร Z-R
+    return parseFloat(dbzToRainRate(dbz).toFixed(1));
+  } catch (e) {
+    return 0.0;
+  }
+}
 function getLocalMotionAtPoint(pinE, pinN) {
   if (!manifest || !manifest.motion) return { spd: 15.0, deg: 270 };
   const motion = manifest.motion;
@@ -1587,20 +1694,43 @@ function renderTelemetryPanelList() {
 
   let html = "";
   sorted.forEach((item, index) => {
-    const val = item[sortKey].toFixed(1);
-    const isTop = index < 3 && parseFloat(val) > 0;
-    const isHeavy = parseFloat(val) > (telemetrySortMode === "1h" ? 25 : 50);
+    // 1. ค่าฝนจากสถานีโทรมาตร
+    const gaugeVal = Number(item[sortKey] || 0);
 
+    // 2. ค่าฝนประเมินจากเรดาร์ ณ พิกัดสถานี
+    const radarVal = getRadarRainAtStation(item.data.lat, item.data.lon);
+
+    // 3. คำนวณความคลาดเคลื่อน Bias (เรดาร์ - เกจวัด)
+    const diff = Number((radarVal - gaugeVal).toFixed(1));
+    let biasClass = "bias-match";
+    let biasText = "0.0";
+
+    if (diff > 0) {
+      biasClass = "bias-over";
+      biasText = `+${diff}`;
+    } else if (diff < 0) {
+      biasClass = "bias-under";
+      biasText = `${diff}`;
+    }
+
+    // 4. ประกอบโครงสร้างแถวใหม่ (สอดคล้องกับหัวตาราง 5 คอลัมน์)
     html += `
-      <div class="tp-item" onclick="zoomToStation(${item.data.lat}, ${item.data.lon}, '${item.data.name}', ${item.idx})">
-        <div class="tp-rank ${isTop ? 'top' : ''}">${index + 1}</div>
-        <div class="tp-st-info">
-          <div class="tp-st-name">${item.data.name}</div>
-          <div class="tp-st-sub">ต.${item.data.tb} · อ.${item.data.ap} · จ.${item.data.pv}</div>
+      <div class="telemetry-row" onclick="zoomToStation(${item.data.lat}, ${item.data.lon}, '${item.data.name}', ${item.idx})">
+        <div class="telem-col-idx">${index + 1}</div>
+        <div class="telem-col-info">
+          <div class="telem-name" title="${item.data.name}">${item.data.name}</div>
+          <div class="telem-sub">ต.${item.data.tb || "-"} · อ.${item.data.ap || "-"} · จ.${item.data.pv || "-"}</div>
         </div>
-        <div class="tp-st-val">
-          <div class="tp-val-num ${isHeavy ? 'rain-high' : ''}">${val}</div>
-          <div class="tp-val-unit">มม.</div>
+        <div class="telem-val-box">
+          <span class="telem-num-gauge">${gaugeVal.toFixed(1)}</span>
+          <span class="telem-unit">มม.</span>
+        </div>
+        <div class="telem-val-box">
+          <span class="telem-num-radar">${radarVal.toFixed(1)}</span>
+          <span class="telem-unit">มม.</span>
+        </div>
+        <div style="display: flex; justify-content: center;">
+          <span class="telem-bias-badge ${biasClass}">${biasText}</span>
         </div>
       </div>
     `;
