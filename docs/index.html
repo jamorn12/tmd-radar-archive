@@ -1690,10 +1690,17 @@ function updateTelemetryStationValues() {
 
     let dbz = 0;
     if (imgData && px >= 0 && px < SCAN_RES && py >= 0 && py < SCAN_RES) {
-      const idx = (py * SCAN_RES + px) * 4;
-      dbz = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = px + dx, ny = py + dy;
+          if (nx >= 0 && nx < SCAN_RES && ny >= 0 && ny < SCAN_RES) {
+            const idx = (ny * SCAN_RES + nx) * 4;
+            const curDbz = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
+            if (curDbz > dbz) dbz = curDbz;
+          }
+        }
+      }
     }
-
     const rain1h = dbzToRainRate(dbz);
     const seed = ((st.lat * 37 + st.lon * 19) % 5);
 
