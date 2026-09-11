@@ -1364,8 +1364,33 @@ function selectImpactedArea(idx) {
   const item = currentImpactedList[idx];
   if (!item) return;
 
-  setInspectionPoint(item.lat, item.lon, item.name);
-  highlightBoundary(item.feature, item.rain3h, true); // เพิ่ม true เพื่อให้ซูมพอดีแปลง
+  const lat = item.lat;
+  const lon = item.lon;
+
+  // 1. ซูมเข้าหารูปแปลงพื้นที่จริง (Fit Bounds)
+  if (item.feature && typeof L !== "undefined") {
+    try {
+      const geoLayer = L.geoJSON(item.feature);
+      const bounds = geoLayer.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13, duration: 1.2 });
+      } else if (!isNaN(lat) && !isNaN(lon)) {
+        map.flyTo([lat, lon], 12, { duration: 1.2 });
+      }
+    } catch (e) {
+      if (!isNaN(lat) && !isNaN(lon)) map.flyTo([lat, lon], 12, { duration: 1.2 });
+    }
+  } else if (!isNaN(lat) && !isNaN(lon)) {
+    map.flyTo([lat, lon], 12, { duration: 1.2 });
+  }
+
+  // 2. ปักหมุดและไฮไลต์เส้นขอบแปลง
+  if (typeof setInspectionPoint === "function") {
+    setInspectionPoint(lat, lon, item.name);
+  }
+  if (typeof highlightBoundary === "function" && item.feature) {
+    highlightBoundary(item.feature, item.rain3h, false);
+  }
 }
 
 let manifest = null;
@@ -1813,22 +1838,34 @@ function updateImpactedProvinces() {
       const px = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
       const py = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
 
+      let dbzSum = 0;
+      let dbzCount = 0;
       let maxDbz = 0;
+
+      // ขยายรัศมีสุ่มตัวอย่างเป็น 7x7 รอบจุด และเก็บทั้งผลรวมกับค่าพีค
       if (imgData && px >= 0 && px < SCAN_RES && py >= 0 && py < SCAN_RES) {
-        for (let dy = -2; dy <= 2; dy++) {
-          for (let dx = -2; dx <= 2; dx++) {
+        for (let dy = -3; dy <= 3; dy++) {
+          for (let dx = -3; dx <= 3; dx++) {
             const nx = px + dx, ny = py + dy;
             if (nx >= 0 && nx < SCAN_RES && ny >= 0 && ny < SCAN_RES) {
               const idx = (ny * SCAN_RES + nx) * 4;
               const dbz = rgbToDbz(imgData[idx], imgData[idx+1], imgData[idx+2], imgData[idx+3]);
-              if (dbz > maxDbz) maxDbz = dbz;
+              if (dbz >= 15) { // คิดเฉพาะจุดที่มีฝนจริง
+                dbzSum += dbz;
+                dbzCount++;
+                if (dbz > maxDbz) maxDbz = dbz;
+              }
             }
           }
         }
       }
 
-      if (maxDbz >= 15) {
-        const rain3h = dbzToRainRate(maxDbz) * 3;
+      // คำนวณฝนสะสม 3 ชม. จากค่าเฉลี่ยฝนในแปลงร่วมกับค่าพีค เพื่อกระจายตัวเลขตามจริง
+      if (dbzCount > 0) {
+        const avgDbz = dbzSum / dbzCount;
+        const effectiveDbz = (avgDbz * 0.7) + (maxDbz * 0.3);
+        const rain3h = parseFloat((dbzToRainRate(effectiveDbz) * 3).toFixed(1));
+
         if (rain3h >= 0.5) {
           impactedList.push({
             name: `${prefix}${displayName}`,
@@ -1838,9 +1875,9 @@ function updateImpactedProvinces() {
             feature: feat
           });
         }
-      }
+      } // <--- ปิด if (dbzCount > 0)
     } catch (err) {}
-  });
+  }); // <--- ปิด targetFeatures.forEach
 
   impactedList.sort((a, b) => b.rain3h - a.rain3h);
   currentImpactedList = impactedList.slice(0, 15);
