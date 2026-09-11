@@ -2952,7 +2952,19 @@ document.querySelectorAll(".tp-tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tp-tab-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    telemetrySortMode = btn.dataset.mode;
+
+    // ดึงโหมดจาก dataset หรือถ้าไม่มีให้อ่านจากข้อความบนปุ่มตรงๆ
+    const rawText = (btn.dataset.mode || btn.innerText || "").trim();
+    if (rawText.includes("3")) {
+      telemetrySortMode = "3h";
+    } else if (rawText.includes("6")) {
+      telemetrySortMode = "6h";
+    } else if (rawText.includes("24") || rawText.includes("วัน")) {
+      telemetrySortMode = "24h";
+    } else {
+      telemetrySortMode = "1h";
+    }
+
     renderTelemetryPanelList();
   });
 });
