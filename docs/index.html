@@ -1564,23 +1564,37 @@ function dbzToRainRate(dbz) {
  * ดึงค่าฝนประมาณการจากเรดาร์ (QPE) ณ พิกัดสถานี
  */
 function getRadarRainAtStation(lat, lon) {
-  if (typeof scanCtx === "undefined" || !scanCtx) return 0.0;
+  if (typeof scanCtx === "undefined" || !scanCtx || !manifest) return 0.0;
+  
   const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
+  const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
   const [eKm, nKm] = project(lat, lon, lat0, lon0);
+
   const rKm = Math.hypot(eKm, nKm);
   if (rKm > 240) return 0.0;
 
-  // แปลงพิกัดกิโลเมตรเป็นพิกัดบน Canvas
-  const cx = 240 + Math.round(eKm);
-  const cy = 240 - Math.round(nKm);
+  // แปลงพิกัดกิโลเมตรเป็นพิกัดบน Canvas ตามความละเอียดจริง (SCAN_RES)
+  const px = Math.round(((eKm / halfKm) + 1) / 2 * (SCAN_RES - 1));
+  const py = Math.round((1 - (nKm / halfKm)) / 2 * (SCAN_RES - 1));
 
   try {
-    const pixel = scanCtx.getImageData(cx, cy, 1, 1).data;
-    const dbz = colorToDbz(pixel[0], pixel[1], pixel[2], pixel[3]);
-    if (dbz <= 0) return 0.0;
+    const imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
+    let maxDbz = 0;
 
-    // คำนวณ Rain Rate (มม./ชม.) ด้วยสูตร Z-R
-    return parseFloat(dbzToRainRate(dbz).toFixed(1));
+    // ตรวจสอบแบบ Buffer 3x3 พิกเซลรอบสถานีเพื่อจับสัญญาณฝนจริง
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const nx = px + dx, ny = py + dy;
+        if (nx >= 0 && nx < SCAN_RES && ny >= 0 && ny < SCAN_RES) {
+          const idx = (ny * SCAN_RES + nx) * 4;
+          const dbz = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
+          if (dbz > maxDbz) maxDbz = dbz;
+        }
+      }
+    }
+
+    if (maxDbz < 15) return 0.0;
+    return parseFloat(dbzToRainRate(maxDbz).toFixed(1));
   } catch (e) {
     return 0.0;
   }
