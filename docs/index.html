@@ -1747,19 +1747,33 @@ function renderTelemetryPanelList() {
   if (!container) return;
 
   const keyMap = { "1h": "rain1h", "3h": "rain3h", "6h": "rain6h", "24h": "rain24h" };
-  const sortKey = keyMap[telemetrySortMode] || "1h";
+  const sortKey = keyMap[telemetrySortMode] || "rain1h";
 
-  const sorted = [...stationMarkerInstances].sort((a, b) => b[sortKey] - a[sortKey]);
+  // 1. คำนวณค่าฝนเรดาร์และเกจวัดล่วงหน้า พร้อมเก็บค่าสัญญาณสูงสุด (maxSignal)
+  const listWithRain = stationMarkerInstances.map(item => {
+    const gaugeVal = Number(item[sortKey] || 0);
+    const radarVal = (typeof getRadarRainAtStation === "function") 
+      ? Number(getRadarRainAtStation(item.data.lat, item.data.lon) || 0) 
+      : 0;
+    
+    return {
+      ...item,
+      calculatedGauge: gaugeVal,
+      calculatedRadar: radarVal,
+      // ใช้ค่าฝนที่มากที่สุด (ไม่ว่าเกจหรือเรดาร์ตรวจเจอ) เป็นเกณฑ์จัดอันดับ
+      maxSignal: Math.max(gaugeVal, radarVal)
+    };
+  });
+
+  // 2. เรียงลำดับ: สถานีที่มีฝนตก (เรดาร์เจอ หรือเกจวัดได้) จะถูกดันขึ้นอันดับ 1 ทันที
+  const sorted = listWithRain.sort((a, b) => b.maxSignal - a.maxSignal);
 
   let html = "";
   sorted.forEach((item, index) => {
-    // 1. ค่าฝนจากสถานีโทรมาตร
-    const gaugeVal = Number(item[sortKey] || 0);
+    const gaugeVal = item.calculatedGauge;
+    const radarVal = item.calculatedRadar;
 
-    // 2. ค่าฝนประเมินจากเรดาร์ ณ พิกัดสถานี
-    const radarVal = getRadarRainAtStation(item.data.lat, item.data.lon);
-
-    // 3. คำนวณความคลาดเคลื่อน Bias (เรดาร์ - เกจวัด)
+    // คำนวณความต่าง Bias (เรดาร์ - เกจวัด)
     const diff = Number((radarVal - gaugeVal).toFixed(1));
     let biasClass = "bias-match";
     let biasText = "0.0";
@@ -1772,7 +1786,6 @@ function renderTelemetryPanelList() {
       biasText = `${diff}`;
     }
 
-    // 4. ประกอบโครงสร้างแถวใหม่ (สอดคล้องกับหัวตาราง 5 คอลัมน์)
     html += `
       <div class="telemetry-row" onclick="zoomToStation(${item.data.lat}, ${item.data.lon}, '${item.data.name}', ${item.idx})">
         <div class="telem-col-idx">${index + 1}</div>
