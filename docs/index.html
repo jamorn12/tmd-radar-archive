@@ -2248,25 +2248,26 @@ function analyzeImpactAtPoint(lat, lon) {
     return;
   }
 
-  // กรณีที่ 2: ยังไม่มีฝน ตรวจจับกลุ่มฝนล่วงหน้า (ทั้งจาก Nowcast Frames และ Upwind)
+  // กรณีที่ 2: ยังไม่มีฝน ตรวจหาฝนล่วงหน้าเต็มกรอบ 120 นาที (Nowcast Frames + Upwind Vector)
   let incomingMin = -1;
   let incomingMaxDbz = 0;
   let trajectoryCoords = [];
 
-  // ขั้นที่ 2.1: ตรวจจากผลสแกนเฟรมอนาคตของ Nowcast ตรงตำแหน่งหมุดก่อน (แม่นยำที่สุด)
+  // 2.1 สแกนตรวจสอบตรงจุดปักหมุดจากเฟรมพยากรณ์ Nowcast ล่วงหน้า 120 นาทีโดยตรง
   for (let i = baseIdx + 1; i < sampledDbzList.length; i++) {
     const item = sampledDbzList[i];
-    if (item.dbz >= 15) {
+    if (item.offset > 0 && item.offset <= 120 && item.dbz >= 15) {
       incomingMin = item.offset;
       incomingMaxDbz = item.dbz;
       break;
     }
   }
 
-  // ขั้นที่ 2.2: ตรวจแนวเวกเตอร์ต้นลมย้อนกลับ (Upwind Search) เสริมกรณีโมเดลสลายตัว
-  if (spd > 3 && imgData) {
+  // 2.2 หากโมเดลยังไม่ขึ้น ให้ตรวจจากแนวเวกเตอร์ต้นลมย้อนกลับ (Upwind Trajectory) ล่วงหน้า 120 นาที
+  if (incomingMin === -1 && spd > 3 && imgData) {
     const oppRad = ((deg + 180) % 360) * Math.PI / 180;
-    for (let m = 3; m <= 120; m += 3) {
+    
+    for (let m = 5; m <= 120; m += 5) {
       const distM = (spd * 1000 / 3600) * (m * 60);
       const testE = pinE + distM * Math.sin(oppRad);
       const testN = pinN + distM * Math.cos(oppRad);
@@ -2278,12 +2279,11 @@ function analyzeImpactAtPoint(lat, lon) {
         const idx = (py * SCAN_RES + px) * 4;
         const d = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
         
-        // ถ้าขั้นที่ 2.1 ยังไม่เจอกลุ่มฝน ให้ใช้เวลาจากระยะพัดลมตรงนี้แทน
-        if (d >= 15 && incomingMin === -1) {
+        if (d >= 15) {
           incomingMin = m;
           incomingMaxDbz = d;
+          break;
         }
-        if (d > incomingMaxDbz) incomingMaxDbz = d;
       }
 
       const [wLat, wLon] = unproject(testE, testN, lat0, lon0);
@@ -2291,6 +2291,7 @@ function analyzeImpactAtPoint(lat, lon) {
     }
   }
 
+  // วาดเส้นประแนวการเคลื่อนที่ของกลุ่มฝน (Trajectory Vector) บนแผนที่
   if (trajectoryCoords.length > 0 && incomingMin !== -1) {
     const trajColor = incomingMaxDbz >= 50 ? "#C084FC" : (incomingMaxDbz >= 38 ? "#F59E0B" : "var(--accent)");
     L.polyline([[lat, lon], ...trajectoryCoords], {
@@ -2301,7 +2302,8 @@ function analyzeImpactAtPoint(lat, lon) {
     }).addTo(layerTrajectory);
   }
 
-  if (incomingMin !== -1) {
+  // หากพบกลุ่มฝนภายในกรอบ 120 นาที ให้ส่งสัญญาณและแจ้งเตือนทันที
+  if (incomingMin > 0 && incomingMin <= 120) {
     const willHail = incomingMaxDbz >= 50 || peakDbz >= 50;
     if (hailBadge) hailBadge.style.display = willHail ? "flex" : "none";
 
@@ -2331,10 +2333,9 @@ function analyzeImpactAtPoint(lat, lon) {
     if (descEl) descEl.innerHTML = `ตรวจพบกลุ่มฝนความแรงสูงสุด <b>${incomingMaxDbz.toFixed(0)} dBZ</b> ความเร็ว ${spd.toFixed(1)} กม./ชม. กำลังมุ่งหน้ามายังจุดนี้`;
     if (pillText) pillText.textContent = `ฝนเข้าในอีก ${incomingMin} นาที`;
 
-    // ขยายเงื่อนไขแจ้งเตือนเป็นภายใน 120 นาที
-    if (incomingMin <= 120) {
-      triggerRainNotification(incomingMin, startStr, durEst, willHail);
-    }
+    // สั่งยิง Notification และส่งเสียง Chime เตือนล่วงหน้าสูงสุด 120 นาที
+    triggerRainNotification(incomingMin, startStr, durEst, willHail);
+  }
   } else {
     if (badgeEl) {
       badgeEl.className = "ac-status-badge badge-clear";
