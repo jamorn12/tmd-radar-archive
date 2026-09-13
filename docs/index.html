@@ -3137,26 +3137,61 @@ function syncAlertBtnUI() {
   safeLucide();
 }
 syncAlertBtnUI();
+// --- วางข้อ 1: ฟังก์ชันส่งแจ้งเตือนที่รองรับ Mobile และ Service Worker ---
+async function showMobileNotification(title, options) {
+  if (typeof playAlertChime === "function") playAlertChime(options?.data?.isHailRisk || false);[cite: 1]
 
-btnAlert.addEventListener("click", async () => {
-  if (!("Notification" in window)) {
-    return alert("เบราว์เซอร์นี้ไม่รองรับระบบ Web Notification");
+  if (navigator.vibrate) {
+    navigator.vibrate(options?.vibrate || [200, 100, 200]);[cite: 1]
   }
 
-  if (!isAlertEnabled) {
-    const perm = await Notification.requestPermission();
-    if (perm === "granted") {
-      isAlertEnabled = true;
-      localStorage.setItem("tanfon_alert_enabled", "true");
-      syncAlertBtnUI();
-      playAlertChime(false);
-      new Notification("ทันฝน: เปิดระบบแจ้งเตือนสำเร็จ", {
-        body: "ระบบจะแจ้งเตือนอัตโนมัติล่วงหน้า 2 ชั่วโมงเมื่อมีกลุ่มฝนมุ่งหน้ามาหาคุณ",
-        icon: "icon-192.png"
-      });
-      analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
-    } else {
-      alert("กรุณาอนุญาต (Allow) การแจ้งเตือนในการตั้งค่าของเบราว์เซอร์");
+  if ("serviceWorker" in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg && reg.showNotification) {
+        return await reg.showNotification(title, options);
+      }
+    } catch (e) {
+      console.warn("SW notification failed, falling back:", e);
+    }
+  }
+
+  try {
+    new Notification(title, options);
+  } catch (e) {
+    console.warn("Standard Notification failed:", e);
+  }
+}
+
+// --- วางข้อ 2: เข้ามาแทนที่บล็อก btnAlert.addEventListener เดิม ---
+btnAlert.addEventListener("click", async () => {
+  if (!("Notification" in window)) {
+    return alert("เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน (หากใช้ iPhone ให้กดแชร์แล้วเลือก 'เพิ่มไปยังหน้าจอโฮม' ก่อน)");
+  }
+
+  if (!isAlertEnabled) {[cite: 1]
+    try {
+      const perm = await Notification.requestPermission();[cite: 1]
+      if (perm === "granted") {[cite: 1]
+        isAlertEnabled = true;[cite: 1]
+        localStorage.setItem("tanfon_alert_enabled", "true");[cite: 1]
+        syncAlertBtnUI();[cite: 1]
+
+        await showMobileNotification("ทันฝน: เปิดระบบแจ้งเตือนสำเร็จ", {[cite: 1]
+          body: "ระบบจะแจ้งเตือนอัตโนมัติล่วงหน้า 2 ชั่วโมงเมื่อมีกลุ่มฝนมุ่งหน้ามาหาคุณ",
+          icon: "icon-192.png",[cite: 1]
+          badge: "icon-192.png",[cite: 1]
+          vibrate: [150, 80, 150]
+        });
+
+        if (typeof analyzeImpactAtPoint === "function") {
+          analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);[cite: 1]
+        }
+      } else if (perm === "denied") {
+        alert("คุณเคยปิดกั้นการแจ้งเตือนไว้ โปรดแตะไอคอนรูปกุญแจ/การตั้งค่าไซต์ข้างแถบ URL เพื่อ 'อนุญาตการแจ้งเตือน'");
+      }
+    } catch (err) {
+      alert("ไม่สามารถเปิดการแจ้งเตือนได้: " + err.message);
     }
   } else {
     isAlertEnabled = false;
@@ -3164,7 +3199,6 @@ btnAlert.addEventListener("click", async () => {
     syncAlertBtnUI();
   }
 });
-
 // ฟังก์ชันสำหรับรีโหลดภาพเรดาร์เมื่อมีรอบข้อมูลใหม่เข้ามา
 async function reloadRadarData(newManifest) {
   // 1. นำเลเยอร์ภาพเรดาร์เดิมออกจากแผนที่เพื่อไม่ให้ภาพซ้อนทับกัน
