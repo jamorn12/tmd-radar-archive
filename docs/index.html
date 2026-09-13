@@ -2248,14 +2248,24 @@ function analyzeImpactAtPoint(lat, lon) {
     return;
   }
 
-  // กรณีที่ 2: ยังไม่มีฝน ตรวจหาต้นลมย้อนหลังล่วงหน้า 120 นาที (Upwind Search)
+  // กรณีที่ 2: ยังไม่มีฝน ตรวจจับกลุ่มฝนล่วงหน้า (ทั้งจาก Nowcast Frames และ Upwind)
   let incomingMin = -1;
   let incomingMaxDbz = 0;
   let trajectoryCoords = [];
 
+  // ขั้นที่ 2.1: ตรวจจากผลสแกนเฟรมอนาคตของ Nowcast ตรงตำแหน่งหมุดก่อน (แม่นยำที่สุด)
+  for (let i = baseIdx + 1; i < sampledDbzList.length; i++) {
+    const item = sampledDbzList[i];
+    if (item.dbz >= 15) {
+      incomingMin = item.offset;
+      incomingMaxDbz = item.dbz;
+      break;
+    }
+  }
+
+  // ขั้นที่ 2.2: ตรวจแนวเวกเตอร์ต้นลมย้อนกลับ (Upwind Search) เสริมกรณีโมเดลสลายตัว
   if (spd > 3 && imgData) {
     const oppRad = ((deg + 180) % 360) * Math.PI / 180;
-    // ขยายลูปจาก 60 เป็น 120 นาที
     for (let m = 3; m <= 120; m += 3) {
       const distM = (spd * 1000 / 3600) * (m * 60);
       const testE = pinE + distM * Math.sin(oppRad);
@@ -2268,6 +2278,7 @@ function analyzeImpactAtPoint(lat, lon) {
         const idx = (py * SCAN_RES + px) * 4;
         const d = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
         
+        // ถ้าขั้นที่ 2.1 ยังไม่เจอกลุ่มฝน ให้ใช้เวลาจากระยะพัดลมตรงนี้แทน
         if (d >= 15 && incomingMin === -1) {
           incomingMin = m;
           incomingMaxDbz = d;
