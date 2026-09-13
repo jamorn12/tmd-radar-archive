@@ -2335,11 +2335,14 @@ function analyzeImpactAtPoint(lat, lon) {
 
     // สั่งยิง Notification และส่งเสียง Chime เตือนล่วงหน้าสูงสุด 120 นาที
     triggerRainNotification(incomingMin, startStr, durEst, willHail);
-  }
   } else {
     if (badgeEl) {
       badgeEl.className = "ac-status-badge badge-clear";
       badgeEl.textContent = "ท้องฟ้าโปร่ง";
+    }
+    if (badgeEl) {
+     badgeEl.className = "ac-status-badge badge-clear";
+     badgeEl.textContent = "ท้องฟ้าโปร่ง";
     }
     // ปรับเป็น 2 ชั่วโมง (120 นาที)
     if (headlineEl) headlineEl.innerHTML = `ไม่มีฝนใน 2 ชั่วโมงข้างหน้า`;
