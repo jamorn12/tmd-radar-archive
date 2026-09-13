@@ -1475,7 +1475,13 @@ let rangeCircleElements = [];
 let stationMarkerElement = null;
 let radarMaskPolygon = null;
 
-let isAlertEnabled = localStorage.getItem("tanfon_alert_enabled") === "true";
+const hasNotiPermission = ("Notification" in window) && Notification.permission === "granted";
+let isAlertEnabled = (localStorage.getItem("tanfon_alert_enabled") === "true") && hasNotiPermission;
+
+if (!hasNotiPermission) {
+  isAlertEnabled = false;
+  localStorage.setItem("tanfon_alert_enabled", "false");
+}
 let lastAlertTimestamp = 0;
 let currentSampledDbzList = [];
 
