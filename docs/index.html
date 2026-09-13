@@ -3139,10 +3139,10 @@ function syncAlertBtnUI() {
 syncAlertBtnUI();
 // --- วางข้อ 1: ฟังก์ชันส่งแจ้งเตือนที่รองรับ Mobile และ Service Worker ---
 async function showMobileNotification(title, options) {
-  if (typeof playAlertChime === "function") playAlertChime(options?.data?.isHailRisk || false);[cite: 1]
+  if (typeof playAlertChime === "function") playAlertChime(options?.data?.isHailRisk || false);
 
   if (navigator.vibrate) {
-    navigator.vibrate(options?.vibrate || [200, 100, 200]);[cite: 1]
+    navigator.vibrate(options?.vibrate || [200, 100, 200]);
   }
 
   if ("serviceWorker" in navigator) {
@@ -3169,23 +3169,23 @@ btnAlert.addEventListener("click", async () => {
     return alert("เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน (หากใช้ iPhone ให้กดแชร์แล้วเลือก 'เพิ่มไปยังหน้าจอโฮม' ก่อน)");
   }
 
-  if (!isAlertEnabled) {[cite: 1]
+  if (!isAlertEnabled) {
     try {
-      const perm = await Notification.requestPermission();[cite: 1]
-      if (perm === "granted") {[cite: 1]
-        isAlertEnabled = true;[cite: 1]
-        localStorage.setItem("tanfon_alert_enabled", "true");[cite: 1]
-        syncAlertBtnUI();[cite: 1]
+      const perm = await Notification.requestPermission();
+      if (perm === "granted") {
+        isAlertEnabled = true;
+        localStorage.setItem("tanfon_alert_enabled", "true");
+        syncAlertBtnUI();
 
-        await showMobileNotification("ทันฝน: เปิดระบบแจ้งเตือนสำเร็จ", {[cite: 1]
+        await showMobileNotification("ทันฝน: เปิดระบบแจ้งเตือนสำเร็จ", {
           body: "ระบบจะแจ้งเตือนอัตโนมัติล่วงหน้า 2 ชั่วโมงเมื่อมีกลุ่มฝนมุ่งหน้ามาหาคุณ",
-          icon: "icon-192.png",[cite: 1]
-          badge: "icon-192.png",[cite: 1]
+          icon: "icon-192.png",
+          badge: "icon-192.png",
           vibrate: [150, 80, 150]
         });
 
         if (typeof analyzeImpactAtPoint === "function") {
-          analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);[cite: 1]
+          analyzeImpactAtPoint(userPinLatLon[0], userPinLatLon[1]);
         }
       } else if (perm === "denied") {
         alert("คุณเคยปิดกั้นการแจ้งเตือนไว้ โปรดแตะไอคอนรูปกุญแจ/การตั้งค่าไซต์ข้างแถบ URL เพื่อ 'อนุญาตการแจ้งเตือน'");
