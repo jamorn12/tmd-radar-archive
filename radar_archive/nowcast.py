@@ -214,8 +214,9 @@ def motion_pysteps(stack: np.ndarray):
     ใส่ NaN นอกรัศมีไปตรง ๆ ได้ pysteps จัดการเป็น missing ให้เอง
     """
     from pysteps.motion.lucaskanade import dense_lucaskanade
-    V = dense_lucaskanade(np.asarray(stack, np.float64), verbose=False)
-    return np.asarray(V, np.float32), dict(method="pysteps.dense_lucaskanade")
+    V = np.asarray(dense_lucaskanade(np.asarray(stack, np.float64), verbose=False), np.float32)
+    # pysteps คืน (x, y) แต่ทั้งระบบเราใช้ (y, x) -> สลับที่ประตูเข้า จุดเดียว
+    return np.stack([V[1], V[0]]), dict(method="pysteps.dense_lucaskanade")
 
 
 def estimate_motion(stack: np.ndarray, engine: str, kmperpixel: float, timestep_min: float):
@@ -251,6 +252,10 @@ def motion_stability(V: np.ndarray, info: dict, kmperpixel: float, timestep_min:
 
     if info.get("method") == "block-matching":
         a = np.array(info["pairs"], float)
+    if len(a) < 3:
+            # std ของ 1-2 ตัวอย่าง = ~0 เสมอ -> confidence จะขึ้น high ทั้งที่ข้อมูลน้อยที่สุด
+            return dict(confidence="low", n_samples=len(a),
+                        reason=f"มีแค่ {len(a)} คู่เฟรม ยังวัดความนิ่งของ motion ไม่ได้")
         spd = np.hypot(a[:, 0], a[:, 1]) * to_kmh
         ang = np.arctan2(a[:, 1], a[:, 0])
         n = len(a)
@@ -353,9 +358,13 @@ def extrapolate_light(last: np.ndarray, V: np.ndarray, leads: tuple, timestep_mi
 def extrapolate_pysteps(last: np.ndarray, V: np.ndarray, leads: tuple, timestep_min: float):
     from pysteps.extrapolation.semilagrangian import extrapolate as sl
     n = int(round(max(leads) / timestep_min))
-    out = sl(np.asarray(last, np.float64), np.asarray(V, np.float64), n)
+    outside = ~np.isfinite(last)                      # จำบริเวณ "ไม่มีข้อมูล" ไว้ก่อน
+    src = np.nan_to_num(np.asarray(last, np.float64), nan=0.0)
+    V_ps = np.stack([V[1], V[0]]).astype(np.float64)  # (y, x) -> (x, y) ที่ประตูออก
+    out = np.asarray(sl(src, V_ps, n), np.float32)
+    out[:, outside] = np.nan                          # คืนสถานะ NaN นอกรัศมี
     idx = [int(round(l / timestep_min)) - 1 for l in leads]
-    return np.asarray(out, np.float32)[idx]
+    return out[idx]
 
 
 def run_extrapolation(last: np.ndarray, V: np.ndarray, engine: str,
