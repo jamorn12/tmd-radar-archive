@@ -252,7 +252,7 @@ def motion_stability(V: np.ndarray, info: dict, kmperpixel: float, timestep_min:
 
     if info.get("method") == "block-matching":
         a = np.array(info["pairs"], float)
-    if len(a) < 3:
+        if len(a) < 3:
             # std ของ 1-2 ตัวอย่าง = ~0 เสมอ -> confidence จะขึ้น high ทั้งที่ข้อมูลน้อยที่สุด
             return dict(confidence="low", n_samples=len(a),
                         reason=f"มีแค่ {len(a)} คู่เฟรม ยังวัดความนิ่งของ motion ไม่ได้")
@@ -372,8 +372,9 @@ def run_extrapolation(last: np.ndarray, V: np.ndarray, engine: str,
     if engine == "pysteps":
         try:
             return extrapolate_pysteps(last, V, leads, timestep_min), "pysteps.semilagrangian"
-        except ImportError:
-            pass
+        except Exception as e:
+            print(f"[!] pysteps extrapolate ล้ม ({type(e).__name__}: {e}) — ใช้ light แทน",
+                  file=sys.stderr)
     return extrapolate_light(last, V, leads, timestep_min), "semilagrangian (light)"
 
 
