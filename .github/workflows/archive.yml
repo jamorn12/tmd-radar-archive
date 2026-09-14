@@ -13,6 +13,11 @@ on:
       repeat:
         description: 'วนเช็กกี่รอบใน job เดียว (เฉพาะรันมือถือ/manual)'
         default: '1'
+      engine:
+        description: 'motion engine: auto = ใช้ pysteps ถ้ามี | light = block matching ของเรา'
+        type: choice
+        options: [auto, light, pysteps]
+        default: auto
 
 permissions:
   contents: write
@@ -49,6 +54,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # ยืนยันว่า optical flow พร้อมใช้จริง ไม่ใช่เงียบ ๆ ตกไป light ทุกรอบ
+      - name: Verify Motion Engine
+        if: ${{ github.event.inputs.mode != 'repair' }}
+        run: |
+          python - <<'PY'
+          import importlib.metadata as md
+          try:
+              from pysteps.motion.lucaskanade import dense_lucaskanade   # noqa: F401
+              from pysteps.extrapolation import semilagrangian           # noqa: F401
+              print(f"::notice::pysteps {md.version('pysteps')} พร้อมใช้ — engine=auto จะใช้ optical flow")
+          except Exception as e:
+              print(f"::warning::pysteps ใช้ไม่ได้ ({type(e).__name__}: {e}) — จะตกไปใช้ engine=light")
+          PY
+
       # โหมดอัตโนมัติจะสั่ง fetch 1 รอบแล้วไปทำ Nowcast ทันที ไม่ต้อง sleep แช่ 9 นาที
       - name: Fetch and Process Radar Frame
         if: ${{ github.event.inputs.mode != 'repair' }}
@@ -64,11 +83,15 @@ jobs:
         run: |
           python -m radar_archive.cli --station PHS repair --apply
 
-      - name: Nowcast (extrapolation, 60 min)
+      # continue-on-error ทำให้ step นี้พังแบบเงียบ ๆ -> ต้องมี ::warning:: ให้เห็นที่หน้าสรุป run
+      - name: Nowcast (extrapolation)
         if: ${{ github.event.inputs.mode != 'repair' }}
         continue-on-error: true
         run: |
-          python -m radar_archive.nowcast --station PHS --out docs/nowcast/PHS
+          python -m radar_archive.nowcast --station PHS \
+            --engine "${{ github.event.inputs.engine || 'auto' }}" \
+            --out docs/nowcast/PHS \
+            || echo "::warning::Nowcast ล้มเหลวรอบนี้ — เว็บจะยังแสดงผลรอบก่อน ตรวจ log ของ step นี้"
 
       - name: Commit and Push Changes
         run: |
