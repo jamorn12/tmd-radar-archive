@@ -1325,24 +1325,48 @@ const THEME_STYLES = {
 
 let currentTheme = "hillshade";
 
+// เครดิตแหล่ง basemap — Esri อนุญาตให้ใช้ฟรีโดยมีเงื่อนไขว่าต้องให้เครดิต
+const ESRI_ATTR = 'Tiles &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener">Esri</a>';
+const ESRI_IMAGERY_ATTR = 'Imagery &copy; Esri, Maxar, Earthstar Geographics';
+
 const baseLayers = {
   dark: L.layerGroup([
-    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16, attribution: ESRI_ATTR }),
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
   ]),
   hillshade: L.layerGroup([
-    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16, attribution: ESRI_ATTR }),
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16, opacity: 0.65 })
   ]),
-  satellite: L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", { attribution: "Google Maps", maxZoom: 19 }),
+  // เดิมใช้ mt1.google.com/vt ซึ่งเป็น endpoint ภายในของ Google ที่ไม่ได้เปิดให้ใช้สาธารณะ
+  // (ต้องผ่าน Maps JavaScript API / Map Tiles API พร้อม key) จึงเปลี่ยนมาใช้ Esri World Imagery
+  // ที่เปิดให้ใช้ฟรีพร้อมเครดิต และเป็นผู้ให้บริการเดียวกับอีก 3 theme อยู่แล้ว
+  satellite: L.layerGroup([
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 18, attribution: ESRI_IMAGERY_ATTR }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16, opacity: 0.8 })
+  ]),
   light: L.layerGroup([
-    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16, attribution: ESRI_ATTR }),
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
   ])
 };
 
 const map = L.map("map", { center: [16.77, 100.22], zoom: 8, zoomControl: false, layers: [baseLayers.hillshade] });
 L.control.zoom({ position: "bottomright" }).addTo(map);
+
+// tile หลุดเป็นเรื่องปกติ (cache ของเบราว์เซอร์เสีย / เน็ตสะดุด / เซิร์ฟเวอร์ตอบช้า)
+// ถ้าไม่ดัก แผนที่จะขาดเป็นช่องเงียบ ๆ ผู้ใช้เข้าใจว่าเว็บพัง
+let tileFailCount = 0;
+Object.values(baseLayers)
+  .flatMap(l => (typeof l.getLayers === "function" ? l.getLayers() : [l]))
+  .forEach(layer => layer.on("tileerror", () => {
+    tileFailCount++;
+    if (tileFailCount === 12) {
+      console.warn("[basemap] tile โหลดไม่ได้หลายชิ้น — แผนที่ฐานอาจขาดเป็นช่อง " +
+                   "(มักเกิดจาก cache ของเบราว์เซอร์ ลองล้าง cache หรือเปิดโหมดไม่ระบุตัวตน) " +
+                   "ข้อมูลเรดาร์ไม่กระทบ");
+    }
+  }));
 
 map.createPane('maskPane');
 map.getPane('maskPane').style.zIndex = 410;
@@ -1501,11 +1525,26 @@ const liveGpsIcon = L.divIcon({
   popupAnchor: [0, -14]
 });
 
-const SCAN_RES = 160;
+// SCAN_RES ต้องเท่ากับ manifest.grid[0] เป๊ะ
+// เดิมตั้งไว้ 160 ขณะที่กริดจริงคือ 241 -> canvas ย่อภาพลงแล้ว "เกลี่ยสี" ระหว่างพิกเซล
+// ทำให้ทุกพิกเซลที่อ่านได้เป็นสีผสมที่ไม่มีอยู่ในตาราง palette และค่า dBZ ที่ถอดกลับมาผิด
+// imageSmoothingEnabled = false บังคับ nearest-neighbour ห้ามเกลี่ยสีเด็ดขาด
+let SCAN_RES = 241;
 const scanCanvas = document.createElement("canvas");
 scanCanvas.width = SCAN_RES;
 scanCanvas.height = SCAN_RES;
 const scanCtx = scanCanvas.getContext("2d", { willReadFrequently: true });
+scanCtx.imageSmoothingEnabled = false;
+
+function syncScanRes() {
+  const n = manifest && manifest.grid && manifest.grid[0];
+  if (!n || n === SCAN_RES) return;
+  console.warn(`[scan] ปรับ SCAN_RES ${SCAN_RES} -> ${n} ตาม manifest.grid`);
+  SCAN_RES = n;
+  scanCanvas.width = SCAN_RES;
+  scanCanvas.height = SCAN_RES;
+  scanCtx.imageSmoothingEnabled = false;
+}
 
 function unproject(E, Nn, lat0, lon0) {
   if (isNaN(E) || isNaN(Nn)) return [lat0, lon0];
@@ -1582,21 +1621,64 @@ function triggerRainNotification(etaMin, startStr, durationMin, isHailRisk) {
   try { new Notification(title, options); } catch (e) {}
 }
 
-function rgbToDbz(r, g, b, a) {
-  if (a < 35) return 0;
-  if (r > 170 && b > 170) return 56;
-  if (r > 190 && g < 70 && b < 70) return 50;
-  if (r > 200 && g > 100 && b < 60) return 42;
-  if (r > 190 && g > 190 && b < 70) return 35;
-  if (g > 130 && r < 140) return 25;
-  if (b > 160 && g > 160) return 18;
-  return 0;
+// ---- palette: อ่านจาก manifest ไม่ hardcode ----
+// เดิมเป็นเงื่อนไข if 7 ชั้นที่เดาช่วงสีเอาเอง ทำให้สีเขียวทุกเฉด (10.4 - 24 dBZ)
+// ถูกตีเป็น 25 dBZ เหมือนกันหมด คลาดได้ถึง 15 dBZ ที่ปลายล่าง
+// ภาพเฟรมถูก render ด้วย levels_rgb ชุดนี้เอง การจับคู่กลับจึงตรงเป๊ะ
+let _pal = null;
+function getPalette() {
+  if (_pal && _pal.src === manifest) return _pal;
+  if (!manifest || !Array.isArray(manifest.levels_rgb) || !Array.isArray(manifest.levels_dbz)) return null;
+  const rgb = manifest.levels_rgb, dbz = manifest.levels_dbz;
+  if (rgb.length !== dbz.length || !rgb.length) {
+    console.warn("[palette] levels_rgb กับ levels_dbz ยาวไม่เท่ากัน — ข้ามการถอดค่า");
+    return null;
+  }
+  _pal = { src: manifest, rgb, dbz, cache: new Map() };
+  return _pal;
 }
 
+// ระยะห่างสีสูงสุดที่ยอมรับ ก่อนตัดสินว่า "ไม่ใช่สีในตาราง" (ระยะยกกำลังสองใน RGB)
+// วัดจากเฟรมจริง: สีใน PNG ต่างจาก levels_rgb ไม่เกิน 1.7 หน่วย (เป็นผลจากการปัดเศษ
+// ระหว่าง palette ที่สกัดรายรอบ กับตารางที่เก็บใน manifest)
+// ส่วนสีขาว (ตัวหนังสือบนแผนที่ที่อาจหลุดมา) ห่างจากสีที่ใกล้ที่สุด ~32 หน่วย
+// ตั้งไว้ที่ 8 จึงรับสีจริงได้สบาย และตัดสีที่ไม่ใช่ palette ออกแน่นอน
+const PAL_MAX_D2 = 8 * 8;
+
+function rgbToDbz(r, g, b, a) {
+  if (a < 35) return 0;
+  const p = getPalette();
+  if (!p) return 0;
+
+  const key = (r << 16) | (g << 8) | b;
+  const hit = p.cache.get(key);
+  if (hit !== undefined) return hit;
+
+  // ตาราง TMD มีสีซ้ำ 4 คู่ (เช่น [2,202,0] เป็นทั้ง 16.5 และ 19 dBZ)
+  // เป็น ambiguity ที่แก้ไม่ได้จากภาพ — เลือกค่าต่ำกว่าเสมอ (d2 < bestD2 ไม่ใช่ <=)
+  // เพื่อให้ประเมินต่ำไว้ก่อน ดีกว่าประเมินฝนแรงเกินจริง
+  let best = -1, bestD2 = Infinity;
+  for (let i = 0; i < p.rgb.length; i++) {
+    const c = p.rgb[i];
+    const dr = r - c[0], dg = g - c[1], db = b - c[2];
+    const d2 = dr * dr + dg * dg + db * db;
+    if (d2 < bestD2) { bestD2 = d2; best = i; }
+  }
+  // ไกลจากทุกสีในตาราง = ขอบภาพที่ถูกเกลี่ย หรือไม่ใช่ echo -> ไม่ใช่ฝน
+  const val = (best < 0 || bestD2 > PAL_MAX_D2) ? 0 : p.dbz[best];
+  if (p.cache.size < 20000) p.cache.set(key, val);
+  return val;
+}
+
+// ---- Z-R: อ่านค่าจาก manifest ไม่ hardcode ----
+// เดิมใช้ Marshall-Palmer (200, 1.6) ขณะที่ระบบผลิต manifest บอกว่าใช้ (250, 1.2)
+// ที่ 45 dBZ สองสูตรต่างกัน 2.4 เท่า · ที่ 55 dBZ ต่างกัน 3.9 เท่า
 function dbzToRainRate(dbz) {
-  if (!dbz || dbz < 15) return 0.0;
+  if (!Number.isFinite(dbz) || dbz < (manifest?.wet_threshold_dbz ?? 11.98)) return 0.0;
+  const zr = (manifest && Array.isArray(manifest.zr) && manifest.zr.length === 2)
+           ? manifest.zr : [250.0, 1.2];
   const z = Math.pow(10, dbz / 10.0);
-  const r = Math.pow(z / 200.0, 1.0 / 1.6);
+  const r = Math.pow(z / zr[0], 1.0 / zr[1]);
   return parseFloat(r.toFixed(1));
 }
 /**
@@ -1645,7 +1727,9 @@ function getRadarRainAtStation(lat, lon, mode = "1h") {
   }
 }
 function getLocalMotionAtPoint(pinE, pinN) {
-  if (!manifest || !manifest.motion) return { spd: 15.0, deg: 270 };
+  // คืน null เมื่อไม่รู้จริง ๆ — เดิมคืนค่าปลอม {15 กม./ชม., 270 องศา} ซึ่งผู้ใช้
+  // แยกไม่ออกว่าเป็นค่าจริงหรือค่าเริ่มต้น
+  if (!manifest || !manifest.motion) return null;
   const motion = manifest.motion;
 
   if (motion.grid_u && motion.grid_v && motion.resolution_km) {
@@ -1659,19 +1743,32 @@ function getLocalMotionAtPoint(pinE, pinN) {
       const v = motion.grid_v[idx] || 0;
       const spd = Math.hypot(u, v) * 3.6;
       const deg = (Math.atan2(u, v) * 180 / Math.PI + 360) % 360;
-      if (spd > 0.5) return { spd: spd, deg: deg };
+      if (spd > 0.5) {
+        return { spd, deg, uniform: false, confidence: motion.confidence || "unknown" };
+      }
     }
   }
 
-  const globalSpd = motion.speed_kmh || motion.kmh || 15.0;
-  const globalDeg = motion.direction_deg !== undefined ? motion.direction_deg : (motion.bearing || 270);
+  // ไม่มี motion field รายพิกเซล -> ใช้เวกเตอร์เดียวทั้งภาพ **ตรง ๆ**
+  //
+  // โค้ดเดิมตรงนี้บวกค่าหลอกเข้าไปตามตำแหน่งของลูกศรบนแผนที่:
+  //     localDeg = globalDeg + cos(angle) * 12        -> บิดทิศได้ +-12 องศา
+  //     localSpd = globalSpd + sin(angle*2)*4 + dist/60
+  // ทำให้ลูกศรสองอันที่ควรชี้ทางเดียวกัน ต่างกันได้ถึง 24 องศา และยิ่งไกลสถานี
+  // ยิ่งดูเร็วขึ้น ทั้งที่ระบบประมาณ motion ได้เวกเตอร์เดียว ไม่มีข้อมูลรายจุดเลย
+  // การแสดงความหลากหลายที่ไม่มีอยู่จริง แย่กว่าการแสดงลูกศรเหมือนกันทุกอัน
+  //
+  // ใช้ Number.isFinite แทน || เพราะใน JS เลข 0 เป็น falsy
+  // bearing = 0 (ฝนไปทางเหนือพอดี) จะกลายเป็น 270 และ kmh = 0 จะกลายเป็น 15
+  const spd = Number.isFinite(motion.speed_kmh) ? motion.speed_kmh
+            : Number.isFinite(motion.kmh)       ? motion.kmh
+            : null;
+  const deg = Number.isFinite(motion.direction_deg) ? motion.direction_deg
+            : Number.isFinite(motion.bearing)       ? motion.bearing
+            : null;
+  if (spd === null || deg === null) return null;
 
-  const dist = Math.hypot(pinE, pinN);
-  const angle = Math.atan2(pinN, pinE);
-  const localSpd = Math.max(4.0, globalSpd + Math.sin(angle * 2) * 4.0 + (dist / 60));
-  const localDeg = (globalDeg + Math.cos(angle) * 12 + 360) % 360;
-
-  return { spd: localSpd, deg: localDeg };
+  return { spd, deg, uniform: true, confidence: motion.confidence || "unknown" };
 }
 
 function initTelemetryStationMarkers() {
@@ -2185,8 +2282,11 @@ function analyzeImpactAtPoint(lat, lon) {
   if (!manifest || !manifest.motion || frameImages.length === 0) return;
 
   const motion = manifest.motion;
-  const spd = motion.speed_kmh || motion.kmh || 0;
-  const deg = motion.direction_deg !== undefined ? motion.direction_deg : (motion.bearing || 0);
+  // ใช้ Number.isFinite แทน || ด้วยเหตุผลเดียวกับใน getLocalMotionAtPoint
+  const spd = Number.isFinite(motion.speed_kmh) ? motion.speed_kmh
+            : Number.isFinite(motion.kmh)       ? motion.kmh : 0;
+  const deg = Number.isFinite(motion.direction_deg) ? motion.direction_deg
+            : Number.isFinite(motion.bearing)       ? motion.bearing : 0;
 
   const lat0 = radarStationLatLon[0] || 16.77;
   const lon0 = radarStationLatLon[1] || 100.22;
@@ -2575,8 +2675,14 @@ function renderCellVectors(frameIdx) {
           if (isNaN(lat) || isNaN(lon)) continue;
           
           const localMotion = getLocalMotionAtPoint(e, n);
+          if (!localMotion) continue;                 // ไม่รู้ motion -> ไม่วาดลูกศร ดีกว่าวาดมั่ว
           const spd = localMotion.spd;
           const deg = localMotion.deg;
+
+          // confidence ต่ำ = ก้อนฝนเคลื่อนคนละทิศ เวกเตอร์เดียวแทนทั้งภาพไม่ได้
+          // ยังวาดอยู่ แต่ทำให้จางลงเพื่อบอกผู้ใช้ว่าเชื่อได้น้อย
+          const weakFlow = localMotion.confidence === "low" || localMotion.confidence === "none";
+          const arrowOpacity = weakFlow ? 0.45 : 1;
 
           const arrowLength = Math.min(32, Math.max(20, 16 + spd * 0.4));
           const arrowStroke = Math.min(3.0, Math.max(2.0, 1.8 + spd * 0.04));
@@ -2584,7 +2690,7 @@ function renderCellVectors(frameIdx) {
           const svgHtml = `
             <div class="arrow-icon" style="width: ${arrowLength}px; height: ${arrowLength}px;">
               <svg viewBox="0 0 28 28" width="${arrowLength}" height="${arrowLength}"
-                   style="transform: rotate(${deg}deg); filter: drop-shadow(0 1px 3px rgba(0,0,0,0.9));">
+                   style="transform: rotate(${deg}deg); opacity: ${arrowOpacity}; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.9));">
                 <line x1="14" y1="23" x2="14" y2="4" stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round"/>
                 <polyline points="8,11 14,4 20,11" fill="none" stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
@@ -2596,7 +2702,11 @@ function renderCellVectors(frameIdx) {
           });
 
           const marker = L.marker([lat, lon], { icon, interactive: true });
-          marker.bindTooltip(`ทิศทาง: ${deg.toFixed(0)}°<br>ความเร็ว: ${spd.toFixed(1)} กม./ชม.`, { direction: "top", offset: [0, -8] });
+          marker.bindTooltip(
+            `ทิศทาง: ${deg.toFixed(0)}°<br>ความเร็ว: ${spd.toFixed(1)} กม./ชม.` +
+            (localMotion.uniform ? "<br><i>เวกเตอร์เดียวทั้งภาพ</i>" : "") +
+            (weakFlow ? "<br><b>ความเชื่อมั่นต่ำ — ก้อนฝนเคลื่อนคนละทิศ</b>" : ""),
+            { direction: "top", offset: [0, -8] });
           layerArrows.addLayer(marker);
         }
       }
@@ -2806,6 +2916,7 @@ async function initRadar() {
     const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
     if (!res.ok) throw new Error("ไม่สามารถโหลด manifest ได้");
     manifest = await res.json();
+    syncScanRes();          // canvas ต้องมีขนาดเท่ากริดเสมอ ไม่งั้นค่าที่อ่านได้เป็นสีผสม
 
     const m = /lat_0=([-\d.]+).*?lon_0=([-\d.]+)/.exec(manifest.projection) || [];
     const lat0 = parseFloat(m[1]) || 16.77;
@@ -3207,6 +3318,7 @@ async function reloadRadarData(newManifest) {
   }
 
   manifest = newManifest;
+  syncScanRes();
   radarOverlays = [];
   frameImages = [];
 
@@ -3263,6 +3375,7 @@ setInterval(async () => {
     } else {
       // ถ้าเวลายังเป็นรอบเดิม ให้อัปเดตเฉพาะข้อความอายุข้อมูล (เช่น "... นาทีที่แล้ว")
       manifest = newManifest;
+      syncScanRes();
       updateFooterStatus();
     }
   } catch (e) {
