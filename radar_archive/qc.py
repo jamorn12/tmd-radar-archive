@@ -13,6 +13,9 @@
 
 3. **speckle**  จุดกระจัดกระจายเล็ก ๆ — จัดการไปแล้วใน refine.py (`min_blob_px`)
 
+4. **map-label leak**  ตัวหนังสือชื่อเมืองบนแผนที่ที่หลุดมาเป็นค่า dBZ สูงโดด ๆ
+   จับด้วย `despeckle()` — ดูว่ามี gradient รองรับไหม ฝนจริงต้องมีไล่ระดับ
+
 ข้อจำกัดที่ต้องยอมรับ: วิธี QC ที่ดีที่สุดต้องใช้ข้อมูลดิบ (ρhv จาก dual-pol,
 texture ของ Doppler velocity, spectrum width, CMD) ซึ่งภาพจากเว็บไม่มีให้
 สิ่งที่ทำได้จากภาพจึงเป็น QC เชิงเรขาคณิตกับเชิงสถิติเวลาเท่านั้น
@@ -28,6 +31,49 @@ import numpy as np
 from scipy import ndimage
 
 from .config import Station
+
+DESPECKLE_JUMP = 12.0          # dBZ ที่สูงกว่าเพื่อนบ้านเกินนี้ = ไม่ใช่ฝน
+DESPECKLE_MIN = 45.0           # ต่ำกว่านี้ไม่ต้องสน จะได้ไม่ไปแตะฝนอ่อน
+
+
+def despeckle(field: np.ndarray, jump: float = DESPECKLE_JUMP,
+              floor: float = DESPECKLE_MIN) -> tuple:
+    """ลบเซลล์แรงจัดที่ไม่มี gradient รองรับ
+
+    ก้อนฝน convective จริงมีไล่ระดับ — แกน 55 dBZ ต้องมี 45 กับ 35 ล้อมรอบ
+    ส่วนตัวหนังสือสีขาวบนแผนที่ (ชื่อเมือง) กระโดดจากพื้นหลังไปแถบจางสุดทันที
+    ไม่มีอะไรรองรับเลย
+
+    เจอจริง: เฟรม 2026-09-03 09:15Z ให้ max 59.2 dBZ ที่ระยะ 130 กม. az 104°
+    ตามไปดูภาพต้นฉบับแล้วเป็นคำว่า "Petchabun" ที่ติดกับก้อนฝนจริง
+    `drop_pale_blobs` ตัดไม่ได้เพราะดูค่ากลางของทั้งก้อน
+
+    คืน (field ที่แก้แล้ว, จำนวนเซลล์ที่แก้)
+    """
+    f = np.array(field, dtype=np.float32, copy=True)
+    finite = np.isfinite(f)
+    if not finite.any():
+        return f, 0
+    filled = np.where(finite, f, 0.0)
+
+    # median 5x5 ของเพื่อนบ้าน (ไม่รวมตัวเอง โดยประมาณ — 5x5 median ทนต่อจุดเดี่ยวอยู่แล้ว)
+    med = ndimage.median_filter(filled, size=5, mode="nearest")
+    bad = finite & (f >= floor) & (f - med > jump)
+    n = int(bad.sum())
+    if n:
+        f[bad] = med[bad]
+    return f, n
+
+
+def despeckle_stack(stack: np.ndarray, **kw):
+    """despeckle ทีละเฟรมทั้ง stack — คืน (stack ที่แก้แล้ว, จำนวนเซลล์รวม)"""
+    out, total = [], 0
+    for fr in stack:
+        g, n = despeckle(fr, **kw)
+        out.append(g)
+        total += n
+    return np.array(out, np.float32), total
+
 
 DEFAULTS = dict(
     n_az=720,              # ความละเอียดมุมกวาดตอนแปลงเป็น polar (0.5° ต่อ bin)
