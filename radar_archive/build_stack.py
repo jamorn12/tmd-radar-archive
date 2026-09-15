@@ -111,8 +111,14 @@ def make_processor(root: Path, st, smask=None, clutter=None):
 
 # ---------------------------------------------------------------- 4. สร้าง stack
 
-def build_run(run: list, st, root: Path, agg: str = "mean", verbose: bool = True):
-    """แปลงหนึ่งช่วงเป็น (stack, times, meta, report)"""
+def build_run(run: list, st, root: Path, agg: str = "mean",
+              despeckle: bool = True, verbose: bool = True):
+    """แปลงหนึ่งช่วงเป็น (stack, times, meta, report)
+
+    despeckle=True เป็นค่าเริ่มต้นโดยตั้งใจ — ต้องให้ stack ที่เอาไปวิเคราะห์
+    ผ่าน QC ระดับเดียวกับที่ nowcast.py ใช้ในระบบจริง ไม่งั้นตัวเลขในเปเปอร์
+    จะอธิบายระบบคนละเวอร์ชันกับที่เสนอ
+    """
     process = make_processor(root, st)
     pal_rgb = pal_dbz = None
     frames, times, rows = [], [], []
@@ -123,6 +129,9 @@ def build_run(run: list, st, root: Path, agg: str = "mean", verbose: bool = True
             pal_rgb, pal_dbz = pipeline.get_palette(root, st, img)
         res, rep = process(img, t, pal_rgb)
         g = grid.to_grid(grid.dbz_field(res, st, pal_dbz), st, agg=agg)
+        n_spk = 0
+        if despeckle:
+            g, n_spk = qcmod.despeckle(g)
         frames.append(g)
         times.append(t)
 
@@ -133,11 +142,13 @@ def build_run(run: list, st, root: Path, agg: str = "mean", verbose: bool = True
             wet=round(float((g[inside] > grid.NO_ECHO_DBZ).mean() * 100), 3),
             max_dbz=round(float(np.nanmax(g)), 1) if inside.any() else None,
             qc_removed=int(rep.removed_px) if rep is not None else 0,
+            despeckled=n_spk,
         ))
         if verbose:
             r = rows[-1]
             print(f"    {r['time']}  cover {r['cover']:5.2f}%  wet {r['wet']:6.3f}%  "
-                  f"max {str(r['max_dbz']):>5} dBZ  qc -{r['qc_removed']}")
+                  f"max {str(r['max_dbz']):>5} dBZ  qc -{r['qc_removed']}"
+                  f"  despeckle -{r['despeckled']}")
 
     stack = np.array(frames, np.float32)
     meta = grid.station_meta(st)
