@@ -47,14 +47,13 @@ from scipy import ndimage
 
 from . import build_stack, grid, pipeline
 from .config import CONFIG_PATH, get_station
+from .qc import despeckle, despeckle_stack   # noqa: F401  (ใช้ต่อในไฟล์นี้ และให้ import จากที่นี่ได้เหมือนเดิม)
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 
 LEADS_MIN = (15, 30, 45, 60, 75, 90, 105, 120)    # ไม่เกิน 60 — extrapolation ไม่สร้างและไม่สลายก้อนฝน
 N_INPUT = 4                      # เฟรมย้อนหลังที่ใช้หา motion (3 คู่)
 SEARCH_PX = 14                   # ระยะค้น block matching (14 px @ 2 กม. = 112 กม./ชม.)
-DESPECKLE_JUMP = 12.0            # dBZ ที่สูงกว่าเพื่อนบ้านเกินนี้ = ไม่ใช่ฝน
-DESPECKLE_MIN = 45.0             # ตรวจเฉพาะค่าที่สูงกว่านี้ (ไม่ไปยุ่งกับฝนปกติ)
 
 
 # ---------------------------------------------------------------- 1. โหลด
@@ -85,44 +84,9 @@ def load_from_stack(path: Path, n: int = N_INPUT):
 
 
 # ---------------------------------------------------------------- 2. despeckle
-
-def despeckle(field: np.ndarray, jump: float = DESPECKLE_JUMP,
-              floor: float = DESPECKLE_MIN) -> tuple:
-    """ลบเซลล์แรงจัดที่ไม่มี gradient รองรับ
-
-    ก้อนฝน convective จริงมีไล่ระดับ — แกน 55 dBZ ต้องมี 45 กับ 35 ล้อมรอบ
-    ส่วนตัวหนังสือสีขาวบนแผนที่ (ชื่อเมือง) กระโดดจากพื้นหลังไปแถบจางสุดทันที
-    ไม่มีอะไรรองรับเลย
-
-    เจอจริง: เฟรม 2026-09-03 09:15Z ให้ max 59.2 dBZ ที่ระยะ 130 กม. az 104°
-    ตามไปดูภาพต้นฉบับแล้วเป็นคำว่า "Petchabun" ที่ติดกับก้อนฝนจริง
-    `drop_pale_blobs` ตัดไม่ได้เพราะดูค่ากลางของทั้งก้อน
-
-    คืน (field ที่แก้แล้ว, จำนวนเซลล์ที่แก้)
-    """
-    f = np.array(field, dtype=np.float32, copy=True)
-    finite = np.isfinite(f)
-    if not finite.any():
-        return f, 0
-    filled = np.where(finite, f, 0.0)
-
-    # median 5x5 ของเพื่อนบ้าน (ไม่รวมตัวเอง โดยประมาณ — 5x5 median ทนต่อจุดเดี่ยวอยู่แล้ว)
-    med = ndimage.median_filter(filled, size=5, mode="nearest")
-    bad = finite & (f >= floor) & (f - med > jump)
-    n = int(bad.sum())
-    if n:
-        f[bad] = med[bad]
-    return f, n
-
-
-def despeckle_stack(stack: np.ndarray, **kw):
-    out, total = [], 0
-    for fr in stack:
-        g, n = despeckle(fr, **kw)
-        out.append(g)
-        total += n
-    return np.array(out, np.float32), total
-
+#
+# ย้ายไป qc.py แล้ว — despeckle เป็น QC ตามนิยาม และ build_stack.py ต้องใช้ตัวเดียวกัน
+# ถ้าปล่อยไว้ที่นี่ build_stack จะ import nowcast ซึ่ง import build_stack กลับ = วน
 
 # ---------------------------------------------------------------- 3. motion
 
