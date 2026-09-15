@@ -18,6 +18,11 @@ on:
         type: choice
         options: [auto, light, pysteps]
         default: auto
+      gauges:
+        description: 'เก็บข้อมูลสถานีวัดน้ำฝนภาคพื้น (สสน.) รอบนี้ด้วยหรือไม่'
+        type: choice
+        options: ['yes', 'no']
+        default: 'yes'
 
 permissions:
   contents: write
@@ -93,11 +98,22 @@ jobs:
             --out docs/nowcast/PHS \
             || echo "::warning::Nowcast ล้มเหลวรอบนี้ — เว็บจะยังแสดงผลรอบก่อน ตรวจ log ของ step นี้"
 
+      # gauge เป็นแหล่งภายนอก (สสน.) และ **ไม่ใช่ input ของ nowcast**
+      # ถ้าดึงไม่ได้ ต้องไม่กระทบ pipeline หลัก -> continue-on-error + || echo
+      # วางไว้ท้ายสุดก่อน commit โดยตั้งใจ: งานที่ขาดได้ ต้องไม่กินเวลาของงานที่ขาดไม่ได้
+      - name: Collect Rain Gauges (HII / thaiwater.net)
+        if: ${{ github.event.inputs.mode != 'repair' && github.event.inputs.gauges != 'no' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          python -m radar_archive.gauges --station PHS --quiet \
+            || echo "::warning::ดึงข้อมูล gauge ไม่สำเร็จรอบนี้ — เรดาร์และ nowcast ไม่กระทบ"
+
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A data/ docs/nowcast/
+          git add -A data/ docs/nowcast/ docs/gauges/
           if git diff --staged --quiet; then
             echo "No changes to commit"
             exit 0
