@@ -1162,43 +1162,82 @@ const MANIFEST_URL = "nowcast/PHS/latest.json";
 const R_EARTH = 6371.0088;
 const THAI_MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 
-const TELEMETRY_STATIONS = [
-  { id: "PHS01", name: "สถานีอุตุนิยมวิทยาพิษณุโลก", tb: "ในเมือง", ap: "เมือง", pv: "พิษณุโลก", lat: 16.782, lon: 100.264 },
-  { id: "PHS02", name: "สถานีโทรมาตร ม.นเรศวร", tb: "ท่าโพธิ์", ap: "เมือง", pv: "พิษณุโลก", lat: 16.745, lon: 100.193 },
-  { id: "PHS03", name: "สถานีเขื่อนแควน้อยบำรุงแดน", tb: "คันโช้ง", ap: "วัดโบสถ์", pv: "พิษณุโลก", lat: 17.186, lon: 100.418 },
-  { id: "PHS04", name: "สถานีโทรมาตร อ.วังทอง", tb: "วังทอง", ap: "วังทอง", pv: "พิษณุโลก", lat: 16.815, lon: 100.435 },
-  { id: "PHS05", name: "สถานีโทรมาตร อ.นครไทย", tb: "นครไทย", ap: "นครไทย", pv: "พิษณุโลก", lat: 17.101, lon: 100.838 },
-  { id: "PHS06", name: "สถานีโทรมาตร อ.ชาติตระการ", tb: "ป่าแดง", ap: "ชาติตระการ", pv: "พิษณุโลก", lat: 17.276, lon: 100.603 },
-  { id: "PHS07", name: "สถานี ปตร.บางระกำ", tb: "บางระกำ", ap: "บางระกำ", pv: "พิษณุโลก", lat: 16.749, lon: 100.120 },
-  { id: "PHS08", name: "สถานีโทรมาตร อ.เนินมะปราง", tb: "เนินมะปราง", ap: "เนินมะปราง", pv: "พิษณุโลก", lat: 16.562, lon: 100.608 },
-  { id: "PHS09", name: "สถานีโทรมาตร อ.พรหมพิราม", tb: "พรหมพิราม", ap: "พรหมพิราม", pv: "พิษณุโลก", lat: 16.998, lon: 100.205 },
-  { id: "SKT01", name: "สถานีอุตุนิยมวิทยาสุโขทัย", tb: "ปากแคว", ap: "เมือง", pv: "สุโขทัย", lat: 17.013, lon: 99.824 },
-  { id: "SKT02", name: "สถานีโทรมาตร อ.สวรรคโลก", tb: "เมืองสวรรคโลก", ap: "สวรรคโลก", pv: "สุโขทัย", lat: 17.316, lon: 99.832 },
-  { id: "SKT03", name: "สถานีโทรมาตร อ.ศรีสัชนาลัย", tb: "หาดเสี้ยว", ap: "ศรีสัชนาลัย", pv: "สุโขทัย", lat: 17.519, lon: 99.761 },
-  { id: "SKT04", name: "สถานีโทรมาตร อ.คีรีมาศ", tb: "โตนด", ap: "คีรีมาศ", pv: "สุโขทัย", lat: 16.832, lon: 99.801 },
-  { id: "PCT01", name: "สถานีอุตุนิยมวิทยาพิจิตร", tb: "ในเมือง", ap: "เมือง", pv: "พิจิตร", lat: 16.442, lon: 100.354 },
-  { id: "PCT02", name: "สถานีโทรมาตร อ.สากเหล็ก", tb: "สากเหล็ก", ap: "สากเหล็ก", pv: "พิจิตร", lat: 16.512, lon: 100.521 },
-  { id: "PCT03", name: "สถานีโทรมาตร อ.ตะพานหิน", tb: "ตะพานหิน", ap: "ตะพานหิน", pv: "พิจิตร", lat: 16.216, lon: 100.426 },
-  { id: "PCT04", name: "สถานีโทรมาตร อ.บางมูลนาก", tb: "บางมูลนาก", ap: "บางมูลนาก", pv: "พิจิตร", lat: 16.031, lon: 100.381 },
-  { id: "UTD01", name: "สถานีอุตุนิยมวิทยาอุตรดิตถ์", tb: "ท่าอิฐ", ap: "เมือง", pv: "อุตรดิตถ์", lat: 17.618, lon: 100.098 },
-  { id: "UTD02", name: "สถานีโทรมาตร อ.ลับแล", tb: "ศรีพนมมาศ", ap: "ลับแล", pv: "อุตรดิตถ์", lat: 17.652, lon: 100.043 },
-  { id: "UTD03", name: "สถานีเขื่อนสิริกิติ์", tb: "ผาเลือด", ap: "ท่าปลา", pv: "อุตรดิตถ์", lat: 17.766, lon: 100.558 },
-  { id: "PBN01", name: "สถานีอุตุนิยมวิทยาเพชรบูรณ์", tb: "สะเดียง", ap: "เมือง", pv: "เพชรบูรณ์", lat: 16.425, lon: 101.156 },
-  { id: "PBN02", name: "สถานีโทรมาตร อ.หล่มสัก", tb: "หล่มสัก", ap: "หล่มสัก", pv: "เพชรบูรณ์", lat: 16.778, lon: 101.242 },
-  { id: "PBN03", name: "สถานีโทรมาตร อ.หล่มเก่า", tb: "หล่มเก่า", ap: "หล่มเก่า", pv: "เพชรบูรณ์", lat: 16.924, lon: 101.235 },
-  { id: "PBN04", name: "สถานีโทรมาตร อ.เขาค้อ", tb: "สะเดาพง", ap: "เขาค้อ", pv: "เพชรบูรณ์", lat: 16.634, lon: 100.995 },
-  { id: "KPT01", name: "สถานีอุตุนิยมวิทยากำแพงเพชร", tb: "สระแก้ว", ap: "เมือง", pv: "กำแพงเพชร", lat: 16.483, lon: 99.521 },
-  { id: "KPT02", name: "สถานีโทรมาตร อ.พรานกระต่าย", tb: "พรานกระต่าย", ap: "พรานกระต่าย", pv: "กำแพงเพชร", lat: 16.665, lon: 99.560 },
-  { id: "KPT03", name: "สถานีโทรมาตร อ.ลานกระบือ", tb: "ลานกระบือ", ap: "ลานกระบือ", pv: "กำแพงเพชร", lat: 16.598, lon: 99.856 },
-  { id: "PRE01", name: "สถานีอุตุนิยมวิทยาแพร่", tb: "ในเวียง", ap: "เมือง", pv: "แพร่", lat: 18.145, lon: 100.165 },
-  { id: "PRE02", name: "สถานีโทรมาตร อ.เด่นชัย", tb: "เด่นชัย", ap: "เด่นชัย", pv: "แพร่", lat: 17.978, lon: 100.052 },
-  { id: "LPG01", name: "สถานีอุตุนิยมวิทยาลำปาง", tb: "พระบาท", ap: "เมือง", pv: "ลำปาง", lat: 18.278, lon: 99.508 },
-  { id: "LPG02", name: "สถานีโทรมาตร อ.แม่เมาะ", tb: "แม่เมาะ", ap: "แม่เมาะ", pv: "ลำปาง", lat: 18.275, lon: 99.664 },
-  { id: "LOI01", name: "สถานีอุตุนิยมวิทยาเลย", tb: "กุดป่อง", ap: "เมือง", pv: "เลย", lat: 17.485, lon: 101.730 },
-  { id: "LOI02", name: "สถานีโทรมาตร อ.ด่านซ้าย", tb: "ด่านซ้าย", ap: "ด่านซ้าย", pv: "เลย", lat: 17.278, lon: 101.148 },
-  { id: "LOI03", name: "สถานีโทรมาตร อ.ภูเรือ", tb: "หนองบัว", ap: "ภูเรือ", pv: "เลย", lat: 17.452, lon: 101.365 },
-  { id: "TAK01", name: "สถานีอุตุนิยมวิทยาตาก", tb: "น้ำรึม", ap: "เมือง", pv: "ตาก", lat: 16.883, lon: 99.123 }
-];
+// สถานีวัดน้ำฝนภาคพื้น — โหลดจาก docs/gauges/PHS.json ที่ radar_archive/gauges.py สร้างไว้
+// เดิมตรงนี้เป็น array ที่พิมพ์ไว้ตายตัว 35 สถานี และ **ไม่มีฟิลด์ค่าฝนเลย**
+// ทำให้แผงแสดง 0.0 คงที่ตลอด และคอลัมน์ Bias กลายเป็น "ค่าเรดาร์ลบศูนย์"
+let TELEMETRY_STATIONS = [];
+let gaugeMeta = null;
+const GAUGES_URL = "gauges/PHS.json";
+
+async function loadGaugeStations() {
+  try {
+    const res = await fetch(GAUGES_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const doc = await res.json();
+
+    // ไฟล์เก็บเป็น array of array + fields เพื่อลดขนาด payload ที่ 1,300+ สถานี
+    const ix = {};
+    (doc.fields || []).forEach((f, i) => { ix[f] = i; });
+    const need = ["id", "name", "lat", "lon", "rain_1h", "rain_24h", "obs_utc", "agency"];
+    const missing = need.filter(k => ix[k] === undefined);
+    if (missing.length) throw new Error("fields ขาด: " + missing.join(", "));
+
+    const num = v => (v === null || v === undefined || v === "") ? null : Number(v);
+    // Number(null) คือ 0 ไม่ใช่ NaN — ถ้าใช้ Number() ตรง ๆ สถานีที่ไม่มีพิกัดจะกลาย
+    // เป็น lat 0 แล้วรอดตัวกรอง isFinite ไปโผล่กลางอ่าวกินี
+    const coord = v => (v === null || v === undefined || v === "") ? NaN : Number(v);
+
+    TELEMETRY_STATIONS = (doc.stations || []).map(row => ({
+      id: row[ix.id],
+      code: ix.code !== undefined ? row[ix.code] : "",
+      name: row[ix.name] || "(ไม่ระบุชื่อ)",
+      lat: coord(row[ix.lat]), lon: coord(row[ix.lon]),
+      distKm: ix.dist_km !== undefined ? Number(row[ix.dist_km]) : null,
+      tb: ix.tumbon   !== undefined ? row[ix.tumbon]   : "",
+      ap: ix.amphoe   !== undefined ? row[ix.amphoe]   : "",
+      pv: ix.province !== undefined ? row[ix.province] : "",
+      agency: row[ix.agency] || "",
+      // null = ไม่มีข้อมูล  ต่างจาก 0 = วัดได้ว่าฝนไม่ตก  ห้ามยุบสองอย่างนี้เข้าด้วยกัน
+      rain_1h: num(row[ix.rain_1h]),
+      rain_24h: num(row[ix.rain_24h]),
+      obs_utc: row[ix.obs_utc] || null
+    })).filter(st => {
+      if (!Number.isFinite(st.lat) || !Number.isFinite(st.lon)) return false;
+      // ตรวจซ้ำฝั่ง client ว่าอยู่ในโดมเรดาร์จริง — ใช้ค่าจากไฟล์เอง ไม่ hardcode
+      // ถ้าฝั่ง python กรองพลาด จุดที่หลุดมาจะโดนตัดตรงนี้แทนที่จะไปโผล่กลางแผนที่
+      const R = doc.radar;
+      if (R && Number.isFinite(R.lat) && Number.isFinite(R.lon) && R.range_km) {
+        const dLat = (st.lat - R.lat) * 111.32;
+        const dLon = (st.lon - R.lon) * 111.32 * Math.cos(R.lat * Math.PI / 180);
+        if (Math.hypot(dLat, dLon) > R.range_km * 1.05) return false;
+      }
+      return true;
+    });
+
+    gaugeMeta = {
+      generated: doc.generated, source: doc.source, agencies: doc.agencies,
+      counts: doc.counts, staleAfterMin: doc.stale_after_min || 90
+    };
+    const ageMin = doc.generated ? (Date.now() / 1000 - doc.generated) / 60 : null;
+    const dropped = (doc.stations || []).length - TELEMETRY_STATIONS.length;
+    console.log(`✅ โหลดสถานีวัดน้ำฝน ${TELEMETRY_STATIONS.length} แห่ง` +
+                (dropped > 0 ? ` (ตัดออก ${dropped} เพราะพิกัดไม่ถูกต้องหรืออยู่นอกโดม)` : "") +
+                (ageMin !== null ? ` · ข้อมูลอายุ ${ageMin.toFixed(0)} นาที` : ""));
+    if (gaugeMeta && ageMin !== null && ageMin > gaugeMeta.staleAfterMin) {
+      console.warn(`[gauges] ข้อมูลเก่ากว่า ${gaugeMeta.staleAfterMin} นาที — pipeline อาจไม่ได้เก็บรอบล่าสุด`);
+    }
+    return true;
+  } catch (e) {
+    TELEMETRY_STATIONS = [];
+    gaugeMeta = null;
+    console.warn("[gauges] โหลดไม่ได้:", e.message,
+                 "— แผงสถานีจะแสดงว่าไม่มีข้อมูล แทนที่จะโชว์ 0.0 หลอก ๆ");
+    return false;
+  }
+}
+
+// ค่าฝนที่ API ให้มามีแค่ 1 ชม. กับ 24 ชม. — 3/6 ชม. ไม่มีข้อมูลต้นทาง
+const GAUGE_WINDOWS = { "1h": "rain_1h", "24h": "rain_24h" };
 
 const geocodeCache = new Map();
 let loadedProvinceFeatures = [];
@@ -1771,33 +1810,31 @@ function getLocalMotionAtPoint(pinE, pinN) {
   return { spd, deg, uniform: true, confidence: motion.confidence || "unknown" };
 }
 
+// วาดหมุดบน canvas ชั้นเดียว ไม่ใช่ DOM element ต่อหมุด
+// ที่ 1,300+ สถานี divIcon จะสร้าง element เท่านั้นตัวและทำให้แผนที่หนืดมากบนมือถือ
+const stationRenderer = L.canvas({ padding: 0.3 });
+
 function initTelemetryStationMarkers() {
   layerStations.clearLayers();
   stationMarkerInstances = [];
 
   TELEMETRY_STATIONS.forEach((st, idx) => {
-    const stationIcon = L.divIcon({
-      className: "",
-      html: `<div class="gauge-pin" id="gpin-${idx}" style="background: #64748B;"></div>`,
-      iconSize: [10, 10],
-      iconAnchor: [5, 5]
-    });
-
-    const marker = L.marker([st.lat, st.lon], { icon: stationIcon }).addTo(layerStations);
-    marker.bindPopup("", { offset: [0, -8] });
+    const marker = L.circleMarker([st.lat, st.lon], {
+      renderer: stationRenderer,
+      radius: 3.5, weight: 1,
+      color: "rgba(255,255,255,0.55)",
+      fillColor: "#64748B", fillOpacity: 0.9
+    }).addTo(layerStations);
+    marker.bindPopup("", { offset: [0, -6] });
 
     stationMarkerInstances.push({
-      data: st,
-      idx: idx,
-      marker: marker,
-      rain1h: 0,
-      rain3h: 0,
-      rain6h: 0,
-      rain24h: 0,
-      dbz: 0
+      data: st, idx, marker,
+      rain1h: null, rain24h: null,   // null = ยังไม่รู้ / ไม่มีข้อมูล
+      dbz: 0, radarRain: 0
     });
   });
 
+  console.log(`[gauges] วางหมุดสถานี ${stationMarkerInstances.length} จุด`);
   if (!document.getElementById("chkStations").checked) map.removeLayer(layerStations);
 }
 
@@ -1849,39 +1886,40 @@ function updateTelemetryStationValues() {
     item.dbz = dbz;
     item.radarRain = radarRainRate;
 
-    // 2. ฝนจากสถานีเกจวัดจริง (ถ้า st มีค่า rain_1h ให้ใช้ค่านั้น ถ้าไม่มีให้เป็น 0.0)
-    const rain1h = Number(st.rain_1h !== undefined ? st.rain_1h : (item.rain1h || 0.0));
-    const rain3h = Number(st.rain_3h !== undefined ? st.rain_3h : (item.rain3h || 0.0));
-    const rain6h = Number(st.rain_6h !== undefined ? st.rain_6h : (item.rain6h || 0.0));
-    const rain24h = Number(st.rain_24h !== undefined ? st.rain_24h : (item.rain24h || 0.0));
+    // 2. ฝนจากสถานีจริง — null หมายถึงไม่มีข้อมูล ไม่ใช่ฝนไม่ตก
+    item.rain1h = (st.rain_1h === null || st.rain_1h === undefined) ? null : Number(st.rain_1h);
+    item.rain24h = (st.rain_24h === null || st.rain_24h === undefined) ? null : Number(st.rain_24h);
+    const rain1h = item.rain1h;
 
-    item.rain1h = rain1h;
-    item.rain3h = rain3h;
-    item.rain6h = rain6h;
-    item.rain24h = rain24h;
+    // สีหมุด: เทา = ไม่มีข้อมูล · น้ำเงินเข้ม = รายงานแล้วว่าไม่มีฝน · ไล่สีตามปริมาณ
+    let dotColor = "#64748B", dotOpacity = 0.55;
+    if (rain1h !== null) {
+      dotOpacity = 0.95;
+      if (rain1h > 90) dotColor = "#C084FC";
+      else if (rain1h > 35) dotColor = "#EF4444";
+      else if (rain1h > 20) dotColor = "#F59E0B";
+      else if (rain1h > 0.1) dotColor = "#10B981";
+      else dotColor = "#334E68";
+    }
+    if (item.marker && item.marker.setStyle) {
+      item.marker.setStyle({ fillColor: dotColor, fillOpacity: dotOpacity });
+    }
 
-    let dotColor = "#64748B";
-    if (rain1h > 90) { dotColor = "#C084FC"; }
-    else if (rain1h > 35) { dotColor = "#EF4444"; }
-    else if (rain1h > 20) { dotColor = "#F59E0B"; }
-    else if (rain1h > 0.1) { dotColor = "#10B981"; }
-
-    const pinEl = document.getElementById(`gpin-${item.idx}`);
-    if (pinEl) pinEl.style.backgroundColor = dotColor;
-
-    let activeVal = rain24h;
-    let activeLabel = "มม. 24 ชม.";
-    if (telemetrySortMode === "1h") { activeVal = rain1h; activeLabel = "มม. 1 ชม."; }
-    else if (telemetrySortMode === "3h") { activeVal = rain3h; activeLabel = "มม. 3 ชม."; }
-    else if (telemetrySortMode === "6h") { activeVal = rain6h; activeLabel = "มม. 6 ชม."; }
+    // แสดงค่าเฉพาะหน้าต่างที่ API มีให้จริง (1 ชม. กับ 24 ชม.)
+    const fmtMm = v => (v === null || v === undefined || !Number.isFinite(v)) ? "—" : v.toFixed(1);
+    let activeVal = item.rain24h, activeLabel = "มม. 24 ชม.";
+    if (telemetrySortMode === "1h") { activeVal = item.rain1h; activeLabel = "มม. 1 ชม."; }
+    else if (telemetrySortMode === "3h" || telemetrySortMode === "6h") {
+      activeVal = null; activeLabel = `มม. ${telemetrySortMode === "3h" ? 3 : 6} ชม. (ไม่มีข้อมูล)`;
+    }
 
     const popupHtml = `
       <div class="wam-popup">
         <div class="wam-pop-name">${st.name}</div>
-        <div class="wam-pop-id">${st.id}</div>
+        <div class="wam-pop-id">${st.code || st.id}${st.distKm !== null ? " · " + st.distKm.toFixed(0) + " กม. จากเรดาร์" : ""}</div>
         <div class="wam-pop-loc">ต.${st.tb} · อ.${st.ap} · ${st.pv}</div>
         <div class="wam-pop-metric">
-          <span>${activeVal.toFixed(1)}</span>
+          <span>${fmtMm(activeVal)}</span>
           <span class="unit">${activeLabel}</span>
           <span class="wam-pop-chart-btn" title="คลิกเพื่อดูกราฟวิเคราะห์ฝน 105 นาที" onclick="zoomToStation(${st.lat}, ${st.lon}, '${st.name}', ${item.idx}); document.getElementById('btnOpenModal').click();">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1890,15 +1928,16 @@ function updateTelemetryStationValues() {
           </span>
         </div>
         <div class="wam-pop-sub-metrics">
-          <span>1 ชม: <b>${rain1h.toFixed(1)}</b></span>
-          <span>3 ชม: <b>${rain3h.toFixed(1)}</b></span>
-          <span>6 ชม: <b>${rain6h.toFixed(1)}</b></span>
-          <span>24 ชม: <b>${rain24h.toFixed(1)}</b></span>
+          <span>1 ชม: <b>${fmtMm(item.rain1h)}</b></span>
+          <span>24 ชม: <b>${fmtMm(item.rain24h)}</b></span>
+          <span>เรดาร์: <b>${radarRainRate.toFixed(1)}</b> มม./ชม.</span>
         </div>
-        <div class="wam-pop-time">${nowHourStr} (${ageMin} นาทีที่แล้ว)</div>
+        <div class="wam-pop-time">${st.obs_utc
+            ? "สถานีรายงาน " + new Date(st.obs_utc).toLocaleString("th-TH", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" })
+            : "ไม่มีเวลารายงาน"}</div>
         <div class="wam-pop-footer">
           <span class="wam-pop-coord" onclick="zoomToStation(${st.lat}, ${st.lon}, '${st.name}', ${item.idx})" title="คลิกเพื่อปักหมุดวิเคราะห์ที่จุดนี้">${st.lat.toFixed(4)}, ${st.lon.toFixed(4)}</span>
-          <span class="wam-pop-agency">ทันฝน · TMD</span>
+          <span class="wam-pop-agency">${st.agency || "?"} · ผ่าน สสน.</span>
         </div>
       </div>
     `;
@@ -1913,65 +1952,65 @@ function renderTelemetryPanelList() {
   const container = document.getElementById("telemetryStationList");
   if (!container) return;
 
-  const keyMap = { "1h": "rain1h", "3h": "rain3h", "6h": "rain6h", "24h": "rain24h" };
-  const sortKey = keyMap[telemetrySortMode] || "rain1h";
+  // ไม่มีข้อมูล -> บอกตรง ๆ ดีกว่าโชว์ตารางว่าง ๆ หรือ 0.0 ที่ดูเหมือนค่าจริง
+  if (!stationMarkerInstances.length) {
+    container.innerHTML = `<div style="padding:24px 14px;text-align:center;opacity:.65;font-size:13px;line-height:1.7">
+      ยังไม่มีข้อมูลสถานีวัดน้ำฝน<br>
+      <span style="opacity:.7">ต้องมีไฟล์ <code>gauges/PHS.json</code> ซึ่งสร้างโดย
+      <code>radar_archive.gauges</code> ในรอบ pipeline</span></div>`;
+    return;
+  }
 
-  // 1. คำนวณค่าฝนเรดาร์และเกจวัดล่วงหน้า พร้อมเก็บค่าสัญญาณสูงสุด (maxSignal)
-  const listWithRain = stationMarkerInstances.map(item => {
-    const gaugeVal = Number(item[sortKey] || 0);
-    
-    // ดึงค่าเรดาร์ฐานที่คำนวณไว้ใน updateTelemetryStationValues
-    const baseRadar = Number(item.radarRain !== undefined ? item.radarRain : (getRadarRainAtStation(item.data.lat, item.data.lon) || 0));
-    
-    let radarVal = baseRadar;
-    if (telemetrySortMode === "3h") radarVal = baseRadar * 2.4;
-    else if (telemetrySortMode === "6h") radarVal = baseRadar * 4.2;
-    else if (telemetrySortMode === "24h") radarVal = baseRadar * 7.5;
-    radarVal = parseFloat(radarVal.toFixed(1));
+  // API ให้ค่าฝนเฉพาะ 1 ชม. กับ 24 ชม. — 3/6 ชม. ไม่มีข้อมูลต้นทาง
+  const gaugeKey = GAUGE_WINDOWS[telemetrySortMode] === "rain_1h" ? "rain1h"
+                 : GAUGE_WINDOWS[telemetrySortMode] === "rain_24h" ? "rain24h"
+                 : null;
 
-    return {
-      ...item,
-      calculatedGauge: gaugeVal,
-      calculatedRadar: radarVal,
-      maxSignal: Math.max(gaugeVal, radarVal)
-    };
-  });
+  // เรดาร์เทียบได้เฉพาะหน้าต่าง 1 ชม. เพราะเราคำนวณจากเฟรมเดียว = rain rate (มม./ชม.)
+  // ค่าสะสม 3/6/24 ชม. ต้องรวมจากหลายเฟรม ซึ่งยังไม่ได้ทำ
+  // เดิมตรงนี้คูณค่าคงที่ 2.4 / 4.2 / 7.5 ซึ่งเป็นการเดาล้วน ๆ -> เอาออก
+  const radarComparable = (telemetrySortMode === "1h");
 
-  // 2. เรียงลำดับ: สถานีที่มีฝนตก (เรดาร์เจอ หรือเกจวัดได้) จะถูกดันขึ้นอันดับ 1 ทันที
-  const sorted = listWithRain.sort((a, b) => b.maxSignal - a.maxSignal);
+  const rows = stationMarkerInstances.map(item => {
+    const gauge = gaugeKey ? item[gaugeKey] : null;
+    const radar = radarComparable ? Number(item.radarRain || 0) : null;
+    const signal = Math.max(
+      (gauge === null ? -1 : gauge),
+      (radar === null ? -1 : radar)
+    );
+    return { item, gauge, radar, signal };
+  }).sort((a, b) => b.signal - a.signal);
+
+  // จำกัดจำนวนแถวใน DOM — 1,300+ แถวทำให้แผงหนืดและ re-render ทุก 15 นาที
+  const LIMIT = 200;
+  const shown = rows.slice(0, LIMIT);
+  const fmt = v => (v === null || !Number.isFinite(v)) ? "—" : v.toFixed(1);
 
   let html = "";
-  sorted.forEach((item, index) => {
-    const gaugeVal = item.calculatedGauge;
-    const radarVal = item.calculatedRadar;
-
-    // คำนวณความต่าง Bias (เรดาร์ - เกจวัด)
-    const diff = Number((radarVal - gaugeVal).toFixed(1));
-    let biasClass = "bias-match";
-    let biasText = "0.0";
-
-    if (diff > 0) {
-      biasClass = "bias-over";
-      biasText = `+${diff}`;
-    } else if (diff < 0) {
-      biasClass = "bias-under";
-      biasText = `${diff}`;
+  shown.forEach((r, index) => {
+    const st = r.item.data;
+    let biasClass = "bias-match", biasText = "—";
+    if (r.gauge !== null && r.radar !== null) {
+      const diff = Number((r.radar - r.gauge).toFixed(1));
+      if (diff > 0) { biasClass = "bias-over"; biasText = `+${diff}`; }
+      else if (diff < 0) { biasClass = "bias-under"; biasText = `${diff}`; }
+      else { biasText = "0.0"; }
     }
-
+    const nameSafe = String(st.name).replace(/'/g, "\\'");
     html += `
-      <div class="telemetry-row" onclick="zoomToStation(${item.data.lat}, ${item.data.lon}, '${item.data.name}', ${item.idx})">
+      <div class="telemetry-row" onclick="zoomToStation(${st.lat}, ${st.lon}, '${nameSafe}', ${r.item.idx})">
         <div class="telem-col-idx">${index + 1}</div>
         <div class="telem-col-info">
-          <div class="telem-name" title="${item.data.name}">${item.data.name}</div>
-          <div class="telem-sub">ต.${item.data.tb || "-"} · อ.${item.data.ap || "-"} · จ.${item.data.pv || "-"}</div>
+          <div class="telem-name" title="${st.name} · ${st.agency || ""}">${st.name}</div>
+          <div class="telem-sub">ต.${st.tb || "-"} · อ.${st.ap || "-"} · จ.${st.pv || "-"}${st.agency ? " · " + st.agency : ""}</div>
         </div>
         <div class="telem-val-box">
-          <span class="telem-num-gauge">${gaugeVal.toFixed(1)}</span>
+          <span class="telem-num-gauge">${fmt(r.gauge)}</span>
           <span class="telem-unit">มม.</span>
         </div>
         <div class="telem-val-box">
-          <span class="telem-num-radar">${radarVal.toFixed(1)}</span>
-          <span class="telem-unit">มม.</span>
+          <span class="telem-num-radar">${fmt(r.radar)}</span>
+          <span class="telem-unit">${radarComparable ? "มม./ชม." : ""}</span>
         </div>
         <div style="display: flex; justify-content: center;">
           <span class="telem-bias-badge ${biasClass}">${biasText}</span>
@@ -1980,8 +2019,18 @@ function renderTelemetryPanelList() {
     `;
   });
 
+  const withData = rows.filter(r => r.gauge !== null).length;
+  let note = `แสดง ${shown.length} จาก ${rows.length} สถานี · มีข้อมูล ${withData}`;
+  if (!gaugeKey) note = `หน้าต่าง ${telemetrySortMode} ไม่มีข้อมูลจากต้นทาง — API ให้เฉพาะ 1 ชม. และ 24 ชม.`;
+  else if (!radarComparable) note += " · คอลัมน์เรดาร์เทียบได้เฉพาะหน้าต่าง 1 ชม.";
+  if (gaugeMeta && gaugeMeta.source) {
+    note += ` · ที่มา ${gaugeMeta.source.short_th || "สสน."}`;
+  }
+  html += `<div style="padding:10px 12px;font-size:11px;opacity:.6;line-height:1.6">${note}</div>`;
+
   container.innerHTML = html;
 }
+
 // พจนานุกรมแปลงชื่อจังหวัดภาษาอังกฤษเป็นภาษาไทย
 const PROV_THAI_MAP = {
   "Lamphun": "ลำพูน", "Chainat": "ชัยนาท", "Chai Nat": "ชัยนาท",
@@ -2931,6 +2980,7 @@ async function initRadar() {
     radarBounds = L.latLngBounds([south, west], [north, east]);
 
     renderRangeRings();
+    await loadGaugeStations();        // ต้องได้รายชื่อสถานีก่อน ถึงจะวางหมุดได้
     initTelemetryStationMarkers();
 
     radarOverlays = [];
@@ -3371,6 +3421,8 @@ setInterval(async () => {
     // ถ้ามีข้อมูลภาพชุดใหม่เข้ามา (Timestamp เปลี่ยน)
     if (currentFrameTime !== newFrameTime) {
       console.log("🔄 ตรวจพบภาพเรดาร์รอบใหม่ กำลังอัปเดตระบบ...");
+      // ค่าฝนสถานีมาพร้อมรอบ pipeline เดียวกัน จึงรีเฟรชคู่กันไป
+      if (await loadGaugeStations()) initTelemetryStationMarkers();
       await reloadRadarData(newManifest);
     } else {
       // ถ้าเวลายังเป็นรอบเดิม ให้อัปเดตเฉพาะข้อความอายุข้อมูล (เช่น "... นาทีที่แล้ว")
