@@ -510,6 +510,20 @@ def write_outputs(out_dir: Path, st, meta: dict, obs_stack, obs_times,
         "motion": {**{k: v for k, v in motion.items() if k != "pairs"}, **stability,
                    "extrapolation": how, **(mgrid or {})},
         "wet_threshold_dbz": round(thr, 2),
+        # ⚠️ threshold ที่ใช้ได้จริง "บนภาพที่ render แล้ว" ไม่เท่ากับค่าข้างบน
+        #
+        # colorize() ปัดค่าลงเข้าแถบ palette ที่ต่ำกว่าหรือเท่ากับ (searchsorted side="right" - 1)
+        # ค่าใดก็ตามในช่วง [11.3, 16.5) จึงถูก render เป็น 11.3 แล้วถอดกลับได้ 11.3
+        # ซึ่ง < 11.98 = ถูกนับว่าแห้ง  ระดับแรกที่ผ่าน threshold จริง ๆ คือ 16.5
+        #
+        # ทุกอย่างที่อ่านค่าจาก PNG (หน้าเว็บ, verify.py) จึงตัดที่ค่านี้ ไม่ใช่ที่ wet_threshold_dbz
+        # วัดยืนยันแล้ว: สั่ง --threshold ค่าใดก็ตามใน (11.3, 16.5] ให้ผลเหมือนกันเป๊ะทุกหลัก
+        #
+        # เก็บทั้งสองค่าไว้เพราะคนละความหมาย ไม่ใช่ค่าซ้ำ
+        #   wet_threshold_dbz           ใช้กับสนาม float ข้างใน (สถิติ wet% ของ nowcast)
+        #   wet_threshold_effective_dbz ใช้กับภาพ render แล้ว (ตัวเลขที่รายงานในเปเปอร์)
+        "wet_threshold_effective_dbz": next(
+            (round(float(v), 1) for v in np.sort(pal_dbz) if float(v) >= thr), round(thr, 2)),
         "qc": {"despeckled_cells": despeckled},
         "frames": entries,
         "source": "Thai Meteorological Department (TMD)",
