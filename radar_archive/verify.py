@@ -381,6 +381,80 @@ def _shift(a: np.ndarray, dr: float, dc: float) -> np.ndarray:
 ETA_STEPS = tuple(range(5, 121, 5))        # วิธี B เดินทวนลมทีละ 5 นาที เหมือนในหน้าเว็บ
 ETA_LEADS = tuple(range(15, 121, 15))      # lead ที่ระบบผลิตจริง
 
+# ห้าวิธีที่ให้คะแนนพร้อมกันทุกรอบ — เรียงตามลำดับที่อยากเห็นในตาราง
+#   A_frames   อ่านเฟรมพยากรณ์ตรงจุด (Lagrangian point sampling)
+#   B_uniform  เดินทวนลมด้วยเวกเตอร์เฉลี่ยตัวเดียว   <- วิธีเดิม
+#   B_grid     เดินทวนลมตาม motion grid รายจุด        <- วิธีใหม่
+#   app_old    A ก่อน ไม่เจอค่อยตกไป B_uniform        <- พฤติกรรมเว็บเดิม
+#   app_new    A ก่อน ไม่เจอค่อยตกไป B_grid           <- พฤติกรรมเว็บปัจจุบัน
+ETA_METHODS = ("A_frames", "B_uniform", "B_grid", "app_old", "app_new")
+N_ETA_METHODS = len(ETA_METHODS)
+
+def _motion_grid_arrays(mot: dict):
+    """ดึง grid_u / grid_v จาก meta ออกมาเป็น array 2 มิติ (หรือ None ถ้ารอบนั้นไม่มีกริด)
+
+    ⚠️ เรื่องแกนที่ต้องระวังที่สุดในไฟล์นี้
+        nowcast.py เก็บกริดโดย **พลิกแถวแล้ว** ให้ row 0 = เหนือ เพื่อให้ตรงกับที่หน้าเว็บคาด
+        ส่วน verify.py ทำงานบนภาพ PNG ที่ decode มา ซึ่ง row 0 = บนภาพ = เหนือ เช่นกัน
+        สองฝั่งจึงตรงกันอยู่แล้ว **ไม่ต้องพลิกซ้ำ** (ถ้าพลิกอีกทีลูกศรครึ่งบน-ล่างจะสลับกัน)
+
+        แต่ระวังว่า "เหนือ" ในภาพ = row น้อย ดังนั้นความเร็วไปทางเหนือ (v บวก)
+        = row **ลดลง** ซึ่งกลับทิศกับ nowcast.py ที่ทำงานบน array แบบ yorigin lower
+
+    หมายเหตุ: กริดคลุม 240 จาก 241 พิกเซล (30 บล็อก x 8 px) จึงเหลื่อมไป 1 px
+    ที่ขอบ ซึ่งไม่มีนัยสำคัญเมื่อบล็อกกว้าง 16 กม.
+    """
+    gu, gv = mot.get("grid_u"), mot.get("grid_v")
+    cols, rows = mot.get("cols"), mot.get("rows")
+    if not gu or not gv or not cols or not rows:
+        return None
+    if len(gu) != cols * rows or len(gv) != cols * rows:
+        return None
+    return (np.asarray(gu, np.float32).reshape(rows, cols),
+            np.asarray(gv, np.float32).reshape(rows, cols))
+
+
+def _eta_upwind_grid(f0, thr, kpp, GU, GV, cell_px):
+    """วิธี B แบบใหม่ — เดินทวนลมทีละ 5 นาที โดย **อ่านเวกเตอร์ใหม่ทุกก้าว**
+
+    ทำซ้ำสิ่งที่ docs/index.html ทำใน analyzeImpactAtPoint() หลังเปลี่ยนมาใช้ motion grid
+    ต่างจากวิธีเดิมที่เลื่อนทั้งภาพด้วยระยะเดียว (ซึ่งถูกต่อเมื่อสนามลมเท่ากันหมด)
+
+    ที่นี่แต่ละพิกเซลมีเส้นทางของตัวเอง จึงต้องเก็บตำแหน่ง (R, C) รายพิกเซล
+    แล้วขยับทีละก้าว ไม่สามารถใช้ _shift() ซึ่งเลื่อนทั้งภาพเท่ากันได้อีกต่อไป
+
+    เดินไปข้างหน้าตามเวลา (5, 10, ... 120) แล้วจดเฉพาะพิกเซลที่ยังไม่เคยเจอฝน
+    -> ค่าที่ได้คือ "นาทีแรกที่เจอ echo ต้นลม" เหมือนกับที่ reversed() ให้ในโค้ดเดิม
+    """
+    n = f0.shape[0]
+    nb = GU.shape[0]
+    R, C = np.mgrid[0:n, 0:n].astype(np.float32)
+    eta = np.full(f0.shape, np.nan, np.float32)
+    val = np.nan_to_num(f0, nan=-99.0)
+    dt = 5 * 60.0                                   # ก้าวละ 5 นาที เป็นวินาที
+    px_per_m = 1.0 / (kpp * 1000.0)
+
+    for m in ETA_STEPS:
+        br = np.clip((R / cell_px).astype(np.int32), 0, nb - 1)
+        bc = np.clip((C / cell_px).astype(np.int32), 0, nb - 1)
+        u = GU[br, bc]                              # m/s ไปทางตะวันออก
+        v = GV[br, bc]                              # m/s ไปทางเหนือ
+        # ถอยหลังในเวลา: ต้นทาง = ปลายทาง - V*t
+        #   ตะวันออก (u บวก) -> column เพิ่ม  => ถอยหลัง C ลด
+        #   เหนือ    (v บวก) -> row **ลด**    => ถอยหลัง R เพิ่ม
+        R += v * dt * px_per_m
+        C -= u * dt * px_per_m
+
+        ri = np.rint(R).astype(np.int32)
+        ci = np.rint(C).astype(np.int32)
+        ok = (ri >= 0) & (ri < n) & (ci >= 0) & (ci < n)
+        hit = np.zeros(f0.shape, bool)
+        hit[ok] = val[ri[ok], ci[ok]] >= thr
+        eta[hit & ~np.isfinite(eta)] = m
+
+    return eta
+
+
 
 def cmd_eta(a, st) -> int:
     """ตรวจว่าการประมาณ "อีกกี่นาทีฝนจะมาถึง" แม่นแค่ไหน
@@ -454,15 +528,31 @@ def cmd_eta(a, st) -> int:
         cen = (n - 1) / 2.0
         inside = np.hypot(yy - cen, xx - cen) * kpp <= (st.range_km - 10)
 
-        # --- วิธี B: เดินทวนลม ---
+        # --- วิธี B1: เดินทวนลมด้วยเวกเตอร์เฉลี่ยตัวเดียว (วิธีเดิมของหน้าเว็บ) ---
+        #
+        # เก็บไว้ต่อแม้หน้าเว็บเลิกใช้แล้ว เพราะเป็น baseline ที่ทำให้ตอบได้ว่า
+        # "การเปลี่ยนไปใช้ motion grid ทำให้ ETA ดีขึ้นจริงไหม" ซึ่งเป็นคำถามของเปเปอร์
+        # ถ้าลบทิ้งจะเหลือแต่ตัวเลขใหม่ลอย ๆ ที่ไม่มีอะไรให้เทียบ
         up = np.radians((deg + 180.0) % 360.0)
-        eta_b = np.full(f0.shape, np.nan, np.float32)
+        eta_b1 = np.full(f0.shape, np.nan, np.float32)
         for m in reversed(ETA_STEPS):
             dist_px = (spd * (m / 60.0)) / kpp
             dc = dist_px * np.sin(up)
             dr = -dist_px * np.cos(up)                # แถวเพิ่มไปทางใต้
             src = _shift(f0, dr, dc)
-            eta_b[np.nan_to_num(src, nan=-99.0) >= thr] = m
+            eta_b1[np.nan_to_num(src, nan=-99.0) >= thr] = m
+
+        # --- วิธี B2: เดินทวนลมตาม motion grid รายจุด (วิธีปัจจุบันของหน้าเว็บ) ---
+        #
+        # รอบเก่าที่เก็บไว้ก่อนมี motion_grid() จะไม่มี grid_u/grid_v -> ตกกลับไปใช้ B1
+        # ซึ่งตรงกับความเป็นจริง: ตอนนั้นระบบก็ทำแบบนั้นจริง ๆ
+        G = _motion_grid_arrays(mot)
+        if G is None:
+            eta_b2, b2_src = eta_b1, "uniform"
+        else:
+            cell_px = max(1, int(round(float(mot.get("resolution_km", 16.0)) / kpp)))
+            eta_b2 = _eta_upwind_grid(f0, thr, kpp, G[0], G[1], cell_px)
+            b2_src = "grid"
 
         # --- วิธี A: อ่านเฟรมพยากรณ์ ---
         eta_a = np.full(f0.shape, np.nan, np.float32)
@@ -483,9 +573,13 @@ def cmd_eta(a, st) -> int:
             continue
 
         # หน้าเว็บใช้ A ก่อน ถ้าไม่เจอถึงตกไป B -> พฤติกรรมจริงคือการรวมสองวิธี
-        eta_c = np.where(np.isfinite(eta_a), eta_a, eta_b)
+        # มีสองเวอร์ชันเพราะ B เปลี่ยนไป: old = ก่อนใช้ motion grid · new = หลังใช้
+        eta_c_old = np.where(np.isfinite(eta_a), eta_a, eta_b1)
+        eta_c_new = np.where(np.isfinite(eta_a), eta_a, eta_b2)
 
-        for name, eta in (("A_frames", eta_a), ("B_upwind", eta_b), ("app_A_then_B", eta_c)):
+        for name, eta in (("A_frames", eta_a),
+                          ("B_uniform", eta_b1), ("B_grid", eta_b2),
+                          ("app_old", eta_c_old), ("app_new", eta_c_new)):
             e, t = eta[sel], truth[sel]
             pred = np.isfinite(e)
             came = np.isfinite(t)
@@ -499,10 +593,10 @@ def cmd_eta(a, st) -> int:
                 err_mean=float(np.mean(e[hit] - t[hit])) if hit.any() else None,
                 early=int(((e < t) & hit).sum()), late=int(((e > t) & hit).sum()),
                 spd_kmh=spd, bearing=deg, confidence=mot.get("confidence"),
-                engine=mot.get("engine"), threshold_dbz=thr,
+                engine=mot.get("engine"), threshold_dbz=thr, b2_source=b2_src,
             ))
         if oi % 200 == 0:
-            print(f"  {oi}/{len(origins)} origin · เก็บได้ {len(rows)//3} รอบ")
+            print(f"  {oi}/{len(origins)} origin · เก็บได้ {len(rows)//N_ETA_METHODS} รอบ")
 
     if not rows:
         print("[!] ไม่มีรอบที่มีภาพสังเกตครบทุก lead", file=sys.stderr)
@@ -511,31 +605,31 @@ def cmd_eta(a, st) -> int:
     out = Path(a.data) / "nowcast" / f"{st.code}_eta.csv"
     with out.open("w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0])); w.writeheader(); w.writerows(rows)
-    print(f"\nรอบที่ตรวจได้ {len(rows)//3} · จุดตัวอย่าง stride {stride}")
+    print(f"\nรอบที่ตรวจได้ {len(rows)//N_ETA_METHODS} · จุดตัวอย่าง stride {stride}")
     print(f"-> {out}\n")
 
-    print(f"{'method':<13}{'จุด':>9}{'ทายว่ามา':>11}{'มาจริง':>9}{'FAR':>8}{'POD':>8}"
+    print(f"{'method':<12}{'จุด':>9}{'ทายว่ามา':>11}{'มาจริง':>9}{'FAR':>8}{'POD':>8}"
           f"{'คลาด(med)':>11}{'เร็วไป':>8}{'ช้าไป':>8}")
-    for name in ("A_frames", "B_upwind", "app_A_then_B"):
+    for name in ETA_METHODS:
         sub = [r for r in rows if r["method"] == name]
         P = sum(r["predicted"] for r in sub); H = sum(r["hit"] for r in sub)
         FA = sum(r["false_alarm"] for r in sub); MS = sum(r["missed"] for r in sub)
         errs = [r["err_med"] for r in sub if r["err_med"] is not None]
-        print(f"{name:<13}{sum(r['n_points'] for r in sub):>9,}{P:>11,}"
+        print(f"{name:<12}{sum(r['n_points'] for r in sub):>9,}{P:>11,}"
               f"{H + MS:>9,}{(FA / P if P else 0):>8.3f}{(H / (H + MS) if H + MS else 0):>8.3f}"
               f"{(float(np.median(errs)) if errs else 0):>+10.1f}น."
               f"{sum(r['early'] for r in sub):>8,}{sum(r['late'] for r in sub):>8,}")
 
-    print(f"\n{'conf':<8}{'method':<13}{'n รอบ':>7}{'FAR':>8}{'POD':>8}{'คลาด(med)':>11}")
+    print(f"\n{'conf':<8}{'method':<12}{'n รอบ':>7}{'FAR':>8}{'POD':>8}{'คลาด(med)':>11}")
     for c in ("high", "medium", "low"):
-        for name in ("A_frames", "B_upwind", "app_A_then_B"):
+        for name in ETA_METHODS:
             sub = [r for r in rows if r["method"] == name and r["confidence"] == c]
             if not sub:
                 continue
             P = sum(r["predicted"] for r in sub); H = sum(r["hit"] for r in sub)
             FA = sum(r["false_alarm"] for r in sub); MS = sum(r["missed"] for r in sub)
             errs = [r["err_med"] for r in sub if r["err_med"] is not None]
-            print(f"{c:<8}{name:<13}{len(sub):>7}{(FA / P if P else 0):>8.3f}"
+            print(f"{c:<8}{name:<12}{len(sub):>7}{(FA / P if P else 0):>8.3f}"
                   f"{(H / (H + MS) if H + MS else 0):>8.3f}"
                   f"{(float(np.median(errs)) if errs else 0):>+10.1f}น.")
     return 0
