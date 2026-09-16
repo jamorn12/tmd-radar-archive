@@ -98,6 +98,25 @@ jobs:
             --out docs/nowcast/PHS \
             || echo "::warning::Nowcast ล้มเหลวรอบนี้ — เว็บจะยังแสดงผลรอบก่อน ตรวจ log ของ step นี้"
 
+      # ⚠️ ขั้นตอนนี้คือสิ่งที่ทำให้ operational verification เป็นไปได้ ห้ามลบ
+      #
+      # docs/nowcast/PHS/f/*.png ถูก **เขียนทับทุก 15 นาที** ภาพพยากรณ์ของรอบก่อนจึง
+      # หายถาวรถ้าไม่คัดลอกออกมาเก็บก่อน = ย้อนกลับไปถามไม่ได้ว่า "เมื่อวานบ่ายสอง
+      # ระบบพยากรณ์ว่าอะไร แล้วจริง ๆ เกิดอะไรขึ้น" ซึ่งเป็นคำถามเดียวที่ operational
+      # verification ตอบได้ และเป็นจุดขายของเปเปอร์
+      #
+      # verify.py archive คัดลอกไปไว้ที่ data/nowcast/<CODE>/<origin_epoch>/ เป็นสำเนา
+      # ถาวร ไม่ถูกเขียนทับ · 954 origin ที่มีตอนนี้กู้มาจาก git ถ้าไม่มี step นี้
+      # ตัวเลขจะหยุดนิ่งอยู่แค่นั้นตลอดไป
+      #
+      # วางหลัง nowcast ทันที (ก่อน gauge) เพราะอ่าน latest.json ที่ nowcast เพิ่งเขียน
+      - name: Archive Forecast for Verification
+        if: ${{ github.event.inputs.mode != 'repair' }}
+        continue-on-error: true
+        run: |
+          python -m radar_archive.verify archive --station PHS \
+            || echo "::warning::เก็บภาพพยากรณ์ไม่สำเร็จรอบนี้ — รอบนี้จะขาดจากชุด verify"
+
       # gauge เป็นแหล่งภายนอก (สสน.) และ **ไม่ใช่ input ของ nowcast**
       # ถ้าดึงไม่ได้ ต้องไม่กระทบ pipeline หลัก -> continue-on-error + || echo
       # วางไว้ท้ายสุดก่อน commit โดยตั้งใจ: งานที่ขาดได้ ต้องไม่กินเวลาของงานที่ขาดไม่ได้
