@@ -402,6 +402,48 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .custom-checkbox input, .layer-label-check input { accent-color: var(--accent); cursor: pointer; }
 .divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0; }
 
+/* กลุ่มควบคุมสถานีวัดน้ำฝน
+ *
+ * เดิม select + ข้อความนับ ถูกยัดเป็น flex item ใน .layer-row (justify-content:space-between)
+ * ทำให้ข้อความนับไปเบียดอยู่ขวามือของ select แล้วตัดบรรทัดเป็น 3 แถว
+ * แก้โดยแยกออกมาเป็นบล็อกของตัวเอง ไม่อยู่ใน flex row นั้นอีก
+ *
+ * และเปลี่ยนจาก <select> เป็น segmented control เพราะ
+ *   1) มีแค่ 3 ตัวเลือก กดครั้งเดียวจบ ไม่ต้องเปิด dropdown แล้วค่อยเลือก
+ *   2) เห็นทุกตัวเลือกพร้อมกัน รู้ทันทีว่ามีอะไรให้เลือกบ้าง
+ *   3) dropdown ของ OS สไตล์พื้นหลังขาวตัวหนังสือดำ แก้ไม่ได้จริงข้ามเบราว์เซอร์
+ *      ซึ่งตัดกับธีมมืดของทั้งหน้า — ปุ่มเองคุมสไตล์ได้ 100%
+ */
+.station-block { display: flex; flex-direction: column; gap: 7px; }
+.station-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.station-count {
+  font-size: 10px; font-family: "IBM Plex Mono", monospace; color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.06); border-radius: 5px;
+  padding: 2px 6px; white-space: nowrap; flex-shrink: 0;
+}
+.seg {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 8px; padding: 2px;
+}
+.seg button {
+  appearance: none; border: 0; background: transparent; cursor: pointer;
+  font-family: inherit; font-size: 11px; font-weight: 500; line-height: 1.3;
+  color: var(--text-dim); padding: 6px 4px; border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.seg button:hover { background: rgba(255, 255, 255, 0.07); color: #E2E8F0; }
+.seg button.on {
+  background: rgba(52, 211, 153, 0.16); color: #34D399; font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.32);
+}
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.station-note { font-size: 10px; color: var(--text-dim); line-height: 1.5; }
+/* หรี่เฉพาะปุ่มเลือกโหมดกับข้อความ — ห้ามคลุม checkbox ไม่งั้นเปิดชั้นกลับไม่ได้ */
+.station-block.off .seg,
+.station-block.off .station-note,
+.station-block.off .station-count { opacity: 0.35; pointer-events: none; }
+
 /* Actionable Weather Card & Rail */
 .rail {
   position: absolute; top: 62px; left: 12px; width: 345px; z-index: 999;
@@ -917,20 +959,20 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
     <div class="divider"></div>
 
-    <div class="layer-row">
-      <label class="custom-checkbox">
-        <input type="checkbox" id="chkStations" checked>
-        <span style="font-weight: 600; color: #34D399;">จุดสถานีวัดน้ำฝน</span>
-      </label>
-      <select id="selStationMode" title="เลือกว่าจะแสดงสถานีแบบไหน"
-              style="width:100%;margin-top:6px;background:rgba(255,255,255,.06);color:#E2E8F0;
-                     border:1px solid rgba(255,255,255,.14);border-radius:6px;
-                     padding:5px 7px;font-size:11.5px;font-family:inherit;cursor:pointer">
-        <option value="smart">อัตโนมัติตามระดับซูม (แนะนำ)</option>
-        <option value="rain">เฉพาะสถานีที่มีฝน</option>
-        <option value="all">ทุกสถานี</option>
-      </select>
-      <div id="stationModeNote" style="font-size:10px;color:#94A3B8;margin-top:4px;line-height:1.5"></div>
+    <div class="station-block" id="stationBlock">
+      <div class="station-head">
+        <label class="custom-checkbox">
+          <input type="checkbox" id="chkStations" checked>
+          <span style="font-weight: 600; color: #34D399;">จุดสถานีวัดน้ำฝน</span>
+        </label>
+        <span class="station-count" id="stationCount">—</span>
+      </div>
+      <div class="seg" id="segStationMode" role="group" aria-label="เลือกว่าจะแสดงสถานีแบบไหน">
+        <button type="button" data-mode="smart" class="on" title="ซูมออก = เห็นเฉพาะสถานีที่มีฝน · ซูมเข้า = เห็นครบขึ้น">อัตโนมัติ</button>
+        <button type="button" data-mode="rain" title="แสดงเฉพาะสถานีที่รายงานว่ามีฝนตก">เฉพาะที่มีฝน</button>
+        <button type="button" data-mode="all" title="แสดงทุกสถานีพร้อมกัน — หมุดจะแน่นมากเมื่อซูมออก">ทั้งหมด</button>
+      </div>
+      <div class="station-note" id="stationModeNote"></div>
     </div>
 
     <div class="divider"></div>
@@ -1881,12 +1923,20 @@ function applyStationVisibility() {
     if (vis) { shown++; if (!layerStations.hasLayer(item.marker)) layerStations.addLayer(item.marker); }
     else if (layerStations.hasLayer(item.marker)) layerStations.removeLayer(item.marker);
   });
+  // แยกตัวเลขออกจากคำอธิบาย: badge บอก "เท่าไหร่" · note บอก "ทำไมถึงเท่านั้น"
+  // เดิมยัดรวมกันเป็นประโยคเดียวข้าง ๆ dropdown แล้วตัดบรรทัดเป็นสามแถว
+  const total = stationMarkerInstances.length;
+  const badge = document.getElementById("stationCount");
+  if (badge) badge.textContent = shown === total ? `${total}` : `${shown}/${total}`;
+
   const note = document.getElementById("stationModeNote");
   if (note) {
-    const total = stationMarkerInstances.length;
-    note.textContent = shown === total
-      ? `แสดงครบ ${total} สถานี`
-      : `แสดง ${shown} จาก ${total} สถานี` + (stationDisplayMode === "smart" ? ` · ซูม ${zoom}` : "");
+    note.textContent =
+      stationDisplayMode === "all"  ? `แสดงทุกสถานีในคลัง ${total} จุด`
+    : stationDisplayMode === "rain" ? `เฉพาะสถานีที่รายงานว่ามีฝน · ซ่อน ${total - shown} จุดที่แห้งหรือไม่มีข้อมูล`
+    : zoom >= 12 ? `ซูม ${zoom} — แสดงครบทุกสถานีในกรอบ`
+    : zoom >= 10 ? `ซูม ${zoom} — แสดงสถานีที่มีฝน และที่ยืนยันว่าแห้ง · ซูมเข้าอีกเพื่อเห็นสถานีที่ไม่มีข้อมูล`
+    :              `ซูม ${zoom} — แสดงเฉพาะสถานีที่มีฝน · ซูมเข้าเพื่อเห็นเพิ่ม`;
   }
   return shown;
 }
@@ -3363,13 +3413,19 @@ document.getElementById("chkRings").addEventListener("change", e => {
 // ระดับซูมเปลี่ยน -> คัดหมุดใหม่ (โหมด smart เท่านั้นที่ขึ้นกับซูม)
 map.on("zoomend", () => { if (stationDisplayMode === "smart") applyStationVisibility(); });
 
-document.getElementById("selStationMode").addEventListener("change", e => {
-  stationDisplayMode = e.target.value;
+// segmented control แทน <select> — ฟังที่ตัว container ตัวเดียว ไม่ต้องผูกทีละปุ่ม
+document.getElementById("segStationMode").addEventListener("click", e => {
+  const btn = e.target.closest("button[data-mode]");
+  if (!btn || btn.classList.contains("on")) return;
+  document.querySelectorAll("#segStationMode button").forEach(b => b.classList.toggle("on", b === btn));
+  stationDisplayMode = btn.dataset.mode;
   applyStationVisibility();
 });
 
 document.getElementById("chkStations").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerStations); else map.removeLayer(layerStations);
+  // ปิดชั้นสถานีแล้ว ปุ่มเลือกโหมดยังกดได้อยู่ = สับสน หรี่ลงและล็อกไว้จนกว่าจะเปิดใหม่
+  document.getElementById("stationBlock").classList.toggle("off", !e.target.checked);
 });
 
 document.getElementById("chkProv").addEventListener("change", e => {
