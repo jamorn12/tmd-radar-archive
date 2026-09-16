@@ -260,6 +260,66 @@ def motion_stability(V: np.ndarray, info: dict, kmperpixel: float, timestep_min:
     )
 
 
+def motion_grid(V: np.ndarray, kmperpixel: float, timestep_min: float,
+                cell_px: int = 8, uniform_tol_px: float = 1e-3) -> dict | None:
+    """ย่อ motion field รายพิกเซลเป็นกริดหยาบ สำหรับให้หน้าเว็บวาดลูกศรรายจุด
+
+    ทำไมต้องมี
+        pysteps ให้ motion รายพิกเซล 241x241 อยู่แล้ว แต่ manifest เก็บแค่เวกเตอร์เฉลี่ย
+        ตัวเดียว หน้าเว็บจึงวาดลูกศรเหมือนกันหมดทุกจุด ทั้งที่ข้อมูลจริงมีรายละเอียดกว่านั้น
+
+    คืน None เฉพาะเมื่อสนามลม "เท่ากันจริง ๆ ทุกพิกเซล" เท่านั้น
+        engine light สร้าง V ด้วยการ broadcast เวกเตอร์เดียวทั้งภาพ ค่า std จึงเป็น 0 พอดี
+        กรณีนั้นส่งกริดไปก็เปล่าประโยชน์ หน้าเว็บมีทางถอยไปใช้เวกเตอร์เดียวอยู่แล้ว
+
+        ⚠️ ห้ามตัดทิ้งเพราะ "สเปรดน้อย" เด็ดขาด สนามจริงของ pysteps มีความเร็วใกล้กัน
+        (rel spread ~0.06) แต่ทิศทางกระจาย 30-40° ซึ่งมีผลโดยตรงกับ ETA ของแต่ละจุด
+        เซลล์ฝนแต่ละก้อนเคลื่อนไม่เหมือนกัน นั่นคือเหตุผลที่ต้องมีกริดตั้งแต่แรก
+
+    หน่วยและทิศทางต้องตรงกับที่หน้าเว็บคาด
+        u = องค์ประกอบตะวันออก (m/s) · v = องค์ประกอบเหนือ (m/s)
+        หน้าเว็บคำนวณ deg = atan2(u, v) ซึ่งได้ compass bearing โดยตรง
+
+    ⚠️ พลิกแกนตั้ง
+        array ของเรา row 0 = ใต้ (yorigin lower) แต่หน้าเว็บนับ row 0 = เหนือ
+        (row = floor(-pinN/res + rows/2)) ถ้าไม่พลิก ลูกศรครึ่งบนกับครึ่งล่างจะสลับที่กัน
+    """
+    if V.ndim != 3 or V.shape[0] != 2:
+        return None
+    n = min(V.shape[1], V.shape[2])
+    k = max(2, int(cell_px))
+    nb = n // k
+    if nb < 3:
+        return None
+    m = nb * k
+
+    # เฉลี่ยเป็นบล็อก — ลด noise รายพิกเซลของ LK ไปในตัว
+    dy = V[0][:m, :m].reshape(nb, k, nb, k).mean(axis=(1, 3))     # px/step ไปทางเหนือ
+    dx = V[1][:m, :m].reshape(nb, k, nb, k).mean(axis=(1, 3))     # px/step ไปทางตะวันออก
+
+    # ตัดทิ้งเฉพาะสนามที่เท่ากันหมดจริง ๆ (light engine) ไม่ใช่สนามที่ "ค่อนข้างสม่ำเสมอ"
+    if float(np.ptp(dx)) < uniform_tol_px and float(np.ptp(dy)) < uniform_tol_px:
+        return None
+
+    to_ms = kmperpixel * 1000.0 / (timestep_min * 60.0)
+    u = (dx * to_ms)[::-1]                # พลิกให้ row 0 = เหนือ
+    v = (dy * to_ms)[::-1]
+
+    # สถิติไว้ให้หน้าเว็บ/เอกสารอ้างอิงว่ากริดนี้ต่างจากเวกเตอร์เดียวแค่ไหน
+    mag = np.hypot(u, v)
+    mu, mv = float(u.mean()), float(v.mean())
+    mean_mag = float(np.hypot(mu, mv))
+    dir_consistency = mean_mag / float(mag.mean()) if mag.mean() > 1e-6 else 1.0
+    return dict(
+        grid_u=[round(float(x), 2) for x in u.ravel()],
+        grid_v=[round(float(x), 2) for x in v.ravel()],
+        resolution_km=round(k * kmperpixel, 3),
+        cols=nb, rows=nb,
+        grid_speed_kmh=[round(float(x) * 3.6, 1) for x in (mag.min(), np.median(mag), mag.max())],
+        grid_dir_consistency=round(float(dir_consistency), 3),
+    )
+
+
 # ---------------------------------------------------------------- 5. extrapolate
 
 def advect(field: np.ndarray, V: np.ndarray, steps: int, n_iter: int = 3) -> np.ndarray:
@@ -393,7 +453,7 @@ def colorize(field: np.ndarray, pal_rgb: np.ndarray, pal_dbz: np.ndarray) -> np.
 def write_outputs(out_dir: Path, st, meta: dict, obs_stack, obs_times,
                   fc_stack, fc_times, motion: dict, stability: dict,
                   pal_rgb, pal_dbz, how: str, despeckled: int,
-                  keep_hours: int = 24) -> Path:
+                  keep_hours: int = 24, mgrid: dict | None = None) -> Path:
     """เขียน PNG ทุกเฟรม + latest.json — สัญญาระหว่างเซิร์ฟเวอร์กับแอป"""
     from PIL import Image
     fdir = out_dir / "f"
@@ -448,7 +508,7 @@ def write_outputs(out_dir: Path, st, meta: dict, obs_stack, obs_times,
         "levels_rgb": [[int(v) for v in c] for c in pal_rgb[np.argsort(pal_dbz)]],
         "zr": [meta["zr_a"], meta["zr_b"]],
         "motion": {**{k: v for k, v in motion.items() if k != "pairs"}, **stability,
-                   "extrapolation": how},
+                   "extrapolation": how, **(mgrid or {})},
         "wet_threshold_dbz": round(thr, 2),
         "qc": {"despeckled_cells": despeckled},
         "frames": entries,
@@ -526,8 +586,14 @@ def main(argv=None) -> int:
               f"max {np.nanmax(f):5.1f} dBZ  "
               f"wet {100*np.nansum(f >= meta['threshold'])/max(np.isfinite(f).sum(),1):6.3f}%")
 
+    mgrid = motion_grid(V, meta["kmperpixel"], meta["timestep"])
+    if mgrid:
+        print(f"motion grid {mgrid['rows']}x{mgrid['cols']} ที่ {mgrid['resolution_km']} กม.")
+    else:
+        print("motion แบนทั้งภาพ — ไม่ส่งกริด หน้าเว็บจะใช้เวกเตอร์เดียว")
+
     path = write_outputs(out_dir, st, meta, obs, times, fc, fc_times,
-                         info, stab, pal_rgb, pal_dbz, how, n_spk)
+                         info, stab, pal_rgb, pal_dbz, how, n_spk, mgrid=mgrid)
     print(f"\nเขียน {len(times)+len(fc)} เฟรม + manifest -> {path}")
     return 0
 
