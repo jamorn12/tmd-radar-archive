@@ -1,0 +1,182 @@
+name: Verify Nowcast Skill
+
+# ให้คะแนนพยากรณ์ที่ระบบผลิตจริง เทียบกับสิ่งที่เกิดขึ้นจริง
+#
+# ทำไมต้องรันเป็นรอบ ไม่ใช่รันพร้อม archive ทุก 15 นาที
+#   score/eta อ่านคลังทั้งก้อน (1,000+ origin) แล้วคำนวณใหม่หมดทุกครั้ง
+#   รันทุก 15 นาทีจะเปลืองเปล่า ๆ เพราะตัวเลขแทบไม่ขยับในหนึ่งรอบ
+#   และไม่มีใครดูบ่อยขนาดนั้น — รายสัปดาห์พอดีกับจังหวะที่ข้อมูลสะสมมากพอให้ต่างจริง
+#
+# ผลลัพธ์ไปสองที่
+#   1. ตารางบนหน้าสรุปของ run   -> ดูได้ทันทีไม่ต้องโหลดอะไร
+#   2. CSV ใน data/nowcast/      -> เอาไปพล็อต/ทำตารางในเปเปอร์
+#
+# ⚠️ ไม่ต้องใช้ fetch-depth: 0 เหมือน recover.yml เพราะอ่านจาก data/nowcast/
+#    ที่ commit อยู่ใน tree แล้ว ไม่ได้ขุดจากประวัติ git
+
+on:
+  schedule:
+    # ทุกวันจันทร์ 01:00 UTC (08:00 น. ไทย) — ต้นสัปดาห์ จะได้เห็นผลของสัปดาห์ที่ผ่านมา
+    - cron: '0 1 * * 1'
+  workflow_dispatch:
+    inputs:
+      station:
+        description: 'รหัสสถานีเรดาร์'
+        default: 'PHS'
+      stride:
+        description: 'eta: สุ่มจุดทุกกี่พิกเซล (8 = ทุก 16 กม.) — เลขน้อย = ละเอียดแต่ช้า'
+        default: '8'
+      threshold:
+        description: 'score: dBZ (ว่าง = ใช้ wet_threshold_dbz ของแต่ละรอบ ซึ่งถูกต้องกว่า)'
+        default: ''
+      commit:
+        description: 'commit ไฟล์ CSV กลับเข้า repo'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # group เดียวกับ archive.yml เพื่อไม่ให้ push ชนกัน
+    concurrency:
+      group: radar-archive
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Archive Status
+        run: |
+          {
+            echo "# ผลตรวจสอบความแม่นยำ"
+            echo ""
+            echo "รันเมื่อ \`$(date -u '+%Y-%m-%d %H:%M UTC')\`"
+            echo ""
+            echo "## คลังที่ใช้ตรวจ"
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          python -m radar_archive.verify status \
+            --station "${{ inputs.station || 'PHS' }}" 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      # นับว่ามีกี่รอบที่มี motion grid — ตัวเลขนี้บอกว่า "เทียบวิธีเก่า/ใหม่ได้หรือยัง"
+      # ถ้าเป็น 0 แปลว่า B_grid จะเท่ากับ B_uniform เป๊ะ และตารางเทียบยังไม่มีความหมาย
+      - name: Motion Grid Coverage
+        run: |
+          {
+            echo ""
+            echo "## รอบที่มี motion grid"
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          python - <<'PY' 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          import json
+          from pathlib import Path
+          root = Path("data/nowcast/${{ inputs.station || 'PHS' }}")
+          tot = grid = 0
+          for m in sorted(root.glob("*/meta.json")):
+              try:
+                  d = json.loads(m.read_text(encoding="utf-8"))
+              except Exception:
+                  continue
+              tot += 1
+              if d.get("motion", {}).get("grid_u"):
+                  grid += 1
+          pct = grid / tot * 100 if tot else 0.0
+          print(f"origin ทั้งหมด {tot} · มี motion grid {grid} ({pct:.1f}%)")
+          if grid == 0:
+              print("")
+              print("!! ยังไม่มีรอบไหนมีกริดเลย -> B_grid จะเท่ากับ B_uniform เป๊ะ")
+              print("   ตารางเทียบวิธีเก่า/ใหม่ยังไม่มีความหมาย ต้องรอสะสมข้อมูลก่อน")
+          elif grid < 100:
+              print("")
+              print(f"!! มีกริดแค่ {grid} รอบ ตัวอย่างยังน้อย ตัวเลขเทียบยังแกว่ง")
+          PY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      # รัน score สามชุด เพราะตอบคนละคำถามกัน — ดูหัวข้อในหน้า summary ประกอบ
+      #   ทั้งคลัง          ใช้ข้อมูลมากที่สุด แต่แต่ละ lead มาจากคนละชุดตัวอย่าง
+      #                     (ระบบเคยผลิตแค่ 4 lead จนถึง 09 ก.ย. 14:00Z แล้วขยายเป็น 8)
+      #                     -> ห้ามเอาไปลากเป็นเส้น CSI vs lead
+      #   complete ถึง 60   ทุกแถวชุดเดียวกัน ตัวอย่างใหญ่ แต่ได้แค่ถึง 60 นาที
+      #   complete ถึง 120  ทุกแถวชุดเดียวกัน ครบช่วง แต่ตัวอย่างเล็กกว่า  <- ตารางหลักของเปเปอร์
+      - name: Score Forecasts (CSI / POD / FAR / BIAS)
+        run: |
+          ARGS="--station ${{ inputs.station || 'PHS' }}"
+          if [ -n "${{ inputs.threshold }}" ]; then ARGS="$ARGS --threshold ${{ inputs.threshold }}"; fi
+
+          {
+            echo ""
+            echo "## คะแนนพยากรณ์ — ทั้งคลัง"
+            echo ""
+            echo "⚠️ แต่ละ lead มาจากคนละชุดตัวอย่าง อย่าเอาไปลากเป็นเส้น CSI vs lead"
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          python -m radar_archive.verify score $ARGS 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          {
+            echo ""
+            echo "## คะแนนพยากรณ์ — ชุดเดียวกันทุก lead ถึง 60 นาที"
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          python -m radar_archive.verify score $ARGS --complete --max-lead 60 2>&1 \
+            | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          {
+            echo ""
+            echo "## คะแนนพยากรณ์ — ชุดเดียวกันทุก lead ถึง 120 นาที (ตารางหลักของเปเปอร์)"
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          python -m radar_archive.verify score $ARGS --complete 2>&1 \
+            | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Score ETA
+        run: |
+          {
+            echo ""
+            echo "## ความแม่นของ ETA (อีกกี่นาทีฝนจะมาถึง)"
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          python -m radar_archive.verify eta \
+            --station "${{ inputs.station || 'PHS' }}" \
+            --stride "${{ inputs.stride || 8 }}" 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Commit CSV Results
+        if: ${{ inputs.commit != false }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A data/nowcast/*.csv
+          if git diff --staged --quiet; then
+            echo "ตัวเลขไม่เปลี่ยนจากรอบก่อน — ไม่ commit"
+            exit 0
+          fi
+          git commit -m "verify: อัปเดตผลตรวจสอบความแม่นยำ [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && exit 0
+            echo "push รอบที่ $i ไม่สำเร็จ รออีก 10 วินาที"
+            sleep 10
+          done
+          echo "::error::push ไม่สำเร็จหลังจากลอง 3 ครั้ง"
+          exit 1
