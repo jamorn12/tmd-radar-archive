@@ -2446,16 +2446,28 @@ function analyzeImpactAtPoint(lat, lon) {
   if (!manifest || !manifest.motion || frameImages.length === 0) return;
 
   const motion = manifest.motion;
-  // ใช้ Number.isFinite แทน || ด้วยเหตุผลเดียวกับใน getLocalMotionAtPoint
-  const spd = Number.isFinite(motion.speed_kmh) ? motion.speed_kmh
-            : Number.isFinite(motion.kmh)       ? motion.kmh : 0;
-  const deg = Number.isFinite(motion.direction_deg) ? motion.direction_deg
-            : Number.isFinite(motion.bearing)       ? motion.bearing : 0;
 
   const lat0 = radarStationLatLon[0] || 16.77;
   const lon0 = radarStationLatLon[1] || 100.22;
   const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
   const [pinE, pinN] = project(lat, lon, lat0, lon0);
+
+  // ⚠️ ETA ต้องใช้เวกเตอร์ "ตรงจุดที่ปักหมุด" ไม่ใช่เวกเตอร์เฉลี่ยทั้งภาพ
+  //
+  // เซลล์ฝนแต่ละก้อนไม่ได้เคลื่อนที่เท่ากัน สนาม motion จริงของ pysteps ที่ PHS
+  // (16 ก.ย. 2569 02:00Z) วัดได้ ทิศกระจาย 92-126 องศา ความเร็ว 6.4-8.6 กม./ชม.
+  //
+  // วัดผลจริงของกรณีนี้: จุดต้นลมที่คำนวณได้ ต่างจากวิธีเวกเตอร์เดียว
+  //     ย้อน  30 นาที -> median 0.7 กม. · p90 1.5 กม.
+  //     ย้อน  60 นาที -> median 1.5 กม. · p90 3.0 กม.
+  //     ย้อน 120 นาที -> median 3.0 กม. · p90 5.9 กม. · max 9.3 กม.
+  //
+  // วันนี้ฝนเคลื่อนช้า (7.8 กม./ชม.) ผลจึงยังไม่มาก แต่ค่านี้แปรตามความเร็วโดยตรง
+  // ถ้าเป็นแนวพายุที่ 50-60 กม./ชม. ความต่างจะขยายเป็นหลายสิบกิโลเมตร
+  // ซึ่งพอที่จะไปโดนคนละก้อนฝน = แจ้งเตือนผิดทั้งเวลาและว่าจะมาหรือไม่มา
+  const pinMotion = getLocalMotionAtPoint(pinE, pinN);
+  const spd = pinMotion ? pinMotion.spd : 0;
+  const deg = pinMotion ? pinMotion.deg : 0;
 
   const targetPx = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
   const targetPy = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
@@ -2566,13 +2578,25 @@ function analyzeImpactAtPoint(lat, lon) {
   }
 
   // 2.2 หากโมเดลยังไม่ขึ้น ให้ตรวจจากแนวเวกเตอร์ต้นลมย้อนกลับ (Upwind Trajectory) ล่วงหน้า 120 นาที
+  //
+  // เดินย้อนทวนลมทีละ 5 นาที และ **อ่านเวกเตอร์ใหม่ทุกก้าว** จากจุดที่เดินมาถึง
+  // ไม่ใช่ยิงเส้นตรงด้วยเวกเตอร์ที่หมุดตัวเดียว
+  //
+  // เหตุผล: เส้นทางที่ก้อนฝนใช้เดินทางมาถึงหมุด ถูกกำหนดโดยลมตลอดเส้นทางนั้น
+  // ไม่ใช่ลมที่ปลายทาง การยิงเส้นตรงจะถูกต่อเมื่อสนามลมเท่ากันหมดทั้งภาพเท่านั้น
+  // ซึ่งไม่จริง นี่คือการอินทิเกรต backward trajectory แบบ Euler ขั้นละ 5 นาที
+  // (หลักการเดียวกับ semi-Lagrangian ที่ nowcast.py ใช้ แค่ทำย้อนหลังบนเฟรมปัจจุบัน)
   if (incomingMin === -1 && spd > 3 && imgData) {
-    const oppRad = ((deg + 180) % 360) * Math.PI / 180;
-    
-    for (let m = 5; m <= 120; m += 5) {
-      const distM = (spd * 1000 / 3600) * (m * 60);
-      const testE = pinE + distM * Math.sin(oppRad);
-      const testN = pinN + distM * Math.cos(oppRad);
+    const STEP_MIN = 5;
+    let testE = pinE, testN = pinN;
+    let stepSpd = spd, stepDeg = deg;
+
+    for (let m = STEP_MIN; m <= 120; m += STEP_MIN) {
+      // ก้าวย้อนทวนลมด้วยเวกเตอร์ ณ ตำแหน่งปัจจุบันของการเดิน
+      const oppRad = ((stepDeg + 180) % 360) * Math.PI / 180;
+      const stepM = (stepSpd * 1000 / 3600) * (STEP_MIN * 60);
+      testE += stepM * Math.sin(oppRad);
+      testN += stepM * Math.cos(oppRad);
 
       const px = Math.round(((testE / halfKm) + 1) / 2 * (SCAN_RES - 1));
       const py = Math.round((1 - (testN / halfKm)) / 2 * (SCAN_RES - 1));
@@ -2580,7 +2604,7 @@ function analyzeImpactAtPoint(lat, lon) {
       if (px >= 0 && px < SCAN_RES && py >= 0 && py < SCAN_RES) {
         const idx = (py * SCAN_RES + px) * 4;
         const d = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
-        
+
         if (d >= 15) {
           incomingMin = m;
           incomingMaxDbz = d;
@@ -2590,6 +2614,10 @@ function analyzeImpactAtPoint(lat, lon) {
 
       const [wLat, wLon] = unproject(testE, testN, lat0, lon0);
       trajectoryCoords.push([wLat, wLon]);
+
+      // อ่านเวกเตอร์ของก้าวถัดไปจากตำแหน่งใหม่ ถ้าหลุดขอบกริดให้คงค่าเดิมไว้
+      const mNext = getLocalMotionAtPoint(testE, testN);
+      if (mNext && mNext.spd > 0.5) { stepSpd = mNext.spd; stepDeg = mNext.deg; }
     }
   }
 
