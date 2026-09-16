@@ -276,6 +276,42 @@ def cmd_score(a, st) -> int:
     if not origins:
         return 1
 
+    leads_want = [L for L in ETA_LEADS if L <= a.max_lead]
+    if not leads_want:
+        print(f"[!] --max-lead {a.max_lead} ไม่เหลือ lead ไหนเลย", file=sys.stderr)
+        return 1
+
+    def _pair_ok(o, L):
+        v = o + L * 60
+        return ((root / str(o) / f"f+{L:03d}.png").exists()
+                and v in have and (root / str(v) / "obs.png").exists())
+
+    # --- คัดเฉพาะ origin ที่มีครบทุก lead (เมื่อสั่ง --complete) ---
+    #
+    # ⚠️ ทำไมเรื่องนี้สำคัญกับเปเปอร์
+    #     ถ้าไม่คัด แต่ละแถวของตาราง lead จะมาจาก **คนละชุดตัวอย่าง**
+    #     คลัง PHS ปัจจุบัน: lead 60 มี n=872 แต่ lead 75 เหลือ n=488
+    #     สาเหตุคือระบบผลิตแค่ 4 lead (ถึง 60 นาที) จนถึง 09 ก.ย. 14:00Z
+    #     แล้วหลังจากนั้นจึงขยายเป็น 8 lead (ถึง 120 นาที)
+    #
+    #     ผลคือครึ่งบนของตารางเป็นข้อมูล 12 วัน ครึ่งล่างเป็นข้อมูล 6 วัน
+    #     ถ้าลากเป็นเส้นเดียว เส้นนั้นปนผลของ "ช่วงเวลาต่างกัน" เข้ากับ "lead ต่างกัน"
+    #     แยกไม่ออกว่า CSI ที่ลดลงมาจากอะไร — reviewer ถามแน่นอน
+    #
+    #     --complete บังคับให้ทุกแถวมาจาก origin ชุดเดียวกันเป๊ะ เทียบข้าม lead ได้จริง
+    if a.complete:
+        keep = [o for o in origins if all(_pair_ok(o, L) for L in leads_want)]
+        if not keep:
+            print(f"[!] ไม่มี origin ไหนครบทุก lead ถึง {a.max_lead} นาที", file=sys.stderr)
+            return 1
+        dropped = len(origins) - len(keep)
+        origins = keep
+        t0 = datetime.fromtimestamp(origins[0], timezone.utc)
+        t1 = datetime.fromtimestamp(origins[-1], timezone.utc)
+        print(f"โหมด --complete: เหลือ {len(origins)} origin (ตัดออก {dropped}) "
+              f"ที่มีครบทุก lead ถึง {a.max_lead} นาที")
+        print(f"  ช่วงเวลาที่เหลือ {t0:%d %b %H:%MZ} - {t1:%d %b %H:%MZ}")
+
     rows, cache = [], {}
     thr = a.threshold
     n_pair = n_noobs = 0
@@ -294,6 +330,8 @@ def cmd_score(a, st) -> int:
 
         for p in sorted(d.glob("f+*.png")):
             lead = int(p.stem[2:])
+            if lead > a.max_lead:
+                continue
             valid = o + lead * 60
             if valid not in have:
                 n_noobs += 1
@@ -333,7 +371,10 @@ def cmd_score(a, st) -> int:
         print("[!] จับคู่ไม่ได้เลย — คลังอาจมี origin ไม่ต่อเนื่องพอ", file=sys.stderr)
         return 1
 
-    out = Path(a.data) / "nowcast" / f"{st.code}_verify.csv"
+    # ตั้งชื่อไฟล์ตามโหมด — ไม่งั้นรันหลายโหมดต่อกันจะทับกันเอง
+    # และคนที่เปิด CSV ทีหลังจะไม่รู้ว่าไฟล์นั้นมาจากชุดตัวอย่างไหน
+    tag = f"_complete{a.max_lead}" if a.complete else ""
+    out = Path(a.data) / "nowcast" / f"{st.code}_verify{tag}.csv"
     with out.open("w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0]))
         w.writeheader(); w.writerows(rows)
@@ -677,6 +718,12 @@ def main(argv=None) -> int:
                    help="eta: สุ่มจุดทุก ๆ กี่พิกเซล (6 = ทุก 12 กม.)")
     p.add_argument("--threshold", type=float, default=None,
                    help="score: dBZ (ค่าเริ่มต้นใช้ wet_threshold_dbz ของแต่ละรอบ)")
+    p.add_argument("--complete", action="store_true",
+                   help="score: ใช้เฉพาะ origin ที่มีครบทุก lead -> ทุกแถวมาจากชุดตัวอย่างเดียวกัน "
+                        "(จำเป็นถ้าจะเทียบ CSI ข้าม lead ในเปเปอร์)")
+    p.add_argument("--max-lead", type=int, default=120,
+                   help="score: ตัด lead ที่ยาวกว่านี้ทิ้ง — คู่กับ --complete เพื่อแลกความยาว "
+                        "กับขนาดตัวอย่าง (เช่น --complete --max-lead 60)")
     a = p.parse_args(argv)
 
     st = get_station(a.station, a.config)
