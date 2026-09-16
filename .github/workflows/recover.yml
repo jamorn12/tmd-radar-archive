@@ -1,0 +1,123 @@
+name: Recover Archived Forecasts
+
+# กู้ภาพพยากรณ์ที่ถูกเขียนทับไปแล้ว กลับมาจากประวัติ git
+#
+# ทำไมต้องแยกเป็น workflow ของตัวเอง ไม่รวมใน archive.yml
+#   archive.yml ใช้ fetch-depth: 1 (ดึงแค่ commit ล่าสุด) เพื่อให้รอบ 15 นาทีเร็ว
+#   แต่ recover ต้องอ่าน **ทั้งประวัติ** จึงต้องใช้ fetch-depth: 0 ซึ่งช้ากว่ามาก
+#   ถ้ายัดรวมกัน ทุกรอบ 15 นาทีจะต้องโคลนประวัติทั้งก้อนเปล่า ๆ วันละ 96 ครั้ง
+#
+# ปกติรันครั้งเดียวก็พอ หลังจากนั้น step "Archive Forecast for Verification"
+# ใน archive.yml จะเก็บให้เองทุกรอบ ไม่ต้องกู้อีก
+#
+# รันซ้ำได้ปลอดภัย — origin ที่มีอยู่แล้วจะถูกข้าม เว้นแต่จะติ๊ก overwrite
+
+on:
+  workflow_dispatch:
+    inputs:
+      station:
+        description: 'รหัสสถานีเรดาร์'
+        default: 'PHS'
+      limit:
+        description: 'จำกัดจำนวน commit ที่ไล่ย้อน (ว่าง = ทั้งหมด) — ใส่เลขน้อย ๆ เช่น 50 เพื่อลองก่อน'
+        default: ''
+      overwrite:
+        description: 'เขียนทับ origin ที่มีอยู่แล้ว (ปกติไม่ต้อง)'
+        type: boolean
+        default: false
+      commit:
+        description: 'commit ผลลัพธ์กลับเข้า repo — ติ๊กออกถ้าอยากดูตัวเลขเฉย ๆ ก่อน'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    # 290 MB ของประวัติ + ไล่ commit นับพัน — ให้เวลาเผื่อไว้
+    timeout-minutes: 45
+    # ใช้ group เดียวกับ archive.yml เพื่อไม่ให้สอง job push ชนกัน
+    concurrency:
+      group: radar-archive
+      cancel-in-progress: false
+
+    steps:
+      # ⚠️ fetch-depth: 0 คือหัวใจของ workflow นี้ ถ้าเป็น 1 จะกู้ไม่ได้เลย
+      #    เพราะ verify.py recover อ่านภาพเก่าจาก blob ในประวัติ git
+      - name: Checkout Repository (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Show Archive Status (before)
+        run: |
+          echo "## ก่อนกู้" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          python -m radar_archive.verify status \
+            --station "${{ inputs.station }}" 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      # ไม่ใส่ continue-on-error ที่นี่โดยตั้งใจ — ต่างจาก step ใน archive.yml
+      # ที่นั่นเป็นงานประจำที่พังได้โดยไม่กระทบรอบอื่น แต่ที่นี่ผู้ใช้กดปุ่มเองและรอผล
+      # ถ้าพังต้องเห็นเป็นสีแดงทันที ไม่ใช่ซ่อนเป็น warning
+      - name: Recover from Git History
+        run: |
+          ARGS="--station ${{ inputs.station }}"
+          if [ -n "${{ inputs.limit }}" ]; then ARGS="$ARGS --limit ${{ inputs.limit }}"; fi
+          if [ "${{ inputs.overwrite }}" = "true" ]; then ARGS="$ARGS --overwrite"; fi
+          echo "รัน: python -m radar_archive.verify recover $ARGS"
+          python -m radar_archive.verify recover $ARGS
+
+      - name: Show Archive Status (after)
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## หลังกู้" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          python -m radar_archive.verify status \
+            --station "${{ inputs.station }}" 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Commit and Push Changes
+        if: ${{ inputs.commit }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A data/nowcast/
+          if git diff --staged --quiet; then
+            echo "ไม่มีอะไรใหม่ให้ commit — คลังครบอยู่แล้ว"
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**ไม่มีอะไรใหม่ให้ commit** — คลังครบอยู่แล้ว" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          N=$(git diff --staged --name-only | wc -l)
+          git commit -m "verify: กู้ภาพพยากรณ์จากประวัติ git ($N ไฟล์) [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && {
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**commit แล้ว $N ไฟล์**" >> $GITHUB_STEP_SUMMARY
+              exit 0
+            }
+            echo "push รอบที่ $i ไม่สำเร็จ รออีก 10 วินาที"
+            sleep 10
+          done
+          echo "::error::push ไม่สำเร็จหลังจากลอง 3 ครั้ง"
+          exit 1
+
+      - name: Note (dry run)
+        if: ${{ !inputs.commit }}
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**ไม่ได้ commit** (ติ๊ก commit ออกไว้) — ไฟล์ที่กู้มาอยู่แค่ใน runner และจะหายเมื่อ job จบ" >> $GITHUB_STEP_SUMMARY
