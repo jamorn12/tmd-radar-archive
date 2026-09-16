@@ -139,7 +139,7 @@ def scores(h: int, fa: int, m: int) -> dict:
 
 META_KEYS = ("station", "generated", "base_time_utc", "projection", "grid", "kmperpixel",
              "timestep_min", "yorigin", "levels_dbz", "levels_rgb", "zr",
-             "motion", "wet_threshold_dbz", "qc", "source")
+             "motion", "wet_threshold_dbz", "wet_threshold_effective_dbz", "qc", "source")
 
 
 def archive_one(doc: dict, read_frame, out_root: Path, code: str,
@@ -325,7 +325,12 @@ def cmd_score(a, st) -> int:
         lv_rgb, lv_dbz = meta.get("levels_rgb"), meta.get("levels_dbz")
         if not lv_rgb or not lv_dbz:
             continue
-        thr_use = thr if thr is not None else float(meta.get("wet_threshold_dbz", 11.98))
+        # ใช้ effective threshold เป็นค่าเริ่มต้น — เราให้คะแนนบนภาพที่ render แล้ว
+        # ค่า wet_threshold_dbz ใช้กับสนาม float ข้างใน nowcast ซึ่งเป็นคนละพื้นที่
+        # (รอบเก่าที่เก็บก่อนมีฟิลด์นี้ จะ fallback ไปค่าเดิม ซึ่งให้ผลเท่ากันอยู่แล้ว
+        #  เพราะทั้งสองค่าตกอยู่ในแถบ palette เดียวกัน)
+        thr_use = thr if thr is not None else float(
+            meta.get("wet_threshold_effective_dbz", meta.get("wet_threshold_dbz", 11.98)))
         mot = meta.get("motion", {})
 
         for p in sorted(d.glob("f+*.png")):
@@ -538,7 +543,8 @@ def cmd_eta(a, st) -> int:
         lv_rgb, lv_dbz = meta.get("levels_rgb"), meta.get("levels_dbz")
         if not lv_rgb:
             continue
-        thr = a.threshold if a.threshold is not None else float(meta.get("wet_threshold_dbz", 11.98))
+        thr = a.threshold if a.threshold is not None else float(
+            meta.get("wet_threshold_effective_dbz", meta.get("wet_threshold_dbz", 11.98)))
         kpp = float(meta.get("kmperpixel", 2.0))
         mot = meta.get("motion", {})
         spd = mot.get("kmh")
