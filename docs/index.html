@@ -256,63 +256,94 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   border-color: #38BDF8;
   color: #fff;
 }
-/* ---- popup สถานีวัดน้ำฝน ---- */
-.wam-popup { min-width: 218px; max-width: 250px; }
+/* ---- popup สถานีวัดน้ำฝน ----
+ *
+ * แบบ B: แถบหัวเปลี่ยนสีตามระดับความรุนแรงของฝน
+ *
+ * ทำไมต้องมีสีที่หัวการ์ด
+ *     ผู้ใช้เปิดดูทีละหลายสถานีเพื่อเทียบกัน ถ้าต้องอ่านตัวเลขทุกครั้งจะช้า
+ *     สีบอกระดับได้ในพริบตา ตัวเลขเอาไว้ยืนยันทีหลัง
+ *
+ * ทำไมเลิกใช้กล่องซ้อนกล่อง
+ *     ของเดิมมี .wam-pop-stat สองกล่อง + .wam-pop-radar อีกกล่อง ซ้อนอยู่ในกรอบ popup
+ *     กลายเป็นกรอบสามชั้น ตาลายและเสียพื้นที่ไปกับเส้นขอบ
+ *     ใช้เส้นคั่นบาง ๆ แทน อ่านเป็นรายการได้ทันทีและได้พื้นที่ตัวเลขคืนมา
+ *
+ * ระดับฝนใช้เกณฑ์ TMD (กรมอุตุนิยมวิทยา)
+ *     0.1-10.0 เล็กน้อย · 10.1-35.0 ปานกลาง · 35.1-90.0 หนัก · >90.0 หนักมาก
+ *     ⚠️ เกณฑ์ชุดนี้ TMD นิยามไว้สำหรับฝนสะสม 24 ชม. เรานำมาใช้กับหน้าต่างที่ผู้ใช้เลือก
+ *     จึงเป็นการเทียบเคียง ไม่ใช่การจัดระดับตามนิยามทางการ — เขียนกำกับไว้ให้ชัด
+ *     สีเดียวกันนี้ใช้กับหมุดบนแผนที่ด้วย แผนที่กับ popup จะได้ไม่ขัดกัน
+ */
+.wam-popup { width: 252px; }
 
-.wam-pop-head { display: flex; align-items: flex-start; gap: 6px; padding-right: 16px; }
-.wam-pop-name {
-  font-size: 14px; font-weight: 700; color: #F8FAFC; line-height: 1.3; flex: 1;
-  /* ชื่อสถานียาวมาก (เช่น "หน่วยพิทักษ์อุทยานแห่งชาติที่ สล.12") ให้ตัด 2 บรรทัด */
+/* --- แถบหัว --- */
+.wam-band { padding: 10px 14px 11px; }
+.wam-band-top { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; padding-right: 14px; }
+.wam-lvl { font-size: 9.5px; font-weight: 700; letter-spacing: .06em; opacity: .9; }
+.wam-chip {
+  margin-left: auto; flex: none; font-size: 9px; font-weight: 700;
+  background: rgba(0,0,0,0.3); border-radius: 4px; padding: 2px 6px; color: #fff; white-space: nowrap;
+}
+.wam-name {
+  font-size: 14.5px; font-weight: 700; line-height: 1.3;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.wam-pop-chip {
-  flex: none; font-size: 10px; font-weight: 700; color: #0B1220;
-  background: #7DD3FC; border-radius: 4px; padding: 2px 5px; line-height: 1.3; white-space: nowrap;
-}
-.wam-pop-loc {
-  font-size: 11px; color: #94A3B8; line-height: 1.4; margin: 3px 0 8px;
+.wam-loc {
+  font-size: 10px; opacity: .78; margin-top: 3px; line-height: 1.45;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 
-/* ตัวเลขหลักสองช่อง 1 ชม. / 24 ชม. — ช่องที่กำลังเลือกอยู่จะถูกเน้น */
-.wam-pop-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
-.wam-pop-stat {
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
-  border-radius: 7px; padding: 6px 8px;
-}
-.wam-pop-stat.is-active { background: rgba(56,189,248,0.13); border-color: rgba(56,189,248,0.5); }
-.wam-pop-stat .k { display: block; font-size: 9.5px; color: #94A3B8; letter-spacing: .02em; }
-.wam-pop-stat .v {
-  display: block; font-size: 18px; font-weight: 700; color: #F8FAFC;
-  font-family: "IBM Plex Mono", monospace; line-height: 1.15;
-}
-.wam-pop-stat .v.dim { color: #64748B; font-size: 15px; }
-.wam-pop-stat .u { font-size: 10px; color: #94A3B8; font-weight: 600; }
+/* ระดับฝน — สีพื้นแถบ และสีตัวอักษรที่อ่านออกบนพื้นนั้น
+ * เขียว/เหลืองสว่างเกินกว่าจะใช้ตัวหนังสือขาว จึงสลับเป็นตัวหนังสือเข้ม */
+.lv-none  { background: linear-gradient(135deg,#475569,#334155); color: #E2E8F0; }
+.lv-dry   { background: linear-gradient(135deg,#3E5977,#2C4257); color: #E2E8F0; }
+.lv-light { background: linear-gradient(135deg,#34D399,#10B981); color: #052E22; }
+.lv-mod   { background: linear-gradient(135deg,#FBBF24,#F59E0B); color: #3B2103; }
+.lv-heavy { background: linear-gradient(135deg,#F87171,#DC2626); color: #FFF; }
+.lv-vheavy{ background: linear-gradient(135deg,#C084FC,#9333EA); color: #FFF; }
+.lv-light .wam-chip, .lv-mod .wam-chip { background: rgba(0,0,0,0.22); }
 
-/* แถวเรดาร์ — คนละแหล่งกับสถานี จึงแยกกล่องให้ชัด ไม่ปนกับตัวเลขข้างบน */
-.wam-pop-radar {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 6px;
-  background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 6px; padding: 5px 8px; font-size: 11px; color: #94A3B8; margin-bottom: 6px;
+/* --- รายการค่า: เส้นคั่น ไม่ใช่กล่อง --- */
+.wam-list { padding: 3px 14px 2px; }
+.wam-li {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.07);
 }
-.wam-pop-radar b { color: #F8FAFC; font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 700; }
-.wam-pop-radar .bias { font-size: 10.5px; font-weight: 700; border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
-.bias-over  { background: rgba(239,68,68,.18); color: #FCA5A5; }
-.bias-under { background: rgba(56,189,248,.18); color: #7DD3FC; }
-.bias-match { background: rgba(148,163,184,.18); color: #CBD5E1; }
+.wam-li:last-child { border-bottom: 0; }
+.wam-li .k { font-size: 10.5px; color: #94A3B8; }
+.wam-li .v {
+  font-size: 17px; font-weight: 700; color: #F8FAFC;
+  font-family: "IBM Plex Mono", monospace; line-height: 1.1; white-space: nowrap;
+}
+.wam-li .v small { font-size: 10px; color: #94A3B8; font-weight: 600; margin-left: 3px; }
+.wam-li .v.dim { color: #64748B; font-size: 14px; }
+/* เรดาร์เป็นคนละแหล่งกับสถานี ลดน้ำหนักลงและใช้สีฟ้าให้แยกออกจากค่าที่วัดได้จริง */
+.wam-li.is-radar .v { font-size: 14px; color: #7DD3FC; }
 
-.wam-pop-time { font-size: 10px; color: #64748B; margin-bottom: 6px; }
-.wam-pop-footer {
-  display: flex; align-items: center; justify-content: space-between; gap: 6px;
-  border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px;
+/* --- ประโยคอธิบายเมื่อเรดาร์กับสถานีไม่ตรงกัน --- */
+.wam-explain {
+  margin: 2px 14px 0; padding: 6px 9px; border-radius: 7px;
+  font-size: 10px; line-height: 1.55;
+  background: rgba(56,189,248,0.10); border: 1px solid rgba(56,189,248,0.24); color: #BAE6FD;
 }
-.wam-pop-coord {
-  font-size: 10.5px; color: var(--accent); cursor: pointer;
-  font-family: "IBM Plex Mono", monospace; text-decoration: none; border-bottom: 1px dotted currentColor;
+.wam-explain.warn { background: rgba(239,68,68,0.11); border-color: rgba(239,68,68,0.26); color: #FCA5A5; }
+
+/* --- ท้ายการ์ด --- */
+.wam-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-top: 9px; padding: 8px 14px;
+  border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2);
 }
-.wam-pop-coord:hover { color: #BAE6FD; }
-.wam-pop-chart-btn { color: var(--accent); cursor: pointer; display: inline-flex; align-items: center; transition: transform .15s ease; }
-.wam-pop-chart-btn:hover { transform: scale(1.18); color: #7DD3FC; }
+.wam-time { font-size: 9.5px; color: #64748B; line-height: 1.4; }
+.wam-foot-act { display: flex; align-items: center; gap: 9px; flex: none; }
+.wam-coord {
+  font-size: 10px; color: var(--accent); cursor: pointer;
+  font-family: "IBM Plex Mono", monospace; border-bottom: 1px dotted currentColor; white-space: nowrap;
+}
+.wam-coord:hover { color: #BAE6FD; }
+.wam-chart-btn { color: var(--accent); cursor: pointer; display: inline-flex; align-items: center; transition: transform .15s ease; }
+.wam-chart-btn:hover { transform: scale(1.18); color: #7DD3FC; }
 
 /* Custom Live Radar Pulsing Pin */
 .custom-pin-wrap { background: transparent !important; border: none !important; }
@@ -1941,6 +1972,28 @@ function applyStationVisibility() {
   return shown;
 }
 
+/* จัดระดับความรุนแรงของฝนตามเกณฑ์ TMD — ใช้ร่วมกันทั้งสีหมุดบนแผนที่และแถบหัว popup
+ *
+ * ก่อนหน้านี้สีหมุดใช้ขอบเขต 0.1 / 20 / 35 / 90 ซึ่งเลข 20 ไม่ตรงกับเกณฑ์ไหนเลย
+ * เปลี่ยนเป็น 0.1 / 10 / 35 / 90 ตามนิยาม TMD เพื่อให้สีที่เห็นตรงกับคำที่เขียน
+ *
+ * ⚠️ เกณฑ์ชุดนี้ TMD นิยามไว้สำหรับฝนสะสม 24 ชม. การเอามาใช้กับฝน 1 ชม. เป็นการ
+ *    เทียบเคียงเพื่อสื่อสาร ไม่ใช่การจัดระดับตามนิยามทางการ
+ */
+function rainLevel(mm) {
+  if (mm === null || mm === undefined || !Number.isFinite(mm))
+    return { cls: "lv-none",   label: "ไม่มีข้อมูล",  color: "#64748B", opacity: 0.55, big: false };
+  if (mm <= 0.1)
+    return { cls: "lv-dry",    label: "ไม่มีฝน",      color: "#334E68", opacity: 0.95, big: false };
+  if (mm <= 10)
+    return { cls: "lv-light",  label: "ฝนเล็กน้อย",   color: "#10B981", opacity: 0.95, big: true };
+  if (mm <= 35)
+    return { cls: "lv-mod",    label: "ฝนปานกลาง",    color: "#F59E0B", opacity: 0.95, big: true };
+  if (mm <= 90)
+    return { cls: "lv-heavy",  label: "ฝนหนัก",       color: "#EF4444", opacity: 0.95, big: true };
+  return   { cls: "lv-vheavy", label: "ฝนหนักมาก",    color: "#C084FC", opacity: 0.95, big: true };
+}
+
 // วาดหมุดบน canvas ชั้นเดียว ไม่ใช่ DOM element ต่อหมุด
 // ที่ 1,300+ สถานี divIcon จะสร้าง element เท่านั้นตัวและทำให้แผนที่หนืดมากบนมือถือ
 const stationRenderer = L.canvas({ padding: 0.3 });
@@ -2024,83 +2077,92 @@ function updateTelemetryStationValues() {
     item.rain24h = (st.rain_24h === null || st.rain_24h === undefined) ? null : Number(st.rain_24h);
     const rain1h = item.rain1h;
 
-    // สีหมุด: เทา = ไม่มีข้อมูล · น้ำเงินเข้ม = รายงานแล้วว่าไม่มีฝน · ไล่สีตามปริมาณ
-    let dotColor = "#64748B", dotOpacity = 0.55;
-    if (rain1h !== null) {
-      dotOpacity = 0.95;
-      if (rain1h > 90) dotColor = "#C084FC";
-      else if (rain1h > 35) dotColor = "#EF4444";
-      else if (rain1h > 20) dotColor = "#F59E0B";
-      else if (rain1h > 0.1) dotColor = "#10B981";
-      else dotColor = "#334E68";
-    }
+    // สีหมุดมาจาก rainLevel() ตัวเดียวกับที่ popup ใช้ — แผนที่กับ popup จะได้ไม่ขัดกัน
+    const lvl = rainLevel(rain1h);
     if (item.marker && item.marker.setStyle) {
       // สถานีที่ฝนตกให้หมุดใหญ่ขึ้นเล็กน้อย จะได้เห็นเด่นในดงหมุดสีเทา
-      const hasRain = rain1h !== null && rain1h > 0.1;
       item.marker.setStyle({
-        fillColor: dotColor, fillOpacity: dotOpacity,
-        radius: hasRain ? 5 : 3.5,
-        color: hasRain ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.45)"
+        fillColor: lvl.color, fillOpacity: lvl.opacity,
+        radius: lvl.big ? 5 : 3.5,
+        color: lvl.big ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.45)"
       });
     }
 
     // แสดงค่าเฉพาะหน้าต่างที่ API มีให้จริง (1 ชม. กับ 24 ชม.)
     const fmtMm = v => (v === null || v === undefined || !Number.isFinite(v)) ? "—" : v.toFixed(1);
-    let activeVal = item.rain24h, activeLabel = "มม. 24 ชม.";
-    if (telemetrySortMode === "1h") { activeVal = item.rain1h; activeLabel = "มม. 1 ชม."; }
-    else if (telemetrySortMode === "3h" || telemetrySortMode === "6h") {
-      activeVal = null; activeLabel = `มม. ${telemetrySortMode === "3h" ? 3 : 6} ชม. (ไม่มีข้อมูล)`;
-    }
-
-    // เลือกว่าช่องไหนควรถูกเน้น ตามแท็บที่ผู้ใช้เลือกอยู่
-    const act24 = (telemetrySortMode === "24h");
     const nameSafe = String(st.name).replace(/'/g, "\\'");
 
-    // เทียบเรดาร์กับสถานีได้เฉพาะหน้าต่าง 1 ชม. (เรดาร์คำนวณจากเฟรมเดียว = rain rate)
-    let biasHtml = "";
-    if (item.rain1h !== null && Number.isFinite(radarRainRate)) {
-      const d = Number((radarRainRate - item.rain1h).toFixed(1));
-      const cls = d > 0 ? "bias-over" : d < 0 ? "bias-under" : "bias-match";
-      biasHtml = `<span class="bias ${cls}">${d > 0 ? "+" : ""}${d}</span>`;
+    /* ประโยคอธิบายเมื่อเรดาร์กับสถานีไม่ตรงกัน
+     *
+     * ⚠️ ของเดิมแสดงตัวเลขเดียวว่า "-38" ซึ่งมีปัญหาสองชั้น
+     *   1) เอา rain rate (มม./ชม. จากเฟรมเดียว) ลบกับฝนสะสม (มม. ใน 1 ชม.) = คนละหน่วย
+     *      จะเท่ากันก็ต่อเมื่อฝนตกสม่ำเสมอตลอดชั่วโมงเท่านั้น
+     *   2) ผู้ใช้อ่าน "-38" แล้วไม่รู้ว่าแปลว่าอะไร และไม่รู้ว่าควรเชื่อฝั่งไหน
+     *
+     * จึงเปลี่ยนเป็นประโยคที่บอกว่าต่างกันอย่างไรและน่าจะเพราะอะไร
+     * โดยเฉพาะกรณี overshooting ที่ระยะไกล ซึ่งเป็นสาเหตุที่พบบ่อยที่สุดของ "เรดาร์ 0.0"
+     */
+    let explainHtml = "";
+    const hasGauge = item.rain1h !== null && Number.isFinite(item.rain1h);
+    const far = Number.isFinite(st.distKm) && st.distKm >= 100;
+    if (hasGauge && Number.isFinite(radarRainRate)) {
+      if (item.rain1h > 1 && radarRainRate < 0.5) {
+        explainHtml = `<div class="wam-explain warn">สถานีวัดได้ ${fmtMm(item.rain1h)} มม. แต่เรดาร์ไม่เห็นฝนตรงนี้` +
+          (far ? ` — ที่ระยะ ${st.distKm.toFixed(0)} กม. ลำคลื่นถูกยกสูงจนอาจสแกนผ่านเหนือยอดฝน`
+               : ` — อาจเป็นฝนที่เพิ่งหยุด หรือก้อนฝนเตี้ยกว่าระดับที่เรดาร์กวาดถึง`) + `</div>`;
+      } else if (radarRainRate > 1 && item.rain1h <= 0.1) {
+        explainHtml = `<div class="wam-explain">เรดาร์เห็นฝน ${radarRainRate.toFixed(1)} มม./ชม. แต่สถานียังรายงาน 0 — ` +
+          `ฝนอาจเพิ่งเริ่มตกและยังไม่ถึงรอบรายงานของสถานี</div>`;
+      } else if (radarRainRate > 0.5 && item.rain1h > 1) {
+        explainHtml = `<div class="wam-explain">เรดาร์กับสถานีตรงกันว่ามีฝน ` +
+          `(ตัวเลขคนละหน่วย เทียบตรง ๆ ไม่ได้)</div>`;
+      }
     }
 
-    const statBox = (label, val, active) => `
-      <div class="wam-pop-stat${active ? " is-active" : ""}">
-        <span class="k">${label}</span>
-        <span class="v${val === null ? " dim" : ""}">${fmtMm(val)}<span class="u"> มม.</span></span>
-      </div>`;
+    const lv = rainLevel(item.rain1h);
+    const locText = [st.tb && "ต." + st.tb, st.ap && "อ." + st.ap, st.pv].filter(Boolean).join(" · ")
+      + (Number.isFinite(st.distKm) ? ` · ${st.distKm.toFixed(0)} กม. จากเรดาร์` : "");
 
     const popupHtml = `
       <div class="wam-popup">
-        <div class="wam-pop-head">
-          <div class="wam-pop-name" title="${st.name}">${st.name}</div>
-          ${st.agency ? `<span class="wam-pop-chip">${st.agency}</span>` : ""}
-        </div>
-        <div class="wam-pop-loc">${[st.tb && "ต." + st.tb, st.ap && "อ." + st.ap, st.pv].filter(Boolean).join(" · ")}${
-          st.distKm !== null && Number.isFinite(st.distKm) ? ` · ${st.distKm.toFixed(0)} กม. จากเรดาร์` : ""}</div>
-
-        <div class="wam-pop-stats">
-          ${statBox("ฝน 1 ชม.", item.rain1h, !act24)}
-          ${statBox("ฝน 24 ชม.", item.rain24h, act24)}
+        <div class="wam-band ${lv.cls}">
+          <div class="wam-band-top">
+            <span class="wam-lvl">${lv.label}</span>
+            ${st.agency ? `<span class="wam-chip">${st.agency}</span>` : ""}
+          </div>
+          <div class="wam-name" title="${st.name}">${st.name}</div>
+          <div class="wam-loc">${locText}</div>
         </div>
 
-        <div class="wam-pop-radar">
-          <span>เรดาร์ ณ ขณะนี้</span>
-          <span><b>${radarRainRate.toFixed(1)}</b> มม./ชม. ${biasHtml}</span>
+        <div class="wam-list">
+          <div class="wam-li">
+            <span class="k">ฝนสะสม 1 ชม.</span>
+            <span class="v${item.rain1h === null ? " dim" : ""}">${fmtMm(item.rain1h)}<small>มม.</small></span>
+          </div>
+          <div class="wam-li">
+            <span class="k">ฝนสะสม 24 ชม.</span>
+            <span class="v${item.rain24h === null ? " dim" : ""}">${fmtMm(item.rain24h)}<small>มม.</small></span>
+          </div>
+          <div class="wam-li is-radar">
+            <span class="k">เรดาร์ ณ ขณะนี้</span>
+            <span class="v">${radarRainRate.toFixed(1)}<small>มม./ชม.</small></span>
+          </div>
         </div>
+        ${explainHtml}
 
-        <div class="wam-pop-time">${st.obs_utc
-            ? "สถานีรายงาน " + new Date(st.obs_utc).toLocaleString("th-TH", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" })
-            : "ไม่มีเวลารายงานจากสถานี"}</div>
-
-        <div class="wam-pop-footer">
-          <span class="wam-pop-coord" onclick="zoomToStation(${st.lat}, ${st.lon}, '${nameSafe}', ${item.idx})"
-                title="ปักหมุดวิเคราะห์ที่จุดนี้">${st.lat.toFixed(4)}, ${st.lon.toFixed(4)}</span>
-          <span class="wam-pop-chart-btn" title="ดูกราฟฝน 105 นาที"
-                onclick="zoomToStation(${st.lat}, ${st.lon}, '${nameSafe}', ${item.idx}); document.getElementById('btnOpenModal').click();">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
-            </svg>
+        <div class="wam-foot">
+          <span class="wam-time">${st.obs_utc
+            ? "รายงาน " + new Date(st.obs_utc).toLocaleString("th-TH", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" })
+            : "ไม่มีเวลารายงาน"}</span>
+          <span class="wam-foot-act">
+            <span class="wam-coord" onclick="zoomToStation(${st.lat}, ${st.lon}, '${nameSafe}', ${item.idx})"
+                  title="ปักหมุดวิเคราะห์ที่จุดนี้">${st.lat.toFixed(3)}, ${st.lon.toFixed(3)}</span>
+            <span class="wam-chart-btn" title="ดูกราฟฝน 105 นาที"
+                  onclick="zoomToStation(${st.lat}, ${st.lon}, '${nameSafe}', ${item.idx}); document.getElementById('btnOpenModal').click();">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+              </svg>
+            </span>
           </span>
         </div>
       </div>
