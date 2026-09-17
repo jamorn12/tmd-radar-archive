@@ -723,8 +723,9 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .rain-scale-bar {
   height: 6px; border-radius: 3px; margin: 3px 0 2px 0;
   /* ขั้นบันได ไม่ไล่เนียน — ให้ตรงกับสีจุดสถานีและอ่านชั้นได้จากแถบ */
+  /* ชุด onDark — ต้องตรงกับ areaCoverColor(x, true) ที่ทาแถบสีซ้ายของแต่ละแถว */
   background: linear-gradient(90deg,
-    #BAE6FD 0% 20%, #38BDF8 20% 40%, #0284C7 40% 60%, #3730A3 60% 80%, #1E1B4B 80% 100%);
+    #0C4A6E 0% 20%, #0369A1 20% 40%, #0EA5E9 40% 60%, #38BDF8 60% 80%, #7DD3FC 80% 100%);
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 .rain-scale-labels {
@@ -741,6 +742,10 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   border-left: 3.5px solid var(--accent); font-size: 11px; cursor: pointer; transition: all 0.15s;
 }
 .ic-item:hover { background: rgba(56, 189, 248, 0.15); transform: translateX(2px); }
+.ic-eta { margin-left: 6px; font-size: 9.5px; opacity: .72; font-weight: 500; }
+/* ป้ายเตือนว่าเขตนี้มีเซลล์เรดาร์น้อย ค่าจึงแกว่ง — ไม่ซ่อนค่า แต่บอกให้รู้ */
+.ic-weak { margin-left: 5px; padding: 0 4px; border-radius: 4px; font-size: 8.5px;
+           background: rgba(148,163,184,.22); color: #CBD5E1; vertical-align: middle; }
 .ic-prov-name { font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 155px; }
 .ic-rain-val { font-family: "IBM Plex Mono", monospace; font-weight: 700; color: #fff; flex-shrink: 0; }
 /* Timeline Container */
@@ -1179,7 +1184,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
         <button class="ic-tab-btn" data-level="tam">ตำบล</button>
       </div>
       <div style="display: flex; align-items: center; gap: 5px;">
-        <span class="ic-unit">มม./3 ชม.</span>
+        <span class="ic-unit">% พื้นที่ · 2 ชม.</span>
         <button class="ic-collapse-btn" id="btnCollapseIc" title="ย่อหน้าต่าง">
           <i data-lucide="chevron-down" class="icon-xs"></i>
         </button>
@@ -1187,11 +1192,11 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     </div>
     <div class="rain-scale-bar"></div>
     <div class="rain-scale-labels">
-      <span>&lt;0.5</span>
-      <span>0.5–5</span>
-      <span>5–15</span>
-      <span>15–30</span>
-      <span>30+</span>
+      <span>&lt;5</span>
+      <span>5–25</span>
+      <span>25–50</span>
+      <span>50–80</span>
+      <span>80+</span>
     </div>
     <div class="ic-list" id="impactedListContainer">
       <div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 6px;">กำลังวิเคราะห์พื้นที่เสี่ยง...</div>
@@ -1621,14 +1626,14 @@ const layerTambon = L.layerGroup();
   map.on("zoomend", handleMapZoomLOD);
 
 // ฟังก์ชันวาดเส้นขอบเขตและซูมพอดีแปลงพื้นที่ (Spotlight Mode - สไตล์ Minimal)
-function highlightBoundary(feature, rain3h) {
+function highlightBoundary(feature, cover) {
   layerHighlight.clearLayers();
   if (!feature) return;
 
   // เส้นขอบแปลงใช้ ramp เดียวกับหมุดสถานีและแผงพื้นที่ (areaRainColor)
   // เดิมใช้ เขียว/ส้ม/แดง ซึ่งเป็นสีเดียวกับเรดาร์ เส้นขอบจึงกลืนกับกลุ่มฝนที่มันล้อมอยู่พอดี
   // ซึ่งเป็นกรณีที่แย่ที่สุด เพราะจุดประสงค์ของเส้นนี้คือชี้ว่า "ตรงนี้แหละ"
-  const color = areaRainColor(rain3h);
+  const color = areaCoverColor(cover);
 
   const geoLayer = L.geoJSON(feature, {
     style: {
@@ -1679,7 +1684,7 @@ function selectImpactedArea(idx) {
     setInspectionPoint(lat, lon, item.name);
   }
   if (typeof highlightBoundary === "function" && item.feature) {
-    highlightBoundary(item.feature, item.rain3h, false);
+    highlightBoundary(item.feature, item.coverage, false);
   }
 }
 
@@ -1888,51 +1893,11 @@ function dbzToRainRate(dbz) {
   const r = Math.pow(z / zr[0], 1.0 / zr[1]);
   return parseFloat(r.toFixed(1));
 }
-/**
- * ดึงค่าฝนประมาณการจากเรดาร์ (QPE) ณ พิกัดสถานี
+/* ลบ getRadarRainAtStation() ออกแล้ว — ไม่มีใครเรียกใช้ และข้างในมีตัวคูณ
+ * ฝนสะสม 2.4 / 4.2 / 7.5 สำหรับ 3 / 6 / 24 ชม. ซึ่งเป็นการเดาล้วน ๆ ไม่มีที่มา
+ * ปล่อยโค้ดตายแบบนี้ไว้อันตรายกว่าลบ เพราะคนอ่านจะนึกว่านี่คือวิธีคิด QPE ของระบบ
+ * ถ้าต้องการฝนสะสมจริง ใช้ radar_archive/accum.py ซึ่งคิด Sum(R x dt) จากเฟรมจริง
  */
-function getRadarRainAtStation(lat, lon, mode = "1h") {
-  if (typeof scanCtx === "undefined" || !scanCtx || !manifest) return 0.0;
-  
-  const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
-  const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
-  const [eKm, nKm] = project(lat, lon, lat0, lon0);
-
-  const rKm = Math.hypot(eKm, nKm);
-  if (rKm > 240) return 0.0;
-
-  const px = Math.round(((eKm / halfKm) + 1) / 2 * (SCAN_RES - 1));
-  const py = Math.round((1 - (nKm / halfKm)) / 2 * (SCAN_RES - 1));
-
-  try {
-    const imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
-    let maxDbz = 0;
-
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        const nx = px + dx, ny = py + dy;
-        if (nx >= 0 && nx < SCAN_RES && ny >= 0 && ny < SCAN_RES) {
-          const idx = (ny * SCAN_RES + nx) * 4;
-          const dbz = rgbToDbz(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3]);
-          if (dbz > maxDbz) maxDbz = dbz;
-        }
-      }
-    }
-
-    if (maxDbz < 15) return 0.0;
-    const r1h = dbzToRainRate(maxDbz);
-
-    // ปรับตัวคูณประเมินฝนสะสมตามแท็บชั่วโมงที่เลือก
-    let factor = 1.0;
-    if (mode === "3h") factor = 2.4;
-    else if (mode === "6h") factor = 4.2;
-    else if (mode === "24h") factor = 7.5;
-
-    return parseFloat((r1h * factor).toFixed(1));
-  } catch (e) {
-    return 0.0;
-  }
-}
 function getLocalMotionAtPoint(pinE, pinN) {
   // คืน null เมื่อไม่รู้จริง ๆ — เดิมคืนค่าปลอม {15 กม./ชม., 270 องศา} ซึ่งผู้ใช้
   // แยกไม่ออกว่าเป็นค่าจริงหรือค่าเริ่มต้น
@@ -2098,6 +2063,28 @@ function rainLevel(mm) {
 //    highlightBoundary() อยู่ก่อนหน้านี้ในไฟล์และเรียกฟังก์ชันนี้
 //    function declaration ถูก hoist ขึ้นไปก็จริง แต่ const จะติด temporal dead zone
 //    ถ้าวันหนึ่งมีการเรียกตอนโหลดหน้าจะได้ ReferenceError ทันที — ตัดความเสี่ยงทิ้งไปเลย
+/* สัดส่วนพื้นที่ (0-1) -> สี  ตระกูลฟ้า-น้ำเงินเดียวกับที่อื่นทั้งระบบ
+ *
+ * มีสองชุดเพราะพื้นหลังคนละแบบ ไม่ใช่เพราะเป็นคนละข้อมูล
+ *   onDark=false  วาดบนแผนที่ซึ่งพื้นหลังสว่าง -> ยิ่งมากยิ่งเข้ม (เข้ม = เด่น)
+ *   onDark=true   วาดบนแผงสีเข้ม              -> ยิ่งมากยิ่งสว่าง (สว่าง = เด่น)
+ *
+ * ถ้าใช้ชุดเดียวทั้งสองที่ ชั้นบนสุด #1E1B4B จะจมหายไปกับพื้นแผงสีเข้ม
+ * เห็นชัดตอนทดสอบ: แถบสีซ้ายของทุกแถวแทบมองไม่เห็นเลย
+ * หลักคือ "ค่ามาก = เด่นกว่า" ซึ่งบนพื้นสว่างกับพื้นมืดให้ผลคนละทิศ
+ */
+function areaCoverColor(frac, onDark) {
+  const ramp = onDark
+    ? ["#0C4A6E", "#0369A1", "#0EA5E9", "#38BDF8", "#7DD3FC"]
+    : ["#BAE6FD", "#38BDF8", "#0284C7", "#3730A3", "#1E1B4B"];
+  if (!Number.isFinite(frac)) return ramp[0];
+  if (frac >= 0.80) return ramp[4];
+  if (frac >= 0.50) return ramp[3];
+  if (frac >= 0.25) return ramp[2];
+  if (frac >= 0.05) return ramp[1];
+  return ramp[0];
+}
+
 function areaRainColor(mm) {
   const ramp = ["#BAE6FD", "#38BDF8", "#0284C7", "#3730A3", "#1E1B4B"];
   if (!Number.isFinite(mm)) return ramp[0];
@@ -2456,129 +2443,155 @@ const PROV_THAI_MAP = {
   "Loei": "เลย", "Chaiyaphum": "ชัยภูมิ", "Khon Kaen": "ขอนแก่น",
   "Udon Thani": "อุดรธานี", "Nong Bua Lamphu": "หนองบัวลำภู", "Kanchanaburi": "กาญจนบุรี"
 };
-function updateImpactedProvinces() {
-  const container = document.getElementById("impactedListContainer");
-  if (!container || frameImages.length === 0) return;
+/* แผงพื้นที่เสี่ยงฝน — อ่านค่าที่ radar_archive/areal.py คำนวณไว้ ไม่คำนวณเองอีกแล้ว
+ *
+ * โค้ดเดิมตรงนี้คำนวณในเบราว์เซอร์แบบนี้
+ *     const effectiveDbz = (avgDbz * 0.7) + (maxDbz * 0.3);
+ *     const rain3h = dbzToRainRate(effectiveDbz) * 3;
+ * ซึ่งผิดสี่ชั้นซ้อนกัน
+ *   1. "* 3" ไม่ใช่ฝนสะสม — เป็น rain rate ตอนนี้คูณสาม คือสมมติว่าฝนตกนิ่ง ๆ
+ *      เท่าเดิมสามชั่วโมง แล้วติดป้ายหน่วยว่า มม. เป็นความผิดพลาดชนิดเดียวกับ
+ *      คอลัมน์ Bias ของสถานีวัดน้ำฝนที่เพิ่งแก้ไป
+ *   2. เฉลี่ยใน dBZ ตรง ๆ — dBZ เป็นสเกลลอการิทึม ต้องเฉลี่ยใน linear Z
+ *      ไม่งั้นได้ค่าต่ำกว่าความจริงเสมอ
+ *   3. 0.7*avg + 0.3*max เป็นตัวเลขผสมที่ไม่มีที่มา
+ *   4. สุ่ม 7x7 พิกเซลรอบ "จุดศูนย์กลาง" ของแปลง อำเภอใหญ่จึงถูกแทนด้วยกล่อง
+ *      ~14 กม. ตรงกลาง ไม่ใช่รูปร่างจริงของอำเภอ
+ *
+ * ตอนนี้ค่ามาจาก Sum(R x dt) จริง บน mask ตามรูป polygon จริง และเป็นชุดเดียวกับ
+ * ที่เขียนลง data/areal/*.csv สำหรับเปเปอร์ — หน้าเว็บกับเปเปอร์จะไม่มีวันขัดกันเอง
+ */
+/* ⚠️ ไม่ประกาศ const ระดับไฟล์สำหรับสามตัวนี้โดยตั้งใจ
+ *    updateImpactedProvinces() ถูกเรียกจากสองที่ที่อยู่ "ก่อนหน้า" จุดนี้ในไฟล์
+ *    (ราวบรรทัด 1620 และ 2294) ตอนนี้ทั้งสองอยู่ในฟังก์ชันจึงยังไม่พัง
+ *    แต่ const จะติด temporal dead zone ทันทีที่มีใครย้ายมาเรียกตอนโหลดหน้า
+ *    เคยเจอกับดักตัวเดียวกันนี้กับ AREA_RAMP มาแล้ว — ตัดความเสี่ยงทิ้งไปเลย
+ */
+function arealStore() {
+  if (!window.__arealCache) window.__arealCache = {};   // level -> doc | "error"
+  return window.__arealCache;
+}
 
-  const img = frameImages[currentIndex];
-  if (!img || !img.complete || img.naturalWidth === 0) return;
-
-  scanCtx.clearRect(0, 0, SCAN_RES, SCAN_RES);
-  scanCtx.drawImage(img, 0, 0, SCAN_RES, SCAN_RES);
-  let imgData = null;
+async function loadAreal(level) {
+  const arealCache = arealStore();
+  if (arealCache[level]) return arealCache[level];
   try {
-    imgData = scanCtx.getImageData(0, 0, SCAN_RES, SCAN_RES).data;
-  } catch (e) { return; }
-
-  const lat0 = radarStationLatLon[0], lon0 = radarStationLatLon[1];
-  const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
-
-  let targetFeatures = loadedProvinceFeatures;
-  let prefix = "จ.";
-  if (currentImpactLevel === "amp") {
-    targetFeatures = loadedAmphoeFeatures;
-    prefix = "อ.";
-  } else if (currentImpactLevel === "tam") {
-    targetFeatures = loadedTambonFeatures;
-    prefix = "ต.";
+    const res = await fetch(`areal/PHS_${level}.json?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const doc = await res.json();
+    const ix = {};
+    (doc.fields || []).forEach((f, k) => { ix[f] = k; });
+    doc._ix = ix;
+    arealCache[level] = doc;
+    console.log(`[areal] ${level}: ${doc.n_units_wet}/${doc.n_units_total} เขตมีฝน`);
+    return doc;
+  } catch (e) {
+    console.warn("[areal] โหลดไม่ได้:", e.message);
+    arealCache[level] = "error";
+    return "error";
   }
+}
 
-  if (!targetFeatures || targetFeatures.length === 0) {
-    container.innerHTML = `<div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 6px;">กำลังโหลดฐานข้อมูลพื้นที่...</div>`;
+// จับคู่ชื่อเขตกลับไปหา polygon เพื่อให้คลิกแล้วซูมและไฮไลต์ได้เหมือนเดิม
+function arealFeatureIndex(levelKey) {
+  const feats = levelKey === "prov" ? loadedProvinceFeatures
+              : levelKey === "amp"  ? loadedAmphoeFeatures
+              : loadedTambonFeatures;
+  const map = {};
+  (feats || []).forEach(f => {
+    const p = f.properties || {};
+    let n = p.name || p.pro_th || p.amp_th || p.tam_th || p.dname || p.tname || "";
+    n = String(n).replace(/^(จ\.|อ\.|ต\.)\s*/, "").trim();
+    if (n && !map[n]) map[n] = f;
+  });
+  return map;
+}
+
+async function updateImpactedProvinces() {
+  const container = document.getElementById("impactedListContainer");
+  if (!container) return;
+
+  const LEVEL_OF = { prov: "province", amp: "amphoe", tam: "tambon" };
+  const PREFIX_OF = { prov: "จ.", amp: "อ.", tam: "ต." };
+  const levelKey = currentImpactLevel;
+  const level = LEVEL_OF[levelKey] || "amphoe";
+  const doc = await loadAreal(level);
+
+  if (doc === "error") {
+    container.innerHTML = `<div style="font-size:11px;color:var(--text-dim);text-align:center;padding:8px;line-height:1.7">
+      ยังไม่มีไฟล์ฝนเชิงพื้นที่<br>
+      <span style="opacity:.75">ต้องมี <code>areal/PHS_${level}.json</code> ซึ่งสร้างโดย
+      <code>radar_archive.areal</code> ในรอบ pipeline</span></div>`;
+    currentImpactedList = [];
     return;
   }
 
-  const impactedList = [];
+  const ix = doc._ix;
+  const featIdx = arealFeatureIndex(levelKey);
+  const prefix = PREFIX_OF[levelKey] || "";
 
-  targetFeatures.forEach(feat => {
-    const props = feat.properties || {};
-    
-    let rawName = props.pro_th || props.name_th || props.pv_th || props.changwat_t ||
-                  props.amp_th || props.tam_th || props.dname || props.tname || props.name || "";
-    if (!rawName) return;
+  // เขตที่เซลล์น้อยเกินไปไม่เอาขึ้นบนสุด — coverage จากเซลล์เดียวไม่ใช่การประมาณ
+  // (ค่ายังอยู่ครบใน CSV ฝั่งเปเปอร์ ตรงนี้เป็นเรื่องการแสดงผลเท่านั้น)
+  const rows = (doc.units || [])
+    .map(u => ({
+      rawName: u[ix.name],
+      nCells: u[ix.n_cells],
+      meanMm: u[ix.mean_mm],
+      maxMm: u[ix.max_mm],
+      coverage: u[ix.coverage],
+      etaArea: u[ix.eta_area],
+      reliable: u[ix.reliable] !== false
+    }))
+    .sort((a, b) => (a.reliable === b.reliable)
+      ? (b.coverage - a.coverage) || (b.meanMm - a.meanMm)
+      : (a.reliable ? -1 : 1));
 
-    rawName = rawName.replace(/^(จ\.|อ\.|ต\.)\s*/, "").trim();
-
-    const displayName = (currentImpactLevel === "prov" && PROV_THAI_MAP[rawName]) 
-      ? PROV_THAI_MAP[rawName] 
-      : rawName;
-
-    try {
-      if (!feat._centroidCoord) {
-        const c = turf.centroid(feat);
-        feat._centroidCoord = [c.geometry.coordinates[1], c.geometry.coordinates[0]];
-      }
-      const [pLat, pLon] = feat._centroidCoord;
-      if (isNaN(pLat) || isNaN(pLon)) return;
-
-      const [pinE, pinN] = project(pLat, pLon, lat0, lon0);
-      const px = Math.round(((pinE / halfKm) + 1) / 2 * (SCAN_RES - 1));
-      const py = Math.round((1 - (pinN / halfKm)) / 2 * (SCAN_RES - 1));
-
-      let dbzSum = 0;
-      let dbzCount = 0;
-      let maxDbz = 0;
-
-      // ขยายรัศมีสุ่มตัวอย่างเป็น 7x7 รอบจุด และเก็บทั้งผลรวมกับค่าพีค
-      if (imgData && px >= 0 && px < SCAN_RES && py >= 0 && py < SCAN_RES) {
-        for (let dy = -3; dy <= 3; dy++) {
-          for (let dx = -3; dx <= 3; dx++) {
-            const nx = px + dx, ny = py + dy;
-            if (nx >= 0 && nx < SCAN_RES && ny >= 0 && ny < SCAN_RES) {
-              const idx = (ny * SCAN_RES + nx) * 4;
-              const dbz = rgbToDbz(imgData[idx], imgData[idx+1], imgData[idx+2], imgData[idx+3]);
-              if (dbz >= 15) { // คิดเฉพาะจุดที่มีฝนจริง
-                dbzSum += dbz;
-                dbzCount++;
-                if (dbz > maxDbz) maxDbz = dbz;
-              }
-            }
-          }
+  currentImpactedList = rows.slice(0, 15).map(r => {
+    const name = PROV_THAI_MAP[r.rawName] || r.rawName;
+    const feat = featIdx[r.rawName] || null;
+    let lat = NaN, lon = NaN;
+    if (feat) {
+      try {
+        if (!feat._centroidCoord) {
+          const c = turf.centroid(feat);
+          feat._centroidCoord = [c.geometry.coordinates[1], c.geometry.coordinates[0]];
         }
-      }
-
-      // คำนวณฝนสะสม 3 ชม. จากค่าเฉลี่ยฝนในแปลงร่วมกับค่าพีค เพื่อกระจายตัวเลขตามจริง
-      if (dbzCount > 0) {
-        const avgDbz = dbzSum / dbzCount;
-        const effectiveDbz = (avgDbz * 0.7) + (maxDbz * 0.3);
-        const rain3h = parseFloat((dbzToRainRate(effectiveDbz) * 3).toFixed(1));
-
-        if (rain3h >= 0.5) {
-          impactedList.push({
-            name: `${prefix}${displayName}`,
-            rain3h: rain3h,
-            lat: pLat,
-            lon: pLon,
-            feature: feat
-          });
-        }
-      } // <--- ปิด if (dbzCount > 0)
-    } catch (err) {}
-  }); // <--- ปิด targetFeatures.forEach
-
-  impactedList.sort((a, b) => b.rain3h - a.rain3h);
-  currentImpactedList = impactedList.slice(0, 15);
-
-  if (currentImpactedList.length === 0) {
-    container.innerHTML = `<div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 6px;">ไม่พบกลุ่มฝนกระทบพื้นที่ในรอบนี้</div>`;
-    return;
-  }
-
-  let impactedHtml = "";
-  currentImpactedList.forEach((item, index) => {
-    // ใช้ ramp เดียวกับหมุดสถานี ผ่าน areaRainColor() — อย่า hardcode ซ้ำที่นี่
-    // ไม่งั้นแก้สีทีหนึ่งต้องไล่แก้สองที่ แล้วจะลืมที่ใดที่หนึ่งเสมอ
-    const borderColor = areaRainColor(item.rain3h);
-
-    impactedHtml += `
-      <div class="ic-item" style="border-left-color: ${borderColor};" onclick="selectImpactedArea(${index})" title="คลิกเพื่อตรวจวัดและแสดงรูปแปลงพื้นที่">
-        <span class="ic-prov-name">${item.name}</span>
-        <span class="ic-rain-val">${item.rain3h.toFixed(1)} มม.</span>
-      </div>
-    `;
+        [lat, lon] = feat._centroidCoord;
+      } catch (e) {}
+    }
+    // rain3h ส่งต่อให้ highlightBoundary ใช้เลือกสีเส้นขอบ — ใช้ mean_mm ของหน้าต่าง
+    // พยากรณ์ ไม่ใช่ค่าคูณสามแบบเดิม
+    return { ...r, name: prefix + name, feature: feat, lat, lon, rain3h: r.meanMm };
   });
 
-  container.innerHTML = impactedHtml;
+  if (currentImpactedList.length === 0) {
+    container.innerHTML = `<div style="font-size:11px;color:var(--text-dim);text-align:center;padding:6px">ไม่พบกลุ่มฝนกระทบพื้นที่ในรอบนี้</div>`;
+    return;
+  }
+
+  let html = "";
+  currentImpactedList.forEach((item, index) => {
+    const pct = Math.round((item.coverage || 0) * 100);
+    const eta = item.etaArea === null || item.etaArea === undefined
+      ? "" : `<span class="ic-eta">${item.etaArea} น.</span>`;
+    const weak = item.reliable ? "" :
+      `<span class="ic-weak" title="มีเพียง ${item.nCells} เซลล์เรดาร์ในเขตนี้ ค่าที่ได้มาจากตัวอย่างน้อยเกินไป">น้อย</span>`;
+    html += `
+      <div class="ic-item" style="border-left-color:${areaCoverColor(item.coverage, true)};"
+           onclick="selectImpactedArea(${index})"
+           title="ฝนสะสมพยากรณ์ ${item.meanMm} มม. · สูงสุดในเขต ${item.maxMm} มม. · ${item.nCells} เซลล์เรดาร์">
+        <span class="ic-prov-name">${item.name}${weak}</span>
+        <span class="ic-rain-val">${pct}%${eta}</span>
+      </div>`;
+  });
+
+  const cov = doc.eta_cover ? Math.round(doc.eta_cover * 100) : 10;
+  html += `<div style="padding:9px 10px 2px;font-size:10.5px;opacity:.55;line-height:1.65">
+      ตัวเลข % คือสัดส่วนพื้นที่ที่คาดว่าจะมีฝนใน 2 ชม. — ไม่ขึ้นกับสมการ Z-R
+      จึงเชื่อถือได้กว่าค่า มม.<br>ตัวเลขนาทีคือเวลาที่ฝนจะครอบคลุมพื้นที่ถึง ${cov}%
+      · ชี้ที่ชื่อเขตเพื่อดูค่า มม.
+    </div>`;
+  container.innerHTML = html;
 }
 // ผูก Event Listener ปุ่มแท็บสลับ จังหวัด / อำเภอ / ตำบล
 document.querySelectorAll(".ic-tab-btn").forEach(btn => {
