@@ -1312,6 +1312,12 @@ async function loadGaugeStations() {
       // null = ไม่มีข้อมูล  ต่างจาก 0 = วัดได้ว่าฝนไม่ตก  ห้ามยุบสองอย่างนี้เข้าด้วยกัน
       rain_1h: num(row[ix.rain_1h]),
       rain_24h: num(row[ix.rain_24h]),
+      // ฝนสะสม 1 ชม. จากภาพเรดาร์ ในหน้าต่างเวลาเดียวกับ rain_1h ของสถานีนั้น
+      // คำนวณที่ radar_archive/accum.py ไม่ใช่ที่นี่ — หน้าเว็บมีแค่เฟรมล่าสุด
+      // จะรวมย้อนหลังเองไม่ได้ และถ้าทำก็จะได้คนละเลขกับที่เก็บลง CSV ประวัติ
+      // radar_1h_n < 4 = ภาพขาดบางเฟรม ค่าสะสมจะต่ำกว่าความจริง
+      radar_1h: ix.radar_1h !== undefined ? num(row[ix.radar_1h]) : null,
+      radar_1h_n: ix.radar_1h_n !== undefined ? num(row[ix.radar_1h_n]) : null,
       obs_utc: row[ix.obs_utc] || null
     })).filter(st => {
       if (!Number.isFinite(st.lat) || !Number.isFinite(st.lon)) return false;
@@ -2022,6 +2028,9 @@ function initTelemetryStationMarkers() {
     stationMarkerInstances.push({
       data: st, idx, marker,
       rain1h: st.rain_1h, rain24h: st.rain_24h,   // null = ไม่มีข้อมูล ไม่ใช่ฝนไม่ตก
+      // radar1h  ฝนสะสม 1 ชม. (มม.)      <- เทียบกับ rain1h ได้ตรงนิยาม
+      // radarRain ความเข้ม ณ เฟรมล่าสุด (มม./ชม.) <- คนละปริมาณ ห้ามเอามาลบกับ rain1h
+      radar1h: st.radar_1h, radar1hN: st.radar_1h_n,
       dbz: 0, radarRain: 0
     });
   });
@@ -2082,6 +2091,8 @@ function updateTelemetryStationValues() {
     // 2. ฝนจากสถานีจริง — null หมายถึงไม่มีข้อมูล ไม่ใช่ฝนไม่ตก
     item.rain1h = (st.rain_1h === null || st.rain_1h === undefined) ? null : Number(st.rain_1h);
     item.rain24h = (st.rain_24h === null || st.rain_24h === undefined) ? null : Number(st.rain_24h);
+    item.radar1h = (st.radar_1h === null || st.radar_1h === undefined) ? null : Number(st.radar_1h);
+    item.radar1hN = (st.radar_1h_n === null || st.radar_1h_n === undefined) ? null : Number(st.radar_1h_n);
     const rain1h = item.rain1h;
 
     // สีหมุดมาจาก rainLevel() ตัวเดียวกับที่ popup ใช้ — แผนที่กับ popup จะได้ไม่ขัดกัน
@@ -2111,19 +2122,34 @@ function updateTelemetryStationValues() {
      */
     let explainHtml = "";
     const hasGauge = item.rain1h !== null && Number.isFinite(item.rain1h);
+    const hasAcc = item.radar1h !== null && Number.isFinite(item.radar1h);
     const far = Number.isFinite(st.distKm) && st.distKm >= 100;
-    if (hasGauge && Number.isFinite(radarRainRate)) {
-      if (item.rain1h > 1 && radarRainRate < 0.5) {
-        explainHtml = `<div class="wam-explain warn">สถานีวัดได้ ${fmtMm(item.rain1h)} มม. แต่เรดาร์ไม่เห็นฝนตรงนี้` +
+    // ภาพขาดบางเฟรม -> ติดดาวไว้ที่ตัวเลข ให้ตรงกับในตาราง
+    const radarStar = (hasAcc && Number.isFinite(item.radar1hN) && item.radar1hN < 4) ? "*" : "";
+
+    // เทียบกับ radar1h (ฝนสะสม มม.) เท่านั้น — เป็นปริมาณเดียวกับ rain1h
+    // เดิมเทียบกับ radarRainRate (มม./ชม.) ซึ่งเป็นคนละนิยาม ทำให้สรุปผิดเป็นประจำ:
+    // ฝนหนักที่เพิ่งผ่านไปจะถูกอ่านว่า "เรดาร์ไม่เห็นฝน" ทั้งที่เรดาร์เห็นครบ
+    if (hasGauge && hasAcc) {
+      const diff = item.radar1h - item.rain1h;
+      const ratio = item.rain1h > 0.5 ? item.radar1h / item.rain1h : null;
+      if (item.rain1h > 1 && item.radar1h < 0.5) {
+        explainHtml = `<div class="wam-explain warn">ตลอดชั่วโมงที่ผ่านมา สถานีวัดได้ ${fmtMm(item.rain1h)} มม. ` +
+          `แต่เรดาร์แทบไม่เห็นฝนเหนือจุดนี้เลย` +
           (far ? ` — ที่ระยะ ${st.distKm.toFixed(0)} กม. ลำคลื่นถูกยกสูงจนอาจสแกนผ่านเหนือยอดฝน`
-               : ` — อาจเป็นฝนที่เพิ่งหยุด หรือก้อนฝนเตี้ยกว่าระดับที่เรดาร์กวาดถึง`) + `</div>`;
-      } else if (radarRainRate > 1 && item.rain1h <= 0.1) {
-        explainHtml = `<div class="wam-explain">เรดาร์เห็นฝน ${radarRainRate.toFixed(1)} มม./ชม. แต่สถานียังรายงาน 0 — ` +
-          `ฝนอาจเพิ่งเริ่มตกและยังไม่ถึงรอบรายงานของสถานี</div>`;
-      } else if (radarRainRate > 0.5 && item.rain1h > 1) {
-        explainHtml = `<div class="wam-explain">เรดาร์กับสถานีตรงกันว่ามีฝน ` +
-          `(ตัวเลขคนละหน่วย เทียบตรง ๆ ไม่ได้)</div>`;
+               : ` — อาจเป็นก้อนฝนเตี้ยกว่าระดับที่เรดาร์กวาดถึง`) + `</div>`;
+      } else if (item.radar1h > 1 && item.rain1h <= 0.1) {
+        explainHtml = `<div class="wam-explain">เรดาร์คิดได้ ${fmtMm(item.radar1h)} มม. แต่สถานียังรายงาน 0 — ` +
+          `ฝนอาจยังไม่ถึงรอบรายงานของสถานี หรือตกไม่ถึงพื้น (virga)</div>`;
+      } else if (ratio !== null && ratio < 0.6) {
+        explainHtml = `<div class="wam-explain">เรดาร์ได้ ${Math.round(ratio * 100)}% ของที่สถานีวัดได้ — ` +
+          `เป็นทิศทางที่คาดไว้อยู่แล้ว สมการ Z-R ที่ใช้ประเมินฝนแบบ convective ต่ำกว่าความจริงเป็นปกติ</div>`;
+      } else if (ratio !== null) {
+        explainHtml = `<div class="wam-explain">เรดาร์กับสถานีใกล้เคียงกัน (ต่างกัน ${diff >= 0 ? "+" : ""}${diff.toFixed(1)} มม.)</div>`;
       }
+    } else if (hasGauge && item.rain1h > 1) {
+      explainHtml = `<div class="wam-explain">ยังไม่มีฝนสะสมจากเรดาร์ให้เทียบในช่วงเวลาที่สถานีรายงาน` +
+        `${radarRainRate > 0.5 ? ` (ตอนนี้เรดาร์เห็น ${radarRainRate.toFixed(1)} มม./ชม. ซึ่งเป็นคนละปริมาณ เทียบกันไม่ได้)` : ""}</div>`;
     }
 
     const lv = rainLevel(item.rain1h);
@@ -2149,6 +2175,10 @@ function updateTelemetryStationValues() {
           <div class="wam-li">
             <span class="k">ฝนสะสม 24 ชม.</span>
             <span class="v${item.rain24h === null ? " dim" : ""}">${fmtMm(item.rain24h)}<small>มม.</small></span>
+          </div>
+          <div class="wam-li is-radar">
+            <span class="k">เรดาร์ สะสม 1 ชม.</span>
+            <span class="v${item.radar1h === null ? " dim" : ""}">${fmtMm(item.radar1h)}${radarStar}<small>มม.</small></span>
           </div>
           <div class="wam-li is-radar">
             <span class="k">เรดาร์ ณ ขณะนี้</span>
@@ -2200,14 +2230,23 @@ function renderTelemetryPanelList() {
                  : GAUGE_WINDOWS[telemetrySortMode] === "rain_24h" ? "rain24h"
                  : null;
 
-  // เรดาร์เทียบได้เฉพาะหน้าต่าง 1 ชม. เพราะเราคำนวณจากเฟรมเดียว = rain rate (มม./ชม.)
-  // ค่าสะสม 3/6/24 ชม. ต้องรวมจากหลายเฟรม ซึ่งยังไม่ได้ทำ
-  // เดิมตรงนี้คูณค่าคงที่ 2.4 / 4.2 / 7.5 ซึ่งเป็นการเดาล้วน ๆ -> เอาออก
+  // เรดาร์เทียบได้เฉพาะหน้าต่าง 1 ชม. เพราะ accum.py คำนวณฝนสะสมมาให้แค่ 1 ชม.
+  // (24 ชม. ทำได้เหมือนกันแต่ต้องย้อน 96 เฟรม ยังไม่ได้เปิดใช้)
+  //
+  // ⚠️ ประวัติของบั๊กตรงนี้ — อย่าให้กลับมาอีก
+  //   เดิมคอลัมน์นี้ใช้ item.radarRain = rain rate ของเฟรมล่าสุด หน่วย มม./ชม.
+  //   แล้วเอาไปลบกับ rain_1h ซึ่งเป็นฝนสะสม หน่วย มม. -> คนละปริมาณกันคนละนิยาม
+  //   ผลคือสถานีที่ฝนเพิ่งผ่านไปจะโชว์ Bias -38.8 ทั้งที่เรดาร์ไม่ได้ผิดอะไรเลย
+  //   ตอนนี้ใช้ item.radar1h = ฝนสะสม 1 ชม. หน้าต่างเดียวกับ rain_1h ของสถานีนั้น
+  //   หน่วยตรงกันแล้ว Bias จึงมีความหมายจริง
+  //   ส่วน radarRain ยังใช้อยู่ใน popup ในฐานะ "ความเข้มตอนนี้" ซึ่งเป็นคนละคำถาม
   const radarComparable = (telemetrySortMode === "1h");
 
   const rows = stationMarkerInstances.map(item => {
     const gauge = gaugeKey ? item[gaugeKey] : null;
-    const radar = radarComparable ? Number(item.radarRain || 0) : null;
+    const radar = radarComparable
+      ? ((item.radar1h === null || item.radar1h === undefined) ? null : Number(item.radar1h))
+      : null;
     const signal = Math.max(
       (gauge === null ? -1 : gauge),
       (radar === null ? -1 : radar)
@@ -2230,6 +2269,10 @@ function renderTelemetryPanelList() {
       else if (diff < 0) { biasClass = "bias-under"; biasText = `${diff}`; }
       else { biasText = "0.0"; }
     }
+    // ภาพเรดาร์ขาดบางเฟรม -> ค่าสะสมต่ำกว่าความจริง ติดดาวไว้ ไม่ซ่อนตัวเลข
+    // ซ่อนแล้วคนจะเข้าใจว่าไม่มีข้อมูล ทั้งที่มีแต่ไม่ครบ ซึ่งเป็นคนละเรื่องกัน
+    const incomplete = r.radar !== null
+      && Number.isFinite(r.item.radar1hN) && r.item.radar1hN < 4;
     const nameSafe = String(st.name).replace(/'/g, "\\'");
     html += `
       <div class="telemetry-row" onclick="zoomToStation(${st.lat}, ${st.lon}, '${nameSafe}', ${r.item.idx})">
@@ -2243,8 +2286,8 @@ function renderTelemetryPanelList() {
           <span class="telem-unit">มม.</span>
         </div>
         <div class="telem-val-box">
-          <span class="telem-num-radar">${fmt(r.radar)}</span>
-          <span class="telem-unit">${radarComparable ? "มม./ชม." : ""}</span>
+          <span class="telem-num-radar">${fmt(r.radar)}${incomplete ? "*" : ""}</span>
+          <span class="telem-unit">${r.radar === null ? "" : "มม."}</span>
         </div>
         <div style="display: flex; justify-content: center;">
           <span class="telem-bias-badge ${biasClass}">${biasText}</span>
@@ -2254,13 +2297,39 @@ function renderTelemetryPanelList() {
   });
 
   const withData = rows.filter(r => r.gauge !== null).length;
+  const withRadar = rows.filter(r => r.radar !== null).length;
+  const anyStar = shown.some(r => r.radar !== null
+    && Number.isFinite(r.item.radar1hN) && r.item.radar1hN < 4);
+
   let note = `แสดง ${shown.length} จาก ${rows.length} สถานี · มีข้อมูล ${withData}`;
-  if (!gaugeKey) note = `หน้าต่าง ${telemetrySortMode} ไม่มีข้อมูลจากต้นทาง — API ให้เฉพาะ 1 ชม. และ 24 ชม.`;
-  else if (!radarComparable) note += " · คอลัมน์เรดาร์เทียบได้เฉพาะหน้าต่าง 1 ชม.";
+  if (!gaugeKey) {
+    note = `หน้าต่าง ${telemetrySortMode} ไม่มีข้อมูลจากต้นทาง — API ให้เฉพาะ 1 ชม. และ 24 ชม.`;
+  } else if (!radarComparable) {
+    note += " · คอลัมน์เรดาร์ยังมีเฉพาะหน้าต่าง 1 ชม.";
+  } else {
+    note += ` · เทียบเรดาร์ได้ ${withRadar}`;
+  }
   if (gaugeMeta && gaugeMeta.source) {
     note += ` · ที่มา ${gaugeMeta.source.short_th || "สสน."}`;
   }
+
+  // อธิบายว่าคอลัมน์เรดาร์คืออะไร ไม่งั้นคนอ่านจะเดาว่าเป็นค่า ณ ขณะนี้เหมือนเดิม
+  // และบอกด้วยว่าทำไมเลขสองฝั่งยังต่างกัน — เป็นข้อจำกัดที่รู้อยู่ ไม่ใช่ตัวเลขพัง
+  let explain = "";
+  if (gaugeKey && radarComparable && withRadar > 0) {
+    explain = "คอลัมน์เรดาร์ = ฝนสะสม 1 ชม. จากภาพเรดาร์ ในช่วงเวลาเดียวกับที่สถานีรายงาน "
+            + "(หน่วย มม. ทั้งคู่) · ค่าเรดาร์มักต่ำกว่าสถานีจากสมการ Z-R ความสูงลำคลื่นที่ระยะไกล "
+            + "และการที่สถานีวัดที่จุดเดียวแต่เรดาร์เฉลี่ยทั้งเซลล์ 2 กม."
+            + (anyStar ? " · <b>*</b> = ภาพเรดาร์ขาดบางเฟรม ค่าสะสมต่ำกว่าความจริง" : "");
+  } else if (gaugeKey && radarComparable) {
+    explain = "ยังไม่มีค่าเรดาร์ให้เทียบ — ต้องรัน <code>radar_archive.gauges</code> "
+            + "เวอร์ชันที่คำนวณ <code>radar_1h</code> ก่อน";
+  }
+
   html += `<div style="padding:10px 12px;font-size:11px;opacity:.6;line-height:1.6">${note}</div>`;
+  if (explain) {
+    html += `<div style="padding:0 12px 12px;font-size:10.5px;opacity:.45;line-height:1.65">${explain}</div>`;
+  }
 
   container.innerHTML = html;
 }
