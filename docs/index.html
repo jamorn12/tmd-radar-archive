@@ -1822,12 +1822,19 @@ function rgbToDbz(r, g, b, a) {
 }
 
 // ---- Z-R: อ่านค่าจาก manifest ไม่ hardcode ----
-// เดิมใช้ Marshall-Palmer (200, 1.6) ขณะที่ระบบผลิต manifest บอกว่าใช้ (250, 1.2)
-// ที่ 45 dBZ สองสูตรต่างกัน 2.4 เท่า · ที่ 55 dBZ ต่างกัน 3.9 เท่า
+//
+// ระบบใช้ Marshall-Palmer  Z = 200 R^1.6
+// (Marshall & Palmer 1948, J. Meteor. 5(4), 165-166 — แหล่งที่ตรวจสอบได้จริง)
+//
+// ค่า fallback ด้านล่างต้องตรงกับ radar_archive/grid.py เสมอ
+// ถ้าไม่ตรง หน้าเว็บจะคำนวณอัตราฝนคนละสูตรกับที่ระบบใช้ ซึ่งเคยเกิดขึ้นมาแล้ว
+//
+// ⚠️ เคยใช้ (250, 1.2) ที่เรียกกันว่า "Rosenfeld tropical" แต่สืบกลับไม่พบในเปเปอร์ต้นทาง
+//    ดูเหตุผลเต็มใน grid.py
 function dbzToRainRate(dbz) {
-  if (!Number.isFinite(dbz) || dbz < (manifest?.wet_threshold_dbz ?? 11.98)) return 0.0;
+  if (!Number.isFinite(dbz) || dbz < (manifest?.wet_threshold_dbz ?? 16.5)) return 0.0;
   const zr = (manifest && Array.isArray(manifest.zr) && manifest.zr.length === 2)
-           ? manifest.zr : [250.0, 1.2];
+           ? manifest.zr : [200.0, 1.6];
   const z = Math.pow(10, dbz / 10.0);
   const r = Math.pow(z / zr[0], 1.0 / zr[1]);
   return parseFloat(r.toFixed(1));
