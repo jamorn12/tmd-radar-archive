@@ -296,13 +296,16 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 /* ระดับฝน — สีพื้นแถบ และสีตัวอักษรที่อ่านออกบนพื้นนั้น
  * เขียว/เหลืองสว่างเกินกว่าจะใช้ตัวหนังสือขาว จึงสลับเป็นตัวหนังสือเข้ม */
-.lv-none  { background: linear-gradient(135deg,#475569,#334155); color: #E2E8F0; }
-.lv-dry   { background: linear-gradient(135deg,#3E5977,#2C4257); color: #E2E8F0; }
-.lv-light { background: linear-gradient(135deg,#34D399,#10B981); color: #052E22; }
-.lv-mod   { background: linear-gradient(135deg,#FBBF24,#F59E0B); color: #3B2103; }
-.lv-heavy { background: linear-gradient(135deg,#F87171,#DC2626); color: #FFF; }
-.lv-vheavy{ background: linear-gradient(135deg,#C084FC,#9333EA); color: #FFF; }
-.lv-light .wam-chip, .lv-mod .wam-chip { background: rgba(0,0,0,0.22); }
+/* แถบหัว popup ใช้สีชุดเดียวกับหมุดบนแผนที่ — ถ้าสองที่ไม่ตรงกันคนจะสับสนทันที
+   สีตัวอักษรเลือกตามความสว่างของพื้น ไม่ได้ไล่ตามระดับฝน */
+.lv-none  { background: linear-gradient(135deg,#64748B,#475569); color: #E2E8F0; }
+.lv-dry   { background: linear-gradient(135deg,#475569,#334155); color: #E2E8F0; }
+.lv-light { background: linear-gradient(135deg,#E0F2FE,#BAE6FD); color: #0C2A3E; }
+.lv-light2{ background: linear-gradient(135deg,#7DD3FC,#38BDF8); color: #06283D; }
+.lv-mod   { background: linear-gradient(135deg,#0EA5E9,#0284C7); color: #FFF; }
+.lv-heavy { background: linear-gradient(135deg,#4338CA,#3730A3); color: #FFF; }
+.lv-vheavy{ background: linear-gradient(135deg,#312E81,#1E1B4B); color: #FFF; }
+.lv-light .wam-chip, .lv-light2 .wam-chip { background: rgba(0,0,0,0.22); }
 
 /* --- รายการค่า: เส้นคั่น ไม่ใช่กล่อง --- */
 .wam-list { padding: 3px 14px 2px; }
@@ -669,6 +672,20 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 }
 .lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #00ECEC 0%, #00A000 25%, #FFFF00 50%, #FF9000 75%, #FF0000 100%); }
 .lg-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
+.lg-title { font-size: 9.5px; color: var(--text-dim); letter-spacing: .2px; margin-bottom: 2px; }
+.lg-sep { height: 1px; background: rgba(255,255,255,0.12); margin: 7px 0 6px; }
+/* จุดกลมมีขอบเข้ม ให้หน้าตาตรงกับหมุดจริงบนแผนที่เป๊ะ ๆ */
+/* จัดเป็นคอลัมน์ จุดกับตัวเลขจะได้อยู่ตรงกันเสมอ
+   ถ้าใช้ space-between สองแถวแยกกัน ตัวเลขที่ยาวไม่เท่ากันจะเลื่อนไม่ตรงจุด */
+.lg-dots { display: flex; justify-content: space-between; align-items: flex-start; margin: 4px 0 1px; }
+.lg-dcol { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1 1 0; }
+.lg-dlab { font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
+/* วงแหวนสว่างรอบนอก — บนแผงสีเข้ม สองชั้นบนสุดเป็นน้ำเงินเข้มจะจมหายถ้าไม่มี
+   บนแผนที่จริงพื้นหลังสว่างกว่านี้ ขอบเข้มด้านในจึงทำงานแทน */
+.lg-dot { width: 13px; height: 13px; border-radius: 50%; border: 1.6px solid #0B1220;
+          box-shadow: 0 0 0 1.4px rgba(255,255,255,0.45); }
+/* ไม่ใช้ฟอนต์ mono กับข้อความไทย — สระกับวรรณยุกต์จะเว้นช่องแปลก ๆ */
+.lg-dunit { font-size: 9px; color: var(--text-dim); text-align: right; opacity: .8; margin-top: 1px; }
 
 /* Impacted Areas UI Card (Spatial Impact Analysis) - Positioned above Legend without overlap */
 .impact-card {
@@ -705,7 +722,9 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 .rain-scale-bar {
   height: 6px; border-radius: 3px; margin: 3px 0 2px 0;
-  background: linear-gradient(90deg, #00ECEC 0%, #10B981 33%, #F59E0B 66%, #EF4444 100%);
+  /* ขั้นบันได ไม่ไล่เนียน — ให้ตรงกับสีจุดสถานีและอ่านชั้นได้จากแถบ */
+  background: linear-gradient(90deg,
+    #BAE6FD 0% 20%, #38BDF8 20% 40%, #0284C7 40% 60%, #3730A3 60% 80%, #1E1B4B 80% 100%);
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 .rain-scale-labels {
@@ -1168,6 +1187,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     </div>
     <div class="rain-scale-bar"></div>
     <div class="rain-scale-labels">
+      <span>&lt;0.5</span>
       <span>0.5–5</span>
       <span>5–15</span>
       <span>15–30</span>
@@ -1218,9 +1238,24 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 <!-- Legend -->
 <!-- สเกลสีเรดาร์ (ปรับตามเกณฑ์กรมอุตุนิยมวิทยา) -->
 <div class="legend glass">
+  <div class="lg-title">เรดาร์ — ความเข้มการสะท้อน</div>
   <div class="lg-labels"><span>15</span><span>28</span><span>38</span><span>45</span><span>50+ dBZ</span></div>
   <div class="lg-bar"></div>
   <div class="lg-labels"><span>เบา</span><span>ปานกลาง</span><span>หนัก</span><span>หนักมาก</span></div>
+
+  <!-- สองแถบแยกกันชัดเจน เพราะเป็นคนละปริมาณ คนละหน่วย คนละแหล่งข้อมูล
+       เรดาร์ = dBZ จากภาพ TMD · สถานี = มม. สะสมจากเครื่องวัดจริงบนพื้น
+       สีจึงต้องคนละตระกูลด้วย ไม่งั้นคนอ่านจะเทียบข้ามแถบโดยไม่ตั้งใจ -->
+  <div class="lg-sep"></div>
+  <div class="lg-title">สถานีวัดน้ำฝน — ฝนสะสม</div>
+  <div class="lg-dots">
+    <span class="lg-dcol"><span class="lg-dot" style="background:#BAE6FD"></span><span class="lg-dlab">0.1</span></span>
+    <span class="lg-dcol"><span class="lg-dot" style="background:#38BDF8"></span><span class="lg-dlab">5</span></span>
+    <span class="lg-dcol"><span class="lg-dot" style="background:#0284C7"></span><span class="lg-dlab">10</span></span>
+    <span class="lg-dcol"><span class="lg-dot" style="background:#3730A3"></span><span class="lg-dlab">35</span></span>
+    <span class="lg-dcol"><span class="lg-dot" style="background:#1E1B4B"></span><span class="lg-dlab">90+</span></span>
+  </div>
+  <div class="lg-dunit">ฝนสะสม (มม.)</div>
 </div>
 
 <!-- Timeline -->
@@ -1580,17 +1615,15 @@ function highlightBoundary(feature, rain3h) {
   layerHighlight.clearLayers();
   if (!feature) return;
 
-  // โทนสีไฮไลต์ตามเกณฑ์ TMD (ค่าเริ่มต้นใช้สีแดงส้มพาสเทลแบบโมเดิร์น)
-  let color = "#F87171";                        // แดงอมส้มพาสเทล
-  if (rain3h >= 30) color = "#EF4444";          // หนักมาก (แดงสด)
-  else if (rain3h >= 15) color = "#F59E0B";     // หนัก (ส้ม)
-  else if (rain3h >= 5) color = "#10B981";      // ปานกลาง (เขียว)
-  else if (rain3h > 0) color = "#38BDF8";       // เบา (ฟ้า)
+  // เส้นขอบแปลงใช้ ramp เดียวกับหมุดสถานีและแผงพื้นที่ (areaRainColor)
+  // เดิมใช้ เขียว/ส้ม/แดง ซึ่งเป็นสีเดียวกับเรดาร์ เส้นขอบจึงกลืนกับกลุ่มฝนที่มันล้อมอยู่พอดี
+  // ซึ่งเป็นกรณีที่แย่ที่สุด เพราะจุดประสงค์ของเส้นนี้คือชี้ว่า "ตรงนี้แหละ"
+  const color = areaRainColor(rain3h);
 
   const geoLayer = L.geoJSON(feature, {
     style: {
       color: color,
-      weight: 2.0,            // เส้นขอบบางคม 2px สไตล์ Minimal
+      weight: 2.6,            // หนาขึ้นเล็กน้อย เพราะสีน้ำเงินเข้มต้องการน้ำหนักเส้นมากกว่าสีสด
       dashArray: "4, 4",      // เส้นประโมเดิร์น
       opacity: 0.9,
       fillColor: color,
@@ -1993,18 +2026,52 @@ function applyStationVisibility() {
  * ⚠️ เกณฑ์ชุดนี้ TMD นิยามไว้สำหรับฝนสะสม 24 ชม. การเอามาใช้กับฝน 1 ชม. เป็นการ
  *    เทียบเคียงเพื่อสื่อสาร ไม่ใช่การจัดระดับตามนิยามทางการ
  */
+/* แถบสีของสถานีวัดน้ำฝน — ตระกูลสีฟ้า/น้ำเงิน แยกขาดจากสีเรดาร์
+ *
+ * ทำไมต้องเป็นฟ้า-น้ำเงิน
+ *   palette เรดาร์ของ TMD ไล่ เขียว -> เหลือง -> ส้ม -> แดง -> ม่วงชมพู
+ *   ไม่มีโทนฟ้าหรือน้ำเงินอยู่เลยแม้แต่แถบเดียว จุดสถานีจึงไม่มีทางกลืนกับฝนข้างหลัง
+ *   ของเดิมใช้ #10B981 (เขียว) #F59E0B (ส้ม) #EF4444 (แดง) ซึ่งเป็นสีเดียวกับเรดาร์เป๊ะ
+ *   จุดที่วางบนกลุ่มฝนจึงหายไปกับพื้นหลัง — เป็นปัญหาที่เห็นชัดบนแผนที่จริง
+ *
+ * ไล่สีแบบขั้นบันได (discrete) ไม่ใช่ไล่เนียน เพื่อให้อ่านจากแถบสีได้ว่าจุดนี้อยู่ชั้นไหน
+ * ตรวจด้วย validator แล้ว: คู่ที่ใกล้กันที่สุดต่างกัน 16.7 (ตาปกติ) และ 13.8 (ตาบอดสี)
+ * ทั้งคู่ผ่านเกณฑ์ — แยกออกได้แม้ผู้ใช้ตาบอดสีเขียว-แดง ซึ่งพบได้ราว 8% ในผู้ชาย
+ *
+ * ขอบเขตชั้นยึดเกณฑ์กรมอุตุ (10 / 35 / 90 มม.) แล้วซอยชั้นล่างสุดเป็นสอง
+ * เพราะฝนส่วนใหญ่ตกอยู่ในช่วง 0.1-10 ถ้าไม่ซอยจะเห็นเป็นสีเดียวกันเกือบทั้งแผนที่
+ */
 function rainLevel(mm) {
   if (mm === null || mm === undefined || !Number.isFinite(mm))
     return { cls: "lv-none",   label: "ไม่มีข้อมูล",  color: "#64748B", opacity: 0.55, big: false };
   if (mm <= 0.1)
-    return { cls: "lv-dry",    label: "ไม่มีฝน",      color: "#334E68", opacity: 0.95, big: false };
+    return { cls: "lv-dry",    label: "ไม่มีฝน",      color: "#475569", opacity: 0.9,  big: false };
+  if (mm <= 5)
+    return { cls: "lv-light",  label: "ฝนเล็กน้อย",   color: "#BAE6FD", opacity: 1.0,  big: true };
   if (mm <= 10)
-    return { cls: "lv-light",  label: "ฝนเล็กน้อย",   color: "#10B981", opacity: 0.95, big: true };
+    return { cls: "lv-light2", label: "ฝนเล็กน้อย",   color: "#38BDF8", opacity: 1.0,  big: true };
   if (mm <= 35)
-    return { cls: "lv-mod",    label: "ฝนปานกลาง",    color: "#F59E0B", opacity: 0.95, big: true };
+    return { cls: "lv-mod",    label: "ฝนปานกลาง",    color: "#0284C7", opacity: 1.0,  big: true };
   if (mm <= 90)
-    return { cls: "lv-heavy",  label: "ฝนหนัก",       color: "#EF4444", opacity: 0.95, big: true };
-  return   { cls: "lv-vheavy", label: "ฝนหนักมาก",    color: "#C084FC", opacity: 0.95, big: true };
+    return { cls: "lv-heavy",  label: "ฝนหนัก",       color: "#3730A3", opacity: 1.0,  big: true };
+  return   { cls: "lv-vheavy", label: "ฝนหนักมาก",    color: "#1E1B4B", opacity: 1.0,  big: true };
+}
+
+// ไล่สีชุดเดียวกับ rainLevel() ใช้กับแผงพื้นที่ (จังหวัด/อำเภอ/ตำบล)
+// เกณฑ์คนละชุดเพราะเป็นฝน 3 ชม. ไม่ใช่ 24 ชม. แต่ใช้ภาษาสีเดียวกัน
+// เพื่อให้คนอ่านไม่ต้องจำสองระบบ
+// ⚠️ เก็บ ramp ไว้ในฟังก์ชัน ไม่ใช่ const นอกฟังก์ชัน
+//    highlightBoundary() อยู่ก่อนหน้านี้ในไฟล์และเรียกฟังก์ชันนี้
+//    function declaration ถูก hoist ขึ้นไปก็จริง แต่ const จะติด temporal dead zone
+//    ถ้าวันหนึ่งมีการเรียกตอนโหลดหน้าจะได้ ReferenceError ทันที — ตัดความเสี่ยงทิ้งไปเลย
+function areaRainColor(mm) {
+  const ramp = ["#BAE6FD", "#38BDF8", "#0284C7", "#3730A3", "#1E1B4B"];
+  if (!Number.isFinite(mm)) return ramp[0];
+  if (mm >= 30)  return ramp[4];
+  if (mm >= 15)  return ramp[3];
+  if (mm >= 5)   return ramp[2];
+  if (mm >= 0.5) return ramp[1];
+  return ramp[0];
 }
 
 // วาดหมุดบน canvas ชั้นเดียว ไม่ใช่ DOM element ต่อหมุด
@@ -2099,10 +2166,15 @@ function updateTelemetryStationValues() {
     const lvl = rainLevel(rain1h);
     if (item.marker && item.marker.setStyle) {
       // สถานีที่ฝนตกให้หมุดใหญ่ขึ้นเล็กน้อย จะได้เห็นเด่นในดงหมุดสีเทา
+      //
+      // ขอบสีเข้มทึบ ไม่ใช่ขาวโปร่ง — นี่คือครึ่งหนึ่งของการแก้ปัญหาจุดกลืนกับเรดาร์
+      // ต่อให้สีในจุดบังเอิญใกล้กับสีพื้นหลังตรงนั้น ขอบเข้มจะล็อกรูปทรงจุดไว้เสมอ
+      // ของเดิมใช้ขาวโปร่ง 45-85% ซึ่งหายไปเลยเมื่อวางบนแถบเรดาร์สีอ่อน
       item.marker.setStyle({
         fillColor: lvl.color, fillOpacity: lvl.opacity,
-        radius: lvl.big ? 5 : 3.5,
-        color: lvl.big ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.45)"
+        radius: lvl.big ? 5.5 : 3.5,
+        color: lvl.big ? "#0B1220" : "rgba(15,23,42,0.75)",
+        weight: lvl.big ? 1.6 : 1
       });
     }
 
@@ -2460,10 +2532,9 @@ function updateImpactedProvinces() {
 
   let impactedHtml = "";
   currentImpactedList.forEach((item, index) => {
-    let borderColor = "#00ECEC";
-    if (item.rain3h >= 30) borderColor = "#EF4444";
-    else if (item.rain3h >= 15) borderColor = "#F59E0B";
-    else if (item.rain3h >= 5) borderColor = "#10B981";
+    // ใช้ ramp เดียวกับหมุดสถานี ผ่าน areaRainColor() — อย่า hardcode ซ้ำที่นี่
+    // ไม่งั้นแก้สีทีหนึ่งต้องไล่แก้สองที่ แล้วจะลืมที่ใดที่หนึ่งเสมอ
+    const borderColor = areaRainColor(item.rain3h);
 
     impactedHtml += `
       <div class="ic-item" style="border-left-color: ${borderColor};" onclick="selectImpactedArea(${index})" title="คลิกเพื่อตรวจวัดและแสดงรูปแปลงพื้นที่">
