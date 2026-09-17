@@ -128,8 +128,28 @@ jobs:
         continue-on-error: true
         timeout-minutes: 6
         run: |
-          python -m radar_archive.areal --station PHS --level both --csv --quiet \
-            || echo "::warning::คำนวณฝนเชิงพื้นที่ไม่สำเร็จรอบนี้ — เรดาร์และ nowcast ไม่กระทบ"
+          # --level all  (ไม่ใช่ both) — CLI เปลี่ยนตอนเพิ่มระดับจังหวัดเข้ามา
+          #   ค่าเดิม both ทำให้ argparse ตาย exit 2 ตั้งแต่ยังไม่ทันเริ่มทำงาน
+          #   และ continue-on-error กลบไว้จนขั้นนี้เงียบสนิทหลายรอบ
+          #
+          # ไม่ใส่ --quiet และเก็บ log ไว้ ถ้าล้มอีกจะเห็น error บนหน้า summary ทันที
+          set -o pipefail
+          if python -m radar_archive.areal --station PHS --level all --csv 2>&1 | tee /tmp/areal.log; then
+            {
+              echo "## ฝนเชิงพื้นที่"
+              echo '```'
+              grep -E '^->|เขตที่จะมีฝน|เขตในโดม' /tmp/areal.log || tail -n 15 /tmp/areal.log
+              echo '```'
+            } >> $GITHUB_STEP_SUMMARY
+          else
+            {
+              echo "## ⚠️ ฝนเชิงพื้นที่ล้มเหลว"
+              echo '```'
+              tail -n 40 /tmp/areal.log
+              echo '```'
+            } >> $GITHUB_STEP_SUMMARY
+            echo "::warning::คำนวณฝนเชิงพื้นที่ไม่สำเร็จรอบนี้ — ดูรายละเอียดท้ายหน้า summary ของ run นี้"
+          fi
 
       # gauge เป็นแหล่งภายนอก (สสน.) และ **ไม่ใช่ input ของ nowcast**
       # ถ้าดึงไม่ได้ ต้องไม่กระทบ pipeline หลัก -> continue-on-error + || echo
