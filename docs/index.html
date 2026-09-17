@@ -1492,24 +1492,34 @@ function safeLucide() {
   } catch (e) {}
 }
 
+/* arrowColor / arrowCasing — ลูกศรลมวาดสองชั้น เส้นรองหนากว่าอยู่ข้างใต้
+ *
+ * ทำไมต้องสองชั้น  สีเรดาร์กินพื้นที่ตั้งแต่เขียวเข้มไปจนแดงและเหลืองสว่าง
+ * ลูกศรสีเดี่ยวสีใดก็ตามจะไปกลืนกับแถบใดแถบหนึ่งเสมอ ของเดิมใช้ส้ม #EA580C
+ * บน hillshade ซึ่งหายไปกับแกนฝนสีส้ม-แดงพอดี ซึ่งเป็นตรงที่ต้องอ่านให้ออกที่สุด
+ *
+ * basemap สว่าง -> ลูกศรดำ ขอบขาว · basemap มืด -> ลูกศรขาว ขอบดำ
+ * ทั้งสองแบบให้คู่ตรงข้ามความสว่างสูงสุด อ่านออกบนทุกสีของเรดาร์
+ */
 const THEME_STYLES = {
   dark: {
-    arrowColor: "#38BDF8", ringColor: "#38BDF8", ringOpacity: 0.45, radarCenter: "#38BDF8", impactLine: "#F59E0B",
+    arrowColor: "#FFFFFF", arrowCasing: "#0B1220",
+    ringColor: "#38BDF8", ringOpacity: 0.45, radarCenter: "#38BDF8", impactLine: "#F59E0B",
     ringLabelBg: "rgba(15, 23, 42, 0.85)", ringLabelBorder: "rgba(56, 189, 248, 0.45)", ringLabelColor: "#38BDF8",
     maskColor: "#050B14", maskOpacity: 0.75
   },
   hillshade: {
-    arrowColor: "#EA580C", ringColor: "#0369A1", ringOpacity: 0.75, radarCenter: "#0284C7", impactLine: "#D97706",
+    arrowColor: "#0B1220", arrowCasing: "#FFFFFF", ringColor: "#0369A1", ringOpacity: 0.75, radarCenter: "#0284C7", impactLine: "#D97706",
     ringLabelBg: "rgba(255, 255, 255, 0.88)", ringLabelBorder: "rgba(2, 132, 199, 0.45)", ringLabelColor: "#0369A1",
     maskColor: "#0F172A", maskOpacity: 0.68
   },
   satellite: {
-    arrowColor: "#FACC15", ringColor: "#FDE047", ringOpacity: 0.85, radarCenter: "#FDE047", impactLine: "#F59E0B",
+    arrowColor: "#FFFFFF", arrowCasing: "#0B1220", ringColor: "#FDE047", ringOpacity: 0.85, radarCenter: "#FDE047", impactLine: "#F59E0B",
     ringLabelBg: "rgba(0, 0, 0, 0.85)", ringLabelBorder: "rgba(250, 204, 21, 0.6)", ringLabelColor: "#FDE047",
     maskColor: "#020617", maskOpacity: 0.80
   },
   light: {
-    arrowColor: "#0F172A", ringColor: "#334155", ringOpacity: 0.55, radarCenter: "#0F172A", impactLine: "#DC2626",
+    arrowColor: "#0B1220", arrowCasing: "#FFFFFF", ringColor: "#334155", ringOpacity: 0.55, radarCenter: "#0F172A", impactLine: "#DC2626",
     ringLabelBg: "rgba(255, 255, 255, 0.92)", ringLabelBorder: "rgba(51, 65, 85, 0.35)", ringLabelColor: "#1E293B",
     maskColor: "#1E293B", maskOpacity: 0.55
   }
@@ -1935,13 +1945,37 @@ function getLocalMotionAtPoint(pinE, pinN) {
     const row = Math.floor((-pinN / gridRes) + (motion.rows / 2));
 
     if (col >= 0 && col < motion.cols && row >= 0 && row < motion.rows) {
-      const idx = row * motion.cols + col;
-      const u = motion.grid_u[idx] || 0;
-      const v = motion.grid_v[idx] || 0;
-      const spd = Math.hypot(u, v) * 3.6;
-      const deg = (Math.atan2(u, v) * 180 / Math.PI + 360) % 360;
-      if (spd > 0.5) {
-        return { spd, deg, uniform: false, confidence: motion.confidence || "unknown" };
+      // เฉลี่ยเวกเตอร์ 3x3 รอบจุด ไม่ใช่หยิบเซลล์เดียว
+      //
+      // ทำไม: เซลล์กริดกว้าง 16 กม. และ dense_lucaskanade ประมาณการเคลื่อนที่
+      // จากการจับคู่ลวดลายในภาพ เซลล์เดี่ยวที่ลวดลายจาง ๆ จะให้ทิศแกว่งได้มาก
+      // การเฉลี่ยในปริภูมิเวกเตอร์ (ไม่ใช่เฉลี่ยองศา ซึ่งพังตอนคร่อม 0/360)
+      // ทำให้ลูกศรที่อยู่ติดกันไม่กระโดดไปคนละทางทั้งที่อยู่ในกระแสลมเดียวกัน
+      let su = 0, sv = 0, smag = 0, n = 0;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          const r = row + dr, c = col + dc;
+          if (r < 0 || r >= motion.rows || c < 0 || c >= motion.cols) continue;
+          const k = r * motion.cols + c;
+          const uu = motion.grid_u[k], vv = motion.grid_v[k];
+          if (!Number.isFinite(uu) || !Number.isFinite(vv)) continue;
+          su += uu; sv += vv; smag += Math.hypot(uu, vv); n++;
+        }
+      }
+      if (n > 0) {
+        const u = su / n, v = sv / n;
+        const meanMag = smag / n;
+        const spd = Math.hypot(u, v) * 3.6;
+        const deg = (Math.atan2(u, v) * 180 / Math.PI + 360) % 360;
+
+        // ความสอดคล้องของทิศ "เฉพาะแถวนี้" = |ค่าเฉลี่ยเวกเตอร์| / ค่าเฉลี่ยของขนาด
+        // 1.0 = เพื่อนบ้านชี้ทางเดียวกันหมด · ต่ำ = ลมเปลี่ยนทิศตรงนี้จริง ๆ
+        //
+        // ค่านี้แทน motion.confidence ของทั้งภาพโดยตั้งใจ — confidence ก้อนนั้น
+        // ต่ำเพราะ "ทั้งภาพ" มีหลายกระแส ซึ่งเป็นปัญหาที่ motion grid แก้ไปแล้ว
+        // การเอามาติดป้ายที่ลูกศรรายจุดจึงผิดฝาผิดตัว ไม่ใช่แค่ดูไม่ดี
+        const agreement = meanMag > 1e-6 ? Math.hypot(u, v) / meanMag : 1;
+        if (spd > 0.5) return { spd, deg, uniform: false, agreement };
       }
     }
   }
@@ -1965,7 +1999,7 @@ function getLocalMotionAtPoint(pinE, pinN) {
             : null;
   if (spd === null || deg === null) return null;
 
-  return { spd, deg, uniform: true, confidence: motion.confidence || "unknown" };
+  return { spd, deg, uniform: true, agreement: 1 };
 }
 
 let stationDisplayMode = "smart";
@@ -3130,20 +3164,31 @@ function renderCellVectors(frameIdx) {
           const spd = localMotion.spd;
           const deg = localMotion.deg;
 
-          // confidence ต่ำ = ก้อนฝนเคลื่อนคนละทิศ เวกเตอร์เดียวแทนทั้งภาพไม่ได้
-          // ยังวาดอยู่ แต่ทำให้จางลงเพื่อบอกผู้ใช้ว่าเชื่อได้น้อย
-          const weakFlow = localMotion.confidence === "low" || localMotion.confidence === "none";
-          const arrowOpacity = weakFlow ? 0.45 : 1;
+          // ลมเปลี่ยนทิศตรงนี้จริง (เพื่อนบ้านในกริดชี้คนละทาง) — เป็นข้อมูลอุตุฯ
+          // ที่มีความหมาย เช่น แนวลมสอบ ไม่ใช่ข้อบกพร่องของระบบ จึงแค่ทำให้จางลง
+          // เล็กน้อยพอให้สังเกตได้ ไม่ใช่จาง 45% จนอ่านทิศไม่ออก
+          const mixedFlow = localMotion.agreement < 0.75;
+          const arrowOpacity = mixedFlow ? 0.75 : 1;
 
           const arrowLength = Math.min(32, Math.max(20, 16 + spd * 0.4));
           const arrowStroke = Math.min(3.0, Math.max(2.0, 1.8 + spd * 0.04));
 
+          // วาดสองชั้น: เส้นรองหนากว่าเป็นสีตรงข้าม แล้วเส้นจริงทับบน
+          // ลูกศรจึงอ่านออกทั้งบนเรดาร์สีเขียว/เหลือง/ส้ม/แดง และบน basemap ทุกแบบ
+          // สีเดี่ยวสีใดสีหนึ่งจะไปกลืนกับแถบสีเรดาร์สักแถบเสมอ ไม่มีทางเลี่ยง
+          const cs = arrowStroke + 1.8;
           const svgHtml = `
             <div class="arrow-icon" style="width: ${arrowLength}px; height: ${arrowLength}px;">
               <svg viewBox="0 0 28 28" width="${arrowLength}" height="${arrowLength}"
-                   style="transform: rotate(${deg}deg); opacity: ${arrowOpacity}; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.9));">
-                <line x1="14" y1="23" x2="14" y2="4" stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round"/>
-                <polyline points="8,11 14,4 20,11" fill="none" stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round" stroke-linejoin="round"/>
+                   style="transform: rotate(${deg}deg); opacity: ${arrowOpacity};">
+                <g stroke="${style.arrowCasing}" stroke-width="${cs}" stroke-linecap="round" stroke-linejoin="round" fill="none">
+                  <line x1="14" y1="23" x2="14" y2="4"/>
+                  <polyline points="8,11 14,4 20,11"/>
+                </g>
+                <g stroke="${style.arrowColor}" stroke-width="${arrowStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none">
+                  <line x1="14" y1="23" x2="14" y2="4"/>
+                  <polyline points="8,11 14,4 20,11"/>
+                </g>
               </svg>
             </div>
           `;
@@ -3153,10 +3198,16 @@ function renderCellVectors(frameIdx) {
           });
 
           const marker = L.marker([lat, lon], { icon, interactive: true });
+          // บอกสิ่งที่วัดได้ ไม่ใช่ให้เกรดตัวเอง
+          // ของเดิมขึ้นว่า "ความเชื่อมั่นต่ำ" ซึ่งมาจาก confidence ของทั้งภาพ
+          // ทั้งที่ลูกศรอันนี้ใช้เวกเตอร์เฉพาะจุดจาก motion grid ไปแล้ว
+          // ป้ายนั้นจึงไม่ตรงกับสิ่งที่วาดอยู่จริง และไม่ได้บอกอะไรที่เอาไปใช้ต่อได้
           marker.bindTooltip(
             `ทิศทาง: ${deg.toFixed(0)}°<br>ความเร็ว: ${spd.toFixed(1)} กม./ชม.` +
-            (localMotion.uniform ? "<br><i>เวกเตอร์เดียวทั้งภาพ</i>" : "") +
-            (weakFlow ? "<br><b>ความเชื่อมั่นต่ำ — ก้อนฝนเคลื่อนคนละทิศ</b>" : ""),
+            (localMotion.uniform
+              ? "<br><i>ค่าเฉลี่ยทั้งภาพ — รอบนี้ยังไม่มีสนามลมรายจุด</i>"
+              : "<br><i>วัดเฉพาะจุดนี้</i>") +
+            (mixedFlow ? "<br><b>ลมเปลี่ยนทิศบริเวณนี้</b>" : ""),
             { direction: "top", offset: [0, -8] });
           layerArrows.addLayer(marker);
         }
