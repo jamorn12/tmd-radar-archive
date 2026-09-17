@@ -117,6 +117,20 @@ jobs:
           python -m radar_archive.verify archive --station PHS \
             || echo "::warning::เก็บภาพพยากรณ์ไม่สำเร็จรอบนี้ — รอบนี้จะขาดจากชุด verify"
 
+      # ฝนเชิงพื้นที่รายอำเภอ/ตำบล — ต้องอยู่หลัง Archive Forecast เพราะอ่านเฟรม
+      # พยากรณ์ f+015..f+120 ที่ step นั้นเพิ่งคัดลอกลง data/nowcast/<CODE>/<origin>/
+      #
+      # รอบแรกจะช้ากว่าปกติเพราะต้องสร้าง mask จับคู่ polygon 1,790 รูปกับเซลล์กริด
+      # หลังจากนั้นอ่านจาก data/areal/*_mask_241.npz ที่ commit ไว้แล้ว
+      # ไฟล์ mask จึงต้องถูก commit ด้วย ไม่งั้นจะสร้างใหม่ทุกรอบเปล่า ๆ
+      - name: Areal Rainfall (amphoe / tambon)
+        if: ${{ github.event.inputs.mode != 'repair' }}
+        continue-on-error: true
+        timeout-minutes: 6
+        run: |
+          python -m radar_archive.areal --station PHS --level both --csv --quiet \
+            || echo "::warning::คำนวณฝนเชิงพื้นที่ไม่สำเร็จรอบนี้ — เรดาร์และ nowcast ไม่กระทบ"
+
       # gauge เป็นแหล่งภายนอก (สสน.) และ **ไม่ใช่ input ของ nowcast**
       # ถ้าดึงไม่ได้ ต้องไม่กระทบ pipeline หลัก -> continue-on-error + || echo
       # วางไว้ท้ายสุดก่อน commit โดยตั้งใจ: งานที่ขาดได้ ต้องไม่กินเวลาของงานที่ขาดไม่ได้
@@ -132,7 +146,11 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A data/ docs/nowcast/ docs/gauges/
+          # สร้างโฟลเดอร์ก่อน add — ขั้น Areal เป็น continue-on-error ถ้ามันล้ม
+          # โฟลเดอร์จะไม่ถูกสร้าง แล้ว git add จะตายด้วย "pathspec did not match"
+          # ลากให้ทั้ง workflow ล้มทั้งที่งานหลักสำเร็จไปแล้ว
+          mkdir -p docs/areal data/areal
+          git add -A data/ docs/nowcast/ docs/gauges/ docs/areal/
           if git diff --staged --quiet; then
             echo "No changes to commit"
             exit 0
