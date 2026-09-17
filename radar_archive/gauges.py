@@ -16,6 +16,22 @@
     ไม่ได้มาจากเรดาร์ ไม่ได้มาจากภาพที่เราถอดสี จึงใช้ตอบคำถามที่ reviewer
     อยากรู้จริง ๆ ได้ว่า "dBZ ที่กู้มาตรงกับฝนจริงหรือเปล่า"
 
+การเทียบกับเรดาร์ — อ่านให้ชัดเช่นกัน
+    ตั้งแต่เวอร์ชันนี้ โมดูลจะแนบ `radar_1h` มาให้ทุกสถานีด้วย = **ฝนสะสม 1 ชม.
+    จากภาพเรดาร์ ในหน้าต่างเวลาเดียวกับ rain_1h ของสถานีนั้น ๆ** (accum.py)
+    ไม่ใช่ rain rate ของเฟรมล่าสุด
+
+    ทำไมต้องเป็นหน้าต่างของ "สถานีนั้น ๆ" ไม่ใช่ชั่วโมงล่าสุดชั่วโมงเดียว
+        สถานีรายงานเป็นรายชั่วโมง แต่ obs_utc ไม่ตรงกันทุกสถานี และ API ยังหน่วง
+        ไม่เท่ากันอีก ถ้าใช้หน้าต่างเดียวกันหมด สถานีที่รายงานช้าจะถูกเทียบกับ
+        ฝนคนละชั่วโมง แล้ว bias ที่ได้จะเป็นความคลาดของเวลา ไม่ใช่ของเรดาร์
+
+    ค่าที่ได้จะยังต่างจาก gauge อยู่ และนั่น **ไม่ใช่บั๊ก** — เป็นผลการวัดที่ต้อง
+    รายงานพร้อมสาเหตุ: Z-R (Marshall-Palmer ออกแบบจากฝน stratiform), ความสูงลำคลื่น
+    ที่ระยะไกล (overshoot), การ quantise ลงแถบสีของภาพ JPEG, และการที่ gauge วัด
+    ที่จุดเดียวแต่เรดาร์เฉลี่ยทั้งเซลล์ ~2 กม.
+    ⚠️ ห้ามปรับ Z-R ให้ตัวเลขไปตรงกับ gauge — gauge จะเลิกเป็นตัววัดที่เป็นอิสระทันที
+
 ข้อควรรู้เรื่อง API (ทดสอบแล้ว 15 ก.ย. 2569)
     - เปิดสาธารณะ ไม่ต้องใช้ API key
     - **ถ้าไม่ใส่ province_code จะได้แค่ top 100 ทั้งประเทศ** ไม่ใช่รายการเต็ม
@@ -44,7 +60,9 @@ from pathlib import Path
 
 import requests
 
+from . import accum
 from .config import CONFIG_PATH, get_station
+from .verify import store_dir
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 DOCS = Path(__file__).resolve().parent.parent / "docs"
@@ -226,11 +244,107 @@ def collect(lat0: float, lon0: float, range_km: float,
     return out, report
 
 
-# ---------------------------------------------------------------- 3. เขียนให้หน้าเว็บ
+# ------------------------------------------------- 3. แนบฝนสะสมเรดาร์ 1 ชม.
+
+RADAR_KEYS = ("radar_1h", "radar_1h_max3", "radar_1h_n", "radar_1h_expect")
+
+
+def _epoch_of(obs_utc: str | None) -> int | None:
+    if not obs_utc:
+        return None
+    try:
+        return int(datetime.strptime(obs_utc, "%Y-%m-%dT%H:%M:%SZ")
+                   .replace(tzinfo=timezone.utc).timestamp())
+    except ValueError:
+        return None
+
+
+def attach_radar(stations: list, store: Path, st, hours: float = 1.0,
+                 verbose: bool = True) -> dict:
+    """เติม radar_1h ให้ทุกสถานี — คืน report
+
+    ประหยัดงานด้วยสองชั้น
+      1. จัดกลุ่มสถานีตาม obs_utc ก่อน สถานีรายงานเป็นรายชั่วโมง เวลาจึงซ้ำกันมาก
+         300+ สถานีมักเหลือหน้าต่างที่ต่างกันจริงแค่ไม่กี่ค่า
+      2. cache สนาม rain rate ต่อ origin ส่งต่อข้ามหน้าต่าง หน้าต่างที่ติดกัน
+         ใช้เฟรมร่วมกันเกือบหมด ถ้าไม่ cache จะ decode PNG เดิมซ้ำหลายร้อยรอบ
+
+    สถานีที่หาเฟรมไม่เจอ (obs_utc เก่าเกินคลัง หรือไม่มี obs_utc) จะได้ None
+    ไม่ใช่ 0.0 — "ไม่มีข้อมูลให้เทียบ" ต่างจาก "เรดาร์เห็นว่าฝนไม่ตก"
+    """
+    for g in stations:
+        for k in RADAR_KEYS:
+            g[k] = None
+
+    store = Path(store)
+    if not store.exists():
+        if verbose:
+            print(f"[!] ไม่พบคลัง nowcast ที่ {store} — ข้ามการเทียบเรดาร์")
+        return dict(with_radar_1h=0, n_windows=0, n_frames_read=0, store=str(store))
+
+    origins = accum.list_origins(store)
+    if not origins:
+        if verbose:
+            print(f"[!] คลัง {store} ยังไม่มี obs.png — ข้ามการเทียบเรดาร์")
+        return dict(with_radar_1h=0, n_windows=0, n_frames_read=0, store=str(store))
+
+    by_end: dict[int, list] = {}
+    for g in stations:
+        ep = _epoch_of(g.get("obs_utc"))
+        if ep is not None:
+            by_end.setdefault(ep, []).append(g)
+
+    cache: dict = {}
+    n_ok = 0
+    for end in sorted(by_end):
+        res = accum.accumulate(store, end, hours, origins=origins, cache=cache)
+        if res is None:
+            continue
+        mm, meta = res["mm"], res["meta"]
+        for g in by_end[end]:
+            v = accum.sample(mm, g["lat"], g["lon"], meta, st.lat, st.lon, "nearest")
+            if v is None:                      # อยู่นอกภาพ (มุมกริดนอกรัศมี)
+                continue
+            g["radar_1h"] = round(v, 2)
+            g["radar_1h_max3"] = round(
+                accum.sample(mm, g["lat"], g["lon"], meta, st.lat, st.lon, "max3"), 2)
+            g["radar_1h_n"] = res["n_used"]
+            g["radar_1h_expect"] = res["n_expect"]
+            n_ok += 1
+
+    if verbose:
+        print(f"    เทียบเรดาร์: {n_ok} สถานี · {len(by_end)} หน้าต่างเวลา "
+              f"· อ่านภาพ {len(cache)} เฟรม")
+    return dict(with_radar_1h=n_ok, n_windows=len(by_end),
+                n_frames_read=len(cache), store=str(store))
+
+
+def bias_summary(stations: list, min_mm: float = 0.1) -> dict | None:
+    """สรุป bias เฉพาะคู่ที่ "มีฝนจริงอย่างน้อยฝั่งหนึ่ง" — คืน None ถ้ายังไม่มีคู่
+
+    ตัดคู่ 0-0 ออกเพราะมันครองตัวอย่างและลากค่าเฉลี่ยเข้าหา 0 จนดูดีเกินจริง
+    ตัวเลขชุดนี้ให้ดูแนวโน้มเท่านั้น ของจริงต้องวิเคราะห์จาก CSV ประวัติ
+    """
+    pair = [(g["rain_1h"], g["radar_1h"]) for g in stations
+            if g.get("rain_1h") is not None and g.get("radar_1h") is not None
+            and (g["rain_1h"] >= min_mm or g["radar_1h"] >= min_mm)]
+    if not pair:
+        return None
+    gsum = sum(p[0] for p in pair)
+    rsum = sum(p[1] for p in pair)
+    diff = sorted(r - gg for gg, r in pair)
+    mid = len(diff) // 2
+    med = diff[mid] if len(diff) % 2 else (diff[mid - 1] + diff[mid]) / 2
+    return dict(n=len(pair), gauge_sum=round(gsum, 1), radar_sum=round(rsum, 1),
+                ratio=round(rsum / gsum, 3) if gsum > 0 else None,
+                median_diff=round(med, 2))
+
+
+# ---------------------------------------------------------------- 4. เขียนให้หน้าเว็บ
 
 WEB_FIELDS = ["id", "code", "name", "lat", "lon", "dist_km",
               "rain_1h", "rain_24h", "obs_utc", "agency",
-              "tumbon", "amphoe", "province"]
+              "tumbon", "amphoe", "province", "radar_1h", "radar_1h_n"]
 
 
 def write_web(out_dir: Path, st, stations: list, report: dict) -> Path:
@@ -255,10 +369,15 @@ def write_web(out_dir: Path, st, stations: list, report: dict) -> Path:
                   "range_km": st.range_km},
         "stale_after_min": 90,
         "note_th": ("rain_1h มีไม่ครบทุกสถานี ให้ใช้ rain_24h เป็นค่าหลัก · "
-                    "obs_utc เป็น UTC แล้ว (API ต้นทางส่งมาเป็น UTC+7)"),
+                    "obs_utc เป็น UTC แล้ว (API ต้นทางส่งมาเป็น UTC+7) · "
+                    "radar_1h = ฝนสะสม 1 ชม. จากภาพเรดาร์ ในหน้าต่างเดียวกับ rain_1h "
+                    "(หน่วย มม. เทียบกันได้ตรงนิยาม) · "
+                    "radar_1h_n = จำนวนเฟรมที่ใช้ ถ้าน้อยกว่า 4 แปลว่าภาพขาด "
+                    "ค่าสะสมจะต่ำกว่าความจริง"),
         "agencies": agencies,
         "counts": {k: report[k] for k in
-                   ("n_stations", "n_provinces", "with_rain_1h", "with_rain_24h")},
+                   ("n_stations", "n_provinces", "with_rain_1h", "with_rain_24h",
+                    "with_radar_1h") if k in report},
         "fields": WEB_FIELDS,
         "stations": [[g[k] for k in WEB_FIELDS] for g in stations],
     }
@@ -268,10 +387,17 @@ def write_web(out_dir: Path, st, stations: list, report: dict) -> Path:
     return p
 
 
-# ---------------------------------------------------------------- 4. เก็บประวัติ
+# ---------------------------------------------------------------- 5. เก็บประวัติ
 
+# radar_* สามคอลัมน์ท้ายคือชุดข้อมูลจับคู่ที่โตขึ้นเองทุกชั่วโมง
+# นี่คือวัตถุดิบของหัวข้อ "การเปรียบเทียบเรดาร์กับสถานีวัดน้ำฝน" ในเปเปอร์
+#   radar_1h       เซลล์ที่ใกล้ที่สุด (~2x2 กม.)  <- ใช้เป็นค่าหลัก นิยามตรงที่สุด
+#   radar_1h_max3  ค่าสูงสุด 3x3 เก็บไว้เทียบว่าการเลือกวิธีสุ่มมีผลแค่ไหน
+#                  **อย่าใช้เป็นค่าหลัก** มันเอนเข้าหาค่าสูงอย่างเป็นระบบ
+#   radar_1h_n     เฟรมที่ใช้จริง < 4 เมื่อไร แปลว่าภาพขาด ต้องกรองออกตอนวิเคราะห์
 HIST_COLS = ["station_id", "code", "name", "agency", "province",
-             "lat", "lon", "dist_km", "obs_utc", "rain_1h", "rain_24h"]
+             "lat", "lon", "dist_km", "obs_utc", "rain_1h", "rain_24h",
+             "radar_1h", "radar_1h_max3", "radar_1h_n"]
 
 
 def append_history(root: Path, st, stations: list) -> tuple:
@@ -287,11 +413,20 @@ def append_history(root: Path, st, stations: list) -> tuple:
     month = datetime.now(timezone.utc).strftime("%Y%m")
     path = out_dir / f"{st.code}_{month}.csv"
 
-    seen = set()
+    seen, old_rows, need_migrate = set(), [], False
     if path.exists():
         with path.open(encoding="utf-8", newline="") as f:
-            for row in csv.DictReader(f):
-                seen.add((row["station_id"], row["obs_utc"]))
+            rd = csv.DictReader(f)
+            # ไฟล์ที่เขียนไว้ก่อนมีคอลัมน์ radar_* จะมีหัวตารางสั้นกว่า
+            # ถ้า append ทื่อ ๆ ค่าจะเลื่อนคอลัมน์และไฟล์พังทั้งเดือน -> เขียนใหม่ทั้งไฟล์
+            need_migrate = list(rd.fieldnames or []) != HIST_COLS
+            for row in rd:
+                seen.add((row.get("station_id", ""), row.get("obs_utc", "")))
+                if need_migrate:
+                    old_rows.append({k: row.get(k, "") for k in HIST_COLS})
+
+    def _v(g, k):
+        return "" if g.get(k) is None else g[k]
 
     rows = []
     for g in stations:
@@ -304,20 +439,32 @@ def append_history(root: Path, st, stations: list) -> tuple:
             "agency": g["agency"], "province": g["province"],
             "lat": g["lat"], "lon": g["lon"], "dist_km": g["dist_km"],
             "obs_utc": g["obs_utc"],
-            "rain_1h": "" if g["rain_1h"] is None else g["rain_1h"],
-            "rain_24h": "" if g["rain_24h"] is None else g["rain_24h"],
+            "rain_1h": _v(g, "rain_1h"), "rain_24h": _v(g, "rain_24h"),
+            "radar_1h": _v(g, "radar_1h"),
+            "radar_1h_max3": _v(g, "radar_1h_max3"),
+            "radar_1h_n": _v(g, "radar_1h_n"),
         })
 
-    new = path.exists()
+    if need_migrate:
+        with path.open("w", encoding="utf-8", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=HIST_COLS)
+            w.writeheader()
+            w.writerows(old_rows)
+            w.writerows(rows)
+        print(f"    [i] ปรับหัวตาราง {path.name} ให้มีคอลัมน์ radar_* "
+              f"(แถวเดิม {len(old_rows)} แถวเก็บไว้ครบ ช่องใหม่เว้นว่าง)")
+        return path, len(rows)
+
+    exists = path.exists()
     with path.open("a", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=HIST_COLS)
-        if not new:
+        if not exists:
             w.writeheader()
         w.writerows(rows)
     return path, len(rows)
 
 
-# ---------------------------------------------------------------- 5. CLI
+# ---------------------------------------------------------------- 6. CLI
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(
@@ -332,6 +479,8 @@ def main(argv=None) -> int:
     p.add_argument("--all-provinces", action="store_true",
                    help="สแกนทั้ง 77 จังหวัด — ใช้ตรวจว่ารายชื่อ NEAR_PHS ขาดจังหวัดไหนไหม")
     p.add_argument("--dry-run", action="store_true", help="ไม่เขียนไฟล์ แสดงผลอย่างเดียว")
+    p.add_argument("--no-radar", action="store_true",
+                   help="ไม่ต้องคำนวณฝนสะสมเรดาร์ (ดึงข้อมูลสถานีอย่างเดียว)")
     p.add_argument("--quiet", action="store_true")
     a = p.parse_args(argv)
 
@@ -355,12 +504,48 @@ def main(argv=None) -> int:
     print("หน่วยงาน: " + " · ".join(f"{k} {v}" for k, v in
                                     sorted(by_ag.items(), key=lambda x: -x[1])))
 
+    # --- ฝนสะสมเรดาร์ในหน้าต่างเดียวกับแต่ละสถานี ---
+    if a.no_radar:
+        for g in stations:
+            for k in RADAR_KEYS:
+                g[k] = None
+        rep["with_radar_1h"] = 0
+    else:
+        print("\nเทียบกับเรดาร์ (ฝนสะสม 1 ชม. หน้าต่างเดียวกับ rain_1h ของแต่ละสถานี)")
+        rrep = attach_radar(stations, store_dir(Path(a.data), st.code), st,
+                            verbose=not a.quiet)
+        rep["with_radar_1h"] = rrep["with_radar_1h"]
+
+        bs = bias_summary(stations)
+        if bs is None:
+            print("    ยังไม่มีคู่ที่มีฝน — ตอนนี้แห้งทั้งโดม ไม่มีอะไรให้เทียบ")
+        else:
+            print(f"    คู่ที่มีฝนอย่างน้อยฝั่งหนึ่ง {bs['n']} คู่ "
+                  f"· รวมสถานี {bs['gauge_sum']} มม. · รวมเรดาร์ {bs['radar_sum']} มม.")
+            if bs["ratio"] is not None:
+                print(f"    อัตราส่วน เรดาร์/สถานี = {bs['ratio']:.2f} "
+                      f"· มัธยฐานผลต่าง {bs['median_diff']:+.2f} มม.")
+            print("    (ตัวเลขรอบเดียวแกว่งมาก ใช้ดูแนวโน้มเท่านั้น "
+                  "ของจริงวิเคราะห์จาก CSV ประวัติ)")
+
     top = [g for g in stations if g["rain_24h"]][:5]
     if top:
         print("\nฝนสูงสุด 24 ชม.")
         for g in top:
             print(f"    {g['rain_24h']:6.1f} มม.  {g['name'][:34]:<34} "
                   f"{g['agency']:<6} {g['dist_km']:5.1f} กม.  {g['obs_utc']}")
+
+    pairs = sorted((g for g in stations
+                    if g.get("rain_1h") is not None and g.get("radar_1h") is not None),
+                   key=lambda g: -g["rain_1h"])[:5]
+    if pairs:
+        print("\nฝนสูงสุด 1 ชม. เทียบเรดาร์ (สถานี / เรดาร์ / ผลต่าง)")
+        for g in pairs:
+            flag = "" if g["radar_1h_n"] == g["radar_1h_expect"] else \
+                   f"  [ภาพขาด ใช้ {g['radar_1h_n']}/{g['radar_1h_expect']} เฟรม]"
+            print(f"    {g['rain_1h']:6.1f} / {g['radar_1h']:6.1f} / "
+                  f"{g['radar_1h'] - g['rain_1h']:+6.1f} มม.  "
+                  f"{g['name'][:28]:<28} {g['dist_km']:5.1f} กม.{flag}")
 
     if a.dry_run:
         print("\n--dry-run: ไม่เขียนไฟล์")
