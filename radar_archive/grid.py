@@ -204,8 +204,31 @@ def station_meta(st: Station) -> dict:
         "unit": "dBZ",
         "transform": None,
         "zerovalue": NO_ECHO_DBZ,
-        "threshold": 11.98,        # 0.1 มม./ชม. ใน Rosenfeld tropical
-        "zr_a": 250.0, "zr_b": 1.2,
+        # ---- Z-R และ threshold ----
+        #
+        # Z = a R^b  ใช้ Marshall-Palmer (a=200, b=1.6)
+        #
+        # ทำไมเปลี่ยนจาก 250/1.2
+        #     ค่า 250/1.2 ถูกเรียกกันทั่วไปว่า "Rosenfeld tropical" แต่สืบกลับแล้วพบว่า
+        #     Rosenfeld, Wolff & Atlas (1993) J. Appl. Meteor. 32(1), 50-72 ระบุใน abstract ว่า
+        #     "The resultant Ze-R functions are not constrained to be power laws."
+        #     เลข 250/1.2 ปรากฏในเอกสารฝึกอบรม WSR-88D ของ NWS โดยไม่มีการอ้างอิงต้นทาง
+        #     -> อ้างในเปเปอร์ไม่ได้อย่างมั่นใจ
+        #     Marshall & Palmer (1948) J. Meteor. 5(4), 165-166 เป็นแหล่งที่ตรวจสอบได้จริง
+        #
+        # threshold ตั้งเป็น "ขอบแถบ palette" ไม่ใช่ค่าที่แปลงจากอัตราฝน
+        #
+        #     colorize() ปัดค่าลงเข้าแถบ palette ดังนั้นค่าที่ตัดได้จริงมีแค่ค่าที่เป็นขอบแถบ
+        #     ตั้ง threshold เป็นเลขอื่นก็ให้ผลเท่ากับขอบแถบที่ใกล้ที่สุดอยู่ดี
+        #     16.5 คือแถบแรกที่นับว่ามีฝน (10.4 กับ 11.3 เป็นแถบที่ต่ำกว่า)
+        #
+        #     ⚠️ เลขเดิม 11.98 ให้ผลเหมือนกันเป๊ะทุกหลัก เพราะตกในแถบ [11.3, 16.5) เดียวกัน
+        #        เปลี่ยนเป็น 16.5 เพื่อให้ "ค่าที่เขียน" ตรงกับ "ค่าที่ใช้จริง"
+        #        ไม่ได้ทำให้ตัวเลข verification เปลี่ยนแม้แต่หลักเดียว
+        #
+        #     16.5 dBZ = 0.392 มม./ชม. ภายใต้ Marshall-Palmer (เดิม 0.238 ภายใต้ 250/1.2)
+        "threshold": 16.5,
+        "zr_a": 200.0, "zr_b": 1.6,
         "kmperpixel": KM_PER_PIXEL,
         "timestep": 15.0,
     }
