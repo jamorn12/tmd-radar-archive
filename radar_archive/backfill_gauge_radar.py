@@ -33,7 +33,22 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parent
+def _find_repo_root(start: Path) -> Path:
+    """หา root ของ repo โดยเดินขึ้นไปจนเจอโฟลเดอร์แพ็กเกจ radar_archive
+
+    ทำไมไม่ใช้ parent ของไฟล์ตรง ๆ
+        สคริปต์นี้ถูกวางได้หลายที่ (root ของ repo หรือใน radar_archive/ ก็ได้)
+        ถ้าใช้ parent ตรง ๆ แล้วไฟล์ไปอยู่ใน radar_archive/ จะได้ sys.path ผิด
+        (import radar_archive ไม่เจอ) และ --data จะชี้ไป radar_archive/data ซึ่งไม่มีจริง
+        เดินขึ้นหาแพ็กเกจแบบนี้ ทำงานถูกไม่ว่าจะวางไว้ตรงไหนในโครงสร้าง repo
+    """
+    for d in [start, *start.parents]:
+        if (d / "radar_archive" / "__init__.py").exists():
+            return d
+    return start
+
+
+ROOT = _find_repo_root(Path(__file__).resolve().parent)
 sys.path.insert(0, str(ROOT))
 
 from radar_archive import gauges as G          # noqa: E402
