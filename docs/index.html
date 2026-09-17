@@ -1035,7 +1035,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     <div class="layer-row">
       <label class="custom-checkbox">
         <input type="checkbox" id="chkProv">
-        <span>ขอบเขตจังหวัด (240 กม.)</span>
+        <span>ฝนคาดการณ์ รายจังหวัด</span>
       </label>
       <label class="layer-label-check">
         <input type="checkbox" id="chkProvLabel"> ป้าย
@@ -1045,7 +1045,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     <div class="layer-row">
       <label class="custom-checkbox">
         <input type="checkbox" id="chkAmp">
-        <span>ขอบเขตอำเภอ (240 กม.)</span>
+        <span>ฝนคาดการณ์ รายอำเภอ</span>
       </label>
       <label class="layer-label-check">
         <input type="checkbox" id="chkAmpLabel"> ป้าย
@@ -1055,7 +1055,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     <div class="layer-row">
       <label class="custom-checkbox">
         <input type="checkbox" id="chkTam">
-        <span>ขอบเขตตำบล (240 กม.)</span>
+        <span>ฝนคาดการณ์ รายตำบล</span>
       </label>
     </div>
   </div>
@@ -1579,6 +1579,19 @@ map.createPane('maskPane');
 map.getPane('maskPane').style.zIndex = 410;
 map.getPane('maskPane').style.pointerEvents = 'none';
 
+/* ชั้นระบายสีเชิงพื้นที่ — ต้องอยู่ "ใต้" ภาพเรดาร์
+ *   tilePane    200  แผนที่ฐาน
+ *   arealPane   350  <- ระบายสีรายเขตตรงนี้
+ *   overlayPane 400  ภาพเรดาร์ (L.imageOverlay ไม่ระบุ pane จึงลงตรงนี้)
+ *   maskPane    410
+ * ลำดับนี้คือหัวใจของแบบที่เลือก: เรดาร์ไม่ถูกบังเลย ส่วนสีเขตโผล่ขึ้นมาตรงที่
+ * เรดาร์ไม่มี echo ซึ่งเป็นตรงที่ฝนกำลังจะมา ไม่ใช่ตรงที่ฝนตกแล้ว
+ * pointerEvents none เพื่อไม่ให้ไปแย่งคลิกจากหมุดสถานีและลูกศรลม
+ */
+map.createPane('arealPane');
+map.getPane('arealPane').style.zIndex = 350;
+map.getPane('arealPane').style.pointerEvents = 'none';
+
 const layerArrows = L.layerGroup().addTo(map);
 const layerRings = L.layerGroup().addTo(map);
 const layerTrajectory = L.layerGroup().addTo(map);
@@ -1589,6 +1602,10 @@ const layerProvinceLabels = L.layerGroup();
 const layerAmphoe = L.layerGroup();
 const layerAmphoeLabels = L.layerGroup();
 const layerTambon = L.layerGroup();
+
+// เก็บ instance ของ L.geoJSON ไว้ เพราะต้อง setStyle ใหม่ทุกครั้งที่ข้อมูลรอบใหม่มา
+// layerGroup ด้านบนเป็นแค่กล่องเปิด/ปิด ไม่มี setStyle ของตัวเอง
+const arealGeoLayers = { province: null, amphoe: null, tambon: null };
   let currentImpactedList = [];
   // --- Dynamic LOD: สลับ จังหวัด / อำเภอ / ตำบล อัตโนมัติตาม Zoom Level ---
   function handleMapZoomLOD() {
@@ -2492,6 +2509,59 @@ async function loadAreal(level) {
   }
 }
 
+/* ระบายสี polygon บนแผนที่ตามค่าเชิงพื้นที่ — "แบบ ก." ที่เลือกไว้
+ *
+ * เขตที่ไม่มีฝนเลยจะ **ไม่ระบายสี** เหลือแค่เส้นขอบจาง ๆ โดยตั้งใจ
+ * ถ้าระบายชั้นอ่อนสุดให้ด้วย ทั้งแผนที่จะกลายเป็นสีฟ้าอ่อนทั้งผืน
+ * แล้วคนอ่านจะเข้าใจว่า "ฝนตกทุกที่นิดหน่อย" ซึ่งตรงข้ามกับความจริง
+ *
+ * เส้นขอบยังคงสีเดิมของแต่ละระดับไว้ (ฟ้า/เหลือง/ฟ้า) เพื่อให้ยังแยกออกว่า
+ * กำลังเปิดชั้นไหนอยู่เมื่อเปิดซ้อนกันหลายระดับ
+ */
+const AREAL_BASE_STYLE = {
+  province: { color: "#38BDF8", weight: 1.5, opacity: 0.75, dashArray: null },
+  amphoe:   { color: "#FBBF24", weight: 1.2, opacity: 0.85, dashArray: "3, 3" },
+  tambon:   { color: "#38BDF8", weight: 0.9, opacity: 0.70, dashArray: null }
+};
+
+async function styleArealLayer(level) {
+  const geo = arealGeoLayers[level];
+  if (!geo) return;
+  const doc = await loadAreal(level);
+  const base = AREAL_BASE_STYLE[level];
+
+  if (doc === "error") {                    // ไม่มีไฟล์ -> กลับไปเป็นเส้นขอบเปล่าแบบเดิม
+    geo.setStyle({ ...base, fill: false });
+    return;
+  }
+  const ix = doc._ix;
+  const cov = {};
+  (doc.units || []).forEach(u => { cov[u[ix.name]] = u[ix.coverage]; });
+
+  geo.eachLayer(lyr => {
+    const nm = String((lyr.feature?.properties?.name) || "").trim();
+    const c = cov[nm];
+    if (!Number.isFinite(c) || c <= 0) {
+      lyr.setStyle({ ...base, fill: false });
+    } else {
+      lyr.setStyle({
+        ...base,
+        fill: true,
+        fillColor: areaCoverColor(c),   // ชุดสำหรับพื้นสว่าง — แผนที่ฐานสว่างกว่าแผง
+        // ยิ่งครอบคลุมมากยิ่งทึบ แต่ไม่เกิน 0.62 เพราะยังต้องเห็นภูมิประเทศข้างใต้
+        fillOpacity: 0.28 + 0.34 * Math.min(1, c)
+      });
+    }
+  });
+}
+
+// เรียกตอนข้อมูลรอบใหม่มา — ล้าง cache ก่อน ไม่งั้นจะระบายด้วยค่ารอบเก่าตลอดไป
+async function refreshArealLayers() {
+  window.__arealCache = {};
+  for (const lv of ["province", "amphoe", "tambon"]) await styleArealLayer(lv);
+  if (typeof updateImpactedProvinces === "function") updateImpactedProvinces();
+}
+
 // จับคู่ชื่อเขตกลับไปหา polygon เพื่อให้คลิกแล้วซูมและไฮไลต์ได้เหมือนเดิม
 function arealFeatureIndex(levelKey) {
   const feats = levelKey === "prov" ? loadedProvinceFeatures
@@ -3352,7 +3422,8 @@ async function loadBoundaries() {
       let dataProv = await resProv.json();
       dataProv = sanitizeGeoJson(dataProv);
       loadedProvinceFeatures = dataProv.features || [];
-      L.geoJSON(dataProv, {
+      arealGeoLayers.province = L.geoJSON(dataProv, {
+        pane: 'arealPane',
         style: { color: "#38BDF8", weight: 1.5, fill: false, opacity: 0.75 },
         onEachFeature: (feature, layer) => {
           const name = feature.properties.name || "";
@@ -3384,7 +3455,8 @@ async function loadBoundaries() {
       let dataAmp = await resAmp.json();
       dataAmp = sanitizeGeoJson(dataAmp);
       loadedAmphoeFeatures = dataAmp.features || [];
-      L.geoJSON(dataAmp, {
+      arealGeoLayers.amphoe = L.geoJSON(dataAmp, {
+        pane: 'arealPane',
         style: { color: "#FBBF24", weight: 1.2, dashArray: "3, 3", fill: false, opacity: 0.85 },
         onEachFeature: (feature, layer) => {
           const name = feature.properties.name || "";
@@ -3416,10 +3488,13 @@ async function loadBoundaries() {
       let dataTam = await resTam.json();
       dataTam = sanitizeGeoJson(dataTam);
       loadedTambonFeatures = dataTam.features || [];
-      L.geoJSON(dataTam, {
+      arealGeoLayers.tambon = L.geoJSON(dataTam, {
+        pane: 'arealPane',
         style: { color: "#38BDF8", weight: 0.9, fill: false, opacity: 0.7 }
       }).addTo(layerTambon);
       console.log("✅ โหลดขอบเขตตำบลสำเร็จ");
+      // geojson ครบแล้ว -> ระบายสีตามข้อมูลเชิงพื้นที่รอบล่าสุด
+      if (typeof refreshArealLayers === "function") refreshArealLayers();
     }
   } catch (err) {
     console.warn("⚠️ โหลดขอบเขตตำบลไม่สำเร็จ:", err);
@@ -3904,6 +3979,8 @@ setInterval(async () => {
       // ค่าฝนสถานีมาพร้อมรอบ pipeline เดียวกัน จึงรีเฟรชคู่กันไป
       if (await loadGaugeStations()) initTelemetryStationMarkers();
       await reloadRadarData(newManifest);
+      // ค่าเชิงพื้นที่มาพร้อมรอบ pipeline เดียวกับภาพเรดาร์ จึงรีเฟรชคู่กันไป
+      if (typeof refreshArealLayers === "function") await refreshArealLayers();
     } else {
       // ถ้าเวลายังเป็นรอบเดิม ให้อัปเดตเฉพาะข้อความอายุข้อมูล (เช่น "... นาทีที่แล้ว")
       manifest = newManifest;
