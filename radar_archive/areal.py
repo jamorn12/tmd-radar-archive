@@ -2,7 +2,7 @@
 
     python -m radar_archive.areal --station PHS --level amphoe
     python -m radar_archive.areal --station PHS --level tambon --kind observed --hours 3
-    python -m radar_archive.areal --station PHS --level both --csv
+    python -m radar_archive.areal --station PHS --level all --csv
     python -m radar_archive.areal --station PHS --rebuild-masks    # บังคับสร้าง mask ใหม่
 
 ทำไมต้องมีโมดูลนี้
@@ -56,13 +56,21 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 DOCS = ROOT / "docs"
 
-# ชื่อไฟล์ขอบเขตในโปรเจกต์นี้ — provinces_240km.geojson เก็บ "อำเภอ" ไม่ใช่จังหวัด
-# (ตรวจแล้ว: 244 feature ชื่อ กงไกรลาศ / ขาณุวรลักษบุรี / คลองขลุง ...)
-# ชื่อไฟล์ชวนเข้าใจผิด แต่ไม่เปลี่ยนเพราะหน้าเว็บอ้างชื่อนี้อยู่
+# ⚠️ กับดัก: มีไฟล์ชื่อ provinces_240km.geojson อยู่สองที่ และ **เนื้อหาคนละอย่าง**
+#     ./provinces_240km.geojson       244 feature = อำเภอ (ชื่อไฟล์ผิด)
+#     docs/provinces_240km.geojson     29 feature = จังหวัดจริง
+#     docs/districts_240km.geojson    244 feature = อำเภอ (ชุดเดียวกับ root เป๊ะ 244/244)
+#
+# โมดูลนี้อ่านจาก docs/ ทั้งหมดโดยตั้งใจ เพราะเป็นไฟล์ที่หน้าเว็บ fetch ไปวาดจริง
+# ถ้าอ่านคนละไฟล์กับหน้าเว็บ ขอบเขตที่คำนวณกับขอบเขตที่ผู้ใช้เห็นจะไม่ตรงกัน
+# ซึ่งเป็นความผิดพลาดที่มองไม่เห็นจนกว่าจะมีคนเอาไปเทียบกัน
 LEVELS = {
-    "amphoe": ("provinces_240km.geojson", "อำเภอ"),
+    "province": ("provinces_240km.geojson", "จังหวัด"),
+    "amphoe": ("districts_240km.geojson", "อำเภอ"),
     "tambon": ("subdistricts_240km.geojson", "ตำบล"),
 }
+# ชื่อจังหวัดในไฟล์เป็นภาษาอังกฤษ ปล่อยไว้อย่างนั้น
+# หน้าเว็บมี PROV_THAI_MAP แปลอยู่แล้ว ทำที่เดียวพอ อย่าทำสองที่ให้ไม่ตรงกัน
 
 WET_MM_PER_FRAME = 0.02      # มม. ต่อเฟรมที่ถือว่า "เซลล์นี้มีฝน" ตอนนับ coverage
 DEFAULT_ETA_COVER = 0.10     # ต้องครอบคลุมพื้นที่เท่านี้ถึงนับว่า "ฝนมาถึงเขตนี้"
@@ -134,7 +142,7 @@ def load_masks(data_root: Path, code: str, level: str, meta: dict, st,
         return {"names": list(z["names"]), "grid_n": int(z["grid_n"]),
                 "idx": [z[f"i{k}"] for k in range(len(z["names"]))]}
 
-    gj = ROOT / LEVELS[level][0]
+    gj = DOCS / LEVELS[level][0]      # docs/ ไม่ใช่ root — ดูหมายเหตุที่ LEVELS
     if not gj.exists():
         raise SystemExit(f"[!] ไม่พบไฟล์ขอบเขต {gj}")
     if verbose:
@@ -368,7 +376,8 @@ def main(argv=None) -> int:
     p.add_argument("--station", default="PHS")
     p.add_argument("--data", default=str(DATA))
     p.add_argument("--docs", default=str(DOCS))
-    p.add_argument("--level", choices=("amphoe", "tambon", "both"), default="both")
+    p.add_argument("--level", choices=("province", "amphoe", "tambon", "all"),
+                   default="all")
     p.add_argument("--kind", choices=("forecast", "observed"), default="forecast")
     p.add_argument("--max-lead", type=int, default=120, help="forecast: ถึงกี่นาที")
     p.add_argument("--hours", type=float, default=3.0, help="observed: ย้อนหลังกี่ชั่วโมง")
@@ -394,7 +403,7 @@ def main(argv=None) -> int:
     print(f"=== {st.code} · origin {epoch} "
           f"({datetime.fromtimestamp(epoch, timezone.utc):%Y-%m-%d %H:%M UTC}) ===")
 
-    for lv in (("amphoe", "tambon") if a.level == "both" else (a.level,)):
+    for lv in (("province", "amphoe", "tambon") if a.level == "all" else (a.level,)):
         run_level(lv, a, st, store, epoch)
     return 0
 
