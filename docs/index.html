@@ -673,6 +673,9 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #00ECEC 0%, #00A000 25%, #FFFF00 50%, #FF9000 75%, #FF0000 100%); }
 .lg-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 .lg-title { font-size: 9.5px; color: var(--text-dim); letter-spacing: .2px; margin-bottom: 2px; }
+/* แถบสีของชั้นเชิงพื้นที่ — ขั้นบันได ตรงกับ areaCoverColor() */
+.lg-bar-area { background: linear-gradient(90deg,
+    rgba(148,163,184,0.20) 0% 20%, #F9A8D4 20% 40%, #F472B6 40% 60%, #DB2777 60% 80%, #9D174D 80% 100%) !important; }
 .lg-sep { height: 1px; background: rgba(255,255,255,0.12); margin: 7px 0 6px; }
 /* จุดกลมมีขอบเข้ม ให้หน้าตาตรงกับหมุดจริงบนแผนที่เป๊ะ ๆ */
 /* จัดเป็นคอลัมน์ จุดกับตัวเลขจะได้อยู่ตรงกันเสมอ
@@ -723,9 +726,9 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .rain-scale-bar {
   height: 6px; border-radius: 3px; margin: 3px 0 2px 0;
   /* ขั้นบันได ไม่ไล่เนียน — ให้ตรงกับสีจุดสถานีและอ่านชั้นได้จากแถบ */
-  /* ชุด onDark — ต้องตรงกับ areaCoverColor(x, true) ที่ทาแถบสีซ้ายของแต่ละแถว */
+  /* ต้องตรงกับ areaCoverColor() ที่ทาแถบสีซ้ายของแต่ละแถวและ polygon บนแผนที่ */
   background: linear-gradient(90deg,
-    #0C4A6E 0% 20%, #0369A1 20% 40%, #0EA5E9 40% 60%, #38BDF8 60% 80%, #7DD3FC 80% 100%);
+    rgba(148,163,184,0.20) 0% 20%, #F9A8D4 20% 40%, #F472B6 40% 60%, #DB2777 60% 80%, #9D174D 80% 100%);
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 .rain-scale-labels {
@@ -1261,6 +1264,14 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     <span class="lg-dcol"><span class="lg-dot" style="background:#1E1B4B"></span><span class="lg-dlab">90+</span></span>
   </div>
   <div class="lg-dunit">ฝนสะสม (มม.)</div>
+
+  <!-- ชั้นที่สาม กินพื้นที่จอมากที่สุดแต่เดิมไม่มีคำอธิบายเลย
+       คนเห็น polygon สีม่วงแล้วเดาไม่ออกว่าหมายถึงอะไร -->
+  <div class="lg-sep"></div>
+  <div class="lg-title">พื้นที่ — จะมีฝนใน 2 ชม.</div>
+  <div class="lg-bar lg-bar-area"></div>
+  <div class="lg-labels"><span>ไม่ทา</span><span>25</span><span>50</span><span>80</span><span>100%</span></div>
+  <div class="lg-dunit">ต่ำกว่า 5% ไม่ระบายสี · เส้นขอบหนาขึ้นตามพื้นที่</div>
 </div>
 
 <!-- Timeline -->
@@ -1650,7 +1661,9 @@ function highlightBoundary(feature, cover) {
   // เส้นขอบแปลงใช้ ramp เดียวกับหมุดสถานีและแผงพื้นที่ (areaRainColor)
   // เดิมใช้ เขียว/ส้ม/แดง ซึ่งเป็นสีเดียวกับเรดาร์ เส้นขอบจึงกลืนกับกลุ่มฝนที่มันล้อมอยู่พอดี
   // ซึ่งเป็นกรณีที่แย่ที่สุด เพราะจุดประสงค์ของเส้นนี้คือชี้ว่า "ตรงนี้แหละ"
-  const color = areaCoverColor(cover);
+  // areaCoverColor() คืน null เมื่อ coverage < 5% — แต่เส้นไฮไลต์ต้องมองเห็นเสมอ
+  // เพราะผู้ใช้เพิ่งคลิกเลือกเขตนี้เอง จึงถอยไปใช้ขั้นอ่อนสุดของ ramp
+  const color = areaCoverColor(cover) || "#F9A8D4";
 
   const geoLayer = L.geoJSON(feature, {
     style: {
@@ -2080,26 +2093,34 @@ function rainLevel(mm) {
 //    highlightBoundary() อยู่ก่อนหน้านี้ในไฟล์และเรียกฟังก์ชันนี้
 //    function declaration ถูก hoist ขึ้นไปก็จริง แต่ const จะติด temporal dead zone
 //    ถ้าวันหนึ่งมีการเรียกตอนโหลดหน้าจะได้ ReferenceError ทันที — ตัดความเสี่ยงทิ้งไปเลย
-/* สัดส่วนพื้นที่ (0-1) -> สี  ตระกูลฟ้า-น้ำเงินเดียวกับที่อื่นทั้งระบบ
+/* สัดส่วนพื้นที่ (0-1) -> สี  — ตระกูล "ม่วง-ชมพู" ใช้เฉพาะชั้นเชิงพื้นที่
  *
- * มีสองชุดเพราะพื้นหลังคนละแบบ ไม่ใช่เพราะเป็นคนละข้อมูล
- *   onDark=false  วาดบนแผนที่ซึ่งพื้นหลังสว่าง -> ยิ่งมากยิ่งเข้ม (เข้ม = เด่น)
- *   onDark=true   วาดบนแผงสีเข้ม              -> ยิ่งมากยิ่งสว่าง (สว่าง = เด่น)
+ * ทำไมไม่ใช้ฟ้า-น้ำเงินเหมือนหมุดสถานี
+ *   บนแผนที่เดียวกันมีสามชั้นข้อมูลซ้อนกัน ถ้าชั้นพื้นที่ใช้ฟ้าเหมือนหมุด
+ *   จุดสีฟ้าอ่อน (ฝน 0.1-5 มม.) กับ polygon สีฟ้าอ่อน (พื้นที่โดนฝน <5%)
+ *   จะเป็นสีเดียวกันทั้งที่เป็นคนละปริมาณ คนละหน่วย — อ่านผิดได้ง่ายมาก
+ *   ตอนนี้จึงแยกขาดสามตระกูล: เรดาร์ เขียว-แดง · สถานี ฟ้า · พื้นที่ ม่วง
  *
- * ถ้าใช้ชุดเดียวทั้งสองที่ ชั้นบนสุด #1E1B4B จะจมหายไปกับพื้นแผงสีเข้ม
- * เห็นชัดตอนทดสอบ: แถบสีซ้ายของทุกแถวแทบมองไม่เห็นเลย
- * หลักคือ "ค่ามาก = เด่นกว่า" ซึ่งบนพื้นสว่างกับพื้นมืดให้ผลคนละทิศ
+ * ม่วงว่างจริง เพราะเราวัดแล้วว่าเรดาร์ TMD ไม่เคยแตะแถบ 50+ dBZ ที่เป็นสีม่วง
+ * (สูงสุดทั้งคลัง 936 เฟรม = 46.5 dBZ ดู gauge_radar_comparison)
+ *
+ * ใช้ชุดเดียวทั้งบนแผนที่และบนแผง ไม่แยกตามพื้นหลังเหมือนก่อน
+ * เพราะชุดสำหรับพื้นเข้มไม่ผ่านเกณฑ์ CVD สักแบบ (คู่ม่วง-มาเจนตาแยกกันไม่ออก)
+ * บนแผงที่พื้นเข้ม ชั้นเข้มสุดจะจางไปบ้าง แต่ทุกแถวมีตัวเลข % กำกับอยู่แล้ว
+ * ตรวจแล้ว: คู่ที่ใกล้กันที่สุดต่างกัน 17.5 (ตาปกติ) และ 13.9 (ตาบอดสี) ผ่านทั้งคู่
  */
-function areaCoverColor(frac, onDark) {
-  const ramp = onDark
-    ? ["#0C4A6E", "#0369A1", "#0EA5E9", "#38BDF8", "#7DD3FC"]
-    : ["#BAE6FD", "#38BDF8", "#0284C7", "#3730A3", "#1E1B4B"];
-  if (!Number.isFinite(frac)) return ramp[0];
-  if (frac >= 0.80) return ramp[4];
-  if (frac >= 0.50) return ramp[3];
-  if (frac >= 0.25) return ramp[2];
-  if (frac >= 0.05) return ramp[1];
-  return ramp[0];
+// ชั้นพื้นที่ใช้โทนกุหลาบ-บานเย็น 4 ขั้น จงใจไม่มีขั้นสีพาสเทลและไม่มีขั้นสีม่วง
+// สีม่วง/คราม ชนกับหมุดสถานี 35 มม. (#3730A3) — วัดแล้ว OKLab dE 0.8 ภายใต้ protan
+// คือแยกไม่ออกเลยสำหรับคนตาบอดสีแดง-เขียว ชุดนี้ดันคู่ที่แย่ที่สุดขึ้นเป็น 6.0
+// ต่ำกว่า 5% ไม่ระบายสี (คืน null) — "แทบไม่มีฝน" ไม่ควรถูกทาสีให้รกแผนที่
+function areaCoverColor(frac) {
+  const ramp = ["#F9A8D4", "#F472B6", "#DB2777", "#9D174D"];
+  if (!Number.isFinite(frac)) return null;
+  if (frac >= 0.80) return ramp[3];
+  if (frac >= 0.50) return ramp[2];
+  if (frac >= 0.25) return ramp[1];
+  if (frac >= 0.05) return ramp[0];
+  return null;
 }
 
 function areaRainColor(mm) {
@@ -2208,10 +2229,15 @@ function updateTelemetryStationValues() {
       // ขอบสีเข้มทึบ ไม่ใช่ขาวโปร่ง — นี่คือครึ่งหนึ่งของการแก้ปัญหาจุดกลืนกับเรดาร์
       // ต่อให้สีในจุดบังเอิญใกล้กับสีพื้นหลังตรงนั้น ขอบเข้มจะล็อกรูปทรงจุดไว้เสมอ
       // ของเดิมใช้ขาวโปร่ง 45-85% ซึ่งหายไปเลยเมื่อวางบนแถบเรดาร์สีอ่อน
+      // ขอบเข้มใช้ได้กับหมุดสีอ่อน (ฟ้า) แต่ใช้ไม่ได้กับหมุดสีเข้มสุดสองขั้น
+      // (35 มม. #3730A3 และ 90+ มม. #1E1B4B) เพราะเมื่อหมุดเข้มวางบน polygon
+      // พื้นที่ที่ทึบ ขอบเข้ม + จุดเข้ม + พื้นเข้ม = หายไปทั้งก้อน
+      // สองขั้นบนจึงสลับเป็นขอบสว่าง ตรรกะเดียวกับ casing ของลูกศรลม
+      const darkFill = (lvl.cls === "lv-heavy" || lvl.cls === "lv-vheavy");
       item.marker.setStyle({
         fillColor: lvl.color, fillOpacity: lvl.opacity,
         radius: lvl.big ? 5.5 : 3.5,
-        color: lvl.big ? "#0B1220" : "rgba(15,23,42,0.75)",
+        color: darkFill ? "#F8FAFC" : (lvl.big ? "#0B1220" : "rgba(15,23,42,0.75)"),
         weight: lvl.big ? 1.6 : 1
       });
     }
@@ -2541,15 +2567,20 @@ async function styleArealLayer(level) {
   geo.eachLayer(lyr => {
     const nm = String((lyr.feature?.properties?.name) || "").trim();
     const c = cov[nm];
-    if (!Number.isFinite(c) || c <= 0) {
-      lyr.setStyle({ ...base, fill: false });
+    const fc = areaCoverColor(c);        // null เมื่อ coverage < 5% หรือไม่มีค่า
+    if (!fc) {
+      lyr.setStyle({ ...base, fill: false, weight: base.weight });
     } else {
       lyr.setStyle({
         ...base,
         fill: true,
-        fillColor: areaCoverColor(c),   // ชุดสำหรับพื้นสว่าง — แผนที่ฐานสว่างกว่าแผง
+        fillColor: fc,
         // ยิ่งครอบคลุมมากยิ่งทึบ แต่ไม่เกิน 0.62 เพราะยังต้องเห็นภูมิประเทศข้างใต้
-        fillOpacity: 0.28 + 0.34 * Math.min(1, c)
+        fillOpacity: 0.28 + 0.34 * Math.min(1, c),
+        // เส้นขอบหนาขึ้นตามพื้นที่ครอบคลุม — เป็น secondary encoding ที่ไม่ใช่สี
+        // จำเป็นเพราะคู่สีที่แย่ที่สุดข้ามชั้น (พื้นที่ vs หมุดสถานี) ยังอยู่ที่ dE 6.0
+        // ซึ่งอ่านได้เฉพาะเมื่อมีช่องทางอื่นช่วย ไม่ใช่ด้วยสีอย่างเดียว
+        weight: base.weight + 1.1 * Math.min(1, c)
       });
     }
   });
@@ -2647,7 +2678,7 @@ async function updateImpactedProvinces() {
     const weak = item.reliable ? "" :
       `<span class="ic-weak" title="มีเพียง ${item.nCells} เซลล์เรดาร์ในเขตนี้ ค่าที่ได้มาจากตัวอย่างน้อยเกินไป">น้อย</span>`;
     html += `
-      <div class="ic-item" style="border-left-color:${areaCoverColor(item.coverage, true)};"
+      <div class="ic-item" style="border-left-color:${areaCoverColor(item.coverage) || "#475569"};"
            onclick="selectImpactedArea(${index})"
            title="ฝนสะสมพยากรณ์ ${item.meanMm} มม. · สูงสุดในเขต ${item.maxMm} มม. · ${item.nCells} เซลล์เรดาร์">
         <span class="ic-prov-name">${item.name}${weak}</span>
