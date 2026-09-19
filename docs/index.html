@@ -684,7 +684,24 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .legend {
   position: absolute; left: 12px; bottom: 65px; z-index: 998;
   padding: 8px 12px; border-radius: 12px; width: 210px;
+  transition: width .18s ease, padding .18s ease;
 }
+/* ย่อไว้ตั้งแต่เริ่ม — บนมือถือ legend เต็มชุดกินจอไปหนึ่งในสี่ ทั้งที่ผู้ใช้
+   ส่วนใหญ่เปิดมาเพื่อดูว่า "ตอนนี้ฝนตกตรงไหน" ไม่ใช่เพื่ออ่านคำอธิบายสี
+   เปิดแล้วระบบจำไว้ ครั้งต่อไปไม่ต้องกดซ้ำ */
+.legend.collapsed { width: auto; padding: 5px 10px; }
+.legend.collapsed .lg-body { display: none; }
+.lg-head {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  background: none; border: 0; padding: 0; margin: 0 0 6px;
+  color: var(--text-dim); font-family: inherit; font-size: 10.5px;
+  cursor: pointer; pointer-events: auto;
+}
+.legend.collapsed .lg-head { margin-bottom: 0; }
+.lg-head:hover { color: var(--text); }
+.lg-head-txt { flex: 1; text-align: left; letter-spacing: .2px; }
+.lg-chev { transition: transform .18s ease; }
+.legend.collapsed .lg-chev { transform: rotate(180deg); }
 .lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #00ECEC 0%, #00A000 25%, #FFFF00 50%, #FF9000 75%, #FF0000 100%); }
 .lg-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 .lg-title { font-size: 9.5px; color: var(--text-dim); letter-spacing: .2px; margin-bottom: 2px; }
@@ -866,8 +883,12 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    /* เดิม none ทั้งกล่อง ซึ่งทำให้ปุ่มย่อ/ขยายกดไม่ได้บนมือถือ
+       ให้เฉพาะปุ่มหัวรับ tap ส่วนเนื้อยังปล่อยให้ tap ทะลุไปที่แผนที่เหมือนเดิม */
     pointer-events: none;
   }
+  .legend .lg-head { pointer-events: auto; }
+  .legend.collapsed { width: auto; }
   .legend .lg-bar { height: 4px; margin: 2px 0; }
   .legend .lg-labels { font-size: 8px; }
 
@@ -1261,7 +1282,13 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 <!-- Legend -->
 <!-- สเกลสีเรดาร์ (ปรับตามเกณฑ์กรมอุตุนิยมวิทยา) -->
-<div class="legend glass">
+<div class="legend glass collapsed" id="legendBox">
+  <button type="button" class="lg-head" id="legendHead" aria-expanded="false" aria-controls="legendBody">
+    <i data-lucide="list" class="icon-xs"></i>
+    <span class="lg-head-txt">สัญลักษณ์</span>
+    <i data-lucide="chevron-up" class="icon-xs lg-chev"></i>
+  </button>
+  <div class="lg-body" id="legendBody">
   <div class="lg-title">เรดาร์ — ความเข้มการสะท้อน</div>
   <div class="lg-labels"><span>15</span><span>28</span><span>38</span><span>45</span><span>50+ dBZ</span></div>
   <div class="lg-bar"></div>
@@ -1288,6 +1315,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   <div class="lg-bar lg-bar-area"></div>
   <div class="lg-labels"><span>ไม่ทา</span><span>25</span><span>50</span><span>80</span><span>100%</span></div>
   <div class="lg-dunit">ต่ำกว่า 5% ไม่ระบายสี · เส้นขอบหนาขึ้นตามพื้นที่</div>
+  </div>
 </div>
 
 <!-- Timeline -->
@@ -1636,6 +1664,18 @@ const LAYER_PREF_KEY = "phs.layers.v1";
 const LAYER_CHK_IDS = ["chkArrows", "chkRings", "chkStations",
                        "chkProv", "chkProvLabel", "chkAmp", "chkAmpLabel", "chkTam"];
 
+function setLegendOpen(open) {
+  const box = document.getElementById("legendBox");
+  const head = document.getElementById("legendHead");
+  if (!box) return;
+  box.classList.toggle("collapsed", !open);
+  if (head) head.setAttribute("aria-expanded", open ? "true" : "false");
+}
+function legendIsOpen() {
+  const box = document.getElementById("legendBox");
+  return !!box && !box.classList.contains("collapsed");
+}
+
 function saveLayerPrefs() {
   try {
     const o = {};
@@ -1644,6 +1684,7 @@ function saveLayerPrefs() {
       if (el) o[id] = el.checked;
     });
     o.stationMode = stationDisplayMode;
+    o.legendOpen = legendIsOpen();
     localStorage.setItem(LAYER_PREF_KEY, JSON.stringify(o));
   } catch (e) { /* เขียนไม่ได้ก็ไม่เป็นไร ไม่ใช่ข้อมูลที่ขาดไม่ได้ */ }
 }
@@ -1664,7 +1705,13 @@ function restoreLayerPrefs() {
     document.querySelectorAll("#segStationMode button").forEach(b =>
       b.classList.toggle("on", b.dataset.mode === stationDisplayMode));
   }
+  // legend ย่อไว้เป็นค่าเริ่มต้น เปิดแล้วจำไว้ตลอด
+  if (typeof o.legendOpen === "boolean") setLegendOpen(o.legendOpen);
 }
+
+// ระยะห่างระหว่างลูกศรลม วัดเป็นพิกเซลบนจอ — renderCellVectors() คำนวณ
+// ความถี่ของกริดย้อนกลับจากค่านี้ ลูกศรจึงห่างเท่ากันเสมอไม่ว่าซูมเท่าไหร่
+const ARROW_GAP_PX = 64;
 
 // ลูกศรลมคุมด้วย checkbox ล้วน ๆ ปิดไว้เสมอจนกว่าผู้ใช้จะเปิดเอง
 //
@@ -3371,7 +3418,27 @@ function renderCellVectors(frameIdx) {
   const lon0 = radarStationLatLon[1];
   const style = THEME_STYLES[currentTheme];
   const halfKm = (manifest.grid[0] - 1) * manifest.kmperpixel / 2;
-  const stepPixels = 6;
+
+  // ความถี่ของลูกศรต้องคิดเป็น "ระยะบนจอ" ไม่ใช่ "ระยะบนแผนที่"
+  //
+  // ของเดิมตายตัวที่ทุก 6 เซลล์ = 12 กม. ซึ่งไม่ขึ้นกับซูมเลย พอซูม 8
+  // 12 กม. บนจอเหลือ ~20 px แต่ตัวลูกศรยาว 20–32 px — ลูกศรจึงยาวกว่าระยะห่าง
+  // ระหว่างลูกศร แล้วซ้อนทับกันจนเป็นก้อนดำ นี่คือสาเหตุที่ซูมออกแล้วดูใหญ่เทอะทะ
+  // ไม่ใช่เพราะลูกศรใหญ่เกินไป แต่เพราะมันแน่นเกินไป
+  //
+  // แก้ด้วยการคำนวณ step ย้อนกลับจากระยะห่างบนจอที่ต้องการ (ARROW_GAP_PX)
+  const zoom = map.getZoom();
+  const mPerPx = 156543.03392 * Math.cos(lat0 * Math.PI / 180) / Math.pow(2, zoom);
+  const cellM = manifest.kmperpixel * 1000;
+  const stepPixels = Math.max(2, Math.min(28, Math.round(ARROW_GAP_PX * mPerPx / cellM)));
+
+  // ย่อลูกศรลงเมื่อซูมออก — ระยะห่างแก้ไปแล้ว แต่ในภาพรวมทั้งโดม 480 กม.
+  // ลูกศรขนาดเท่าซูมใกล้ยังดูใหญ่เกินสัดส่วนของกลุ่มฝนที่มันอธิบายอยู่
+  const sizeFactor = zoom <= 8 ? 0.72 : zoom === 9 ? 0.82 : zoom === 10 ? 0.91 : 1;
+
+  // วาดเฉพาะที่อยู่ในกรอบจอ (เผื่อขอบไว้หน่อยกันกระพริบตอนเลื่อน)
+  // เดิมวาดทั้งกริด 241x241 ทุกครั้งแม้ผู้ใช้มองอยู่มุมเดียว
+  const view = map.getBounds().pad(0.25);
 
   for (let y = stepPixels; y < SCAN_RES - stepPixels; y += stepPixels) {
     for (let x = stepPixels; x < SCAN_RES - stepPixels; x += stepPixels) {
@@ -3392,7 +3459,8 @@ function renderCellVectors(frameIdx) {
         if (Math.hypot(e, n) <= 230) {
           const [lat, lon] = unproject(e, n, lat0, lon0);
           if (isNaN(lat) || isNaN(lon)) continue;
-          
+          if (!view.contains([lat, lon])) continue;   // นอกกรอบจอ ไม่ต้องสร้าง marker
+
           const localMotion = getLocalMotionAtPoint(e, n);
           if (!localMotion) continue;                 // ไม่รู้ motion -> ไม่วาดลูกศร ดีกว่าวาดมั่ว
           const spd = localMotion.spd;
@@ -3404,8 +3472,8 @@ function renderCellVectors(frameIdx) {
           const mixedFlow = localMotion.agreement < 0.75;
           const arrowOpacity = mixedFlow ? 0.75 : 1;
 
-          const arrowLength = Math.min(32, Math.max(20, 16 + spd * 0.4));
-          const arrowStroke = Math.min(3.0, Math.max(2.0, 1.8 + spd * 0.04));
+          const arrowLength = Math.min(32, Math.max(20, 16 + spd * 0.4)) * sizeFactor;
+          const arrowStroke = Math.min(3.0, Math.max(2.0, 1.8 + spd * 0.04)) * sizeFactor;
 
           // วาดสองชั้น: เส้นรองหนากว่าเป็นสีตรงข้าม แล้วเส้นจริงทับบน
           // ลูกศรจึงอ่านออกทั้งบนเรดาร์สีเขียว/เหลือง/ส้ม/แดง และบน basemap ทุกแบบ
@@ -3925,10 +3993,18 @@ document.getElementById("toggleLayerCard").addEventListener("click", () => {
   safeLucide();
 });
 
-document.getElementById("chkArrows").addEventListener("change", () => {
+document.getElementById("chkArrows").addEventListener("change", e => {
   syncArrowLayer();
+  // วาดใหม่ทันทีที่เปิด — ลูกศรที่ค้างอยู่ใน layer อาจถูกวาดไว้ตอนซูมอื่น
+  if (e.target.checked && manifest) renderCellVectors(currentIndex);
   saveLayerPrefs();
 });
+document.getElementById("legendHead")?.addEventListener("click", () => {
+  setLegendOpen(!legendIsOpen());
+  saveLayerPrefs();
+  safeLucide();
+});
+
 document.getElementById("chkRings").addEventListener("change", e => {
   if (e.target.checked) {
     map.addLayer(layerRings);
@@ -3942,6 +4018,17 @@ document.getElementById("chkRings").addEventListener("change", e => {
 
 // ระดับซูมเปลี่ยน -> คัดหมุดใหม่ (โหมด smart เท่านั้นที่ขึ้นกับซูม)
 map.on("zoomend", () => { if (stationDisplayMode === "smart") applyStationVisibility(); });
+
+// ความถี่และขนาดของลูกศรขึ้นกับซูม และวาดเฉพาะในกรอบจอ จึงต้องวาดใหม่เมื่อ
+// ซูมหรือเลื่อนแผนที่ ทำเฉพาะตอนชั้นนี้เปิดอยู่ ไม่งั้นเสียแรงเปล่าทุกครั้งที่เลื่อน
+let arrowRedrawTimer = null;
+function scheduleArrowRedraw() {
+  if (!map.hasLayer(layerArrows)) return;
+  clearTimeout(arrowRedrawTimer);
+  arrowRedrawTimer = setTimeout(() => renderCellVectors(currentIndex), 120);
+}
+map.on("zoomend", scheduleArrowRedraw);
+map.on("moveend", scheduleArrowRedraw);
 
 // segmented control แทน <select> — ฟังที่ตัว container ตัวเดียว ไม่ต้องผูกทีละปุ่ม
 document.getElementById("segStationMode").addEventListener("click", e => {
