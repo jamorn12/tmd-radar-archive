@@ -731,8 +731,12 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .lg-dunit { font-size: 9px; color: var(--text-dim); text-align: right; opacity: .8; margin-top: 1px; }
 
 /* Impacted Areas UI Card (Spatial Impact Analysis) - Positioned above Legend without overlap */
+/* ระยะจากขอบล่างคำนวณจากความสูงจริงของ legend ไม่ได้ตั้งเป็นตัวเลขตายตัว
+   เพราะ legend ย่อ/ขยายได้แล้ว ความสูงจึงเปลี่ยนระหว่างใช้งาน
+   ตัวเลขใน fallback ไว้ใช้ตอน JS ยังไม่ทันคำนวณรอบแรกเท่านั้น */
 .impact-card {
-  position: absolute; left: 12px; bottom: 135px; z-index: 998;
+  position: absolute; left: 12px; z-index: 998;
+  bottom: var(--impact-bottom, 149px);
   width: 250px; padding: 10px 12px; border-radius: 14px;
   transition: all 0.25s cubic-bezier(0.3, 0.8, 0.3, 1);
 }
@@ -903,7 +907,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     display: block !important;
     position: absolute;
     left: 8px;
-    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    bottom: var(--impact-bottom, calc(142px + env(safe-area-inset-bottom, 0px)));
     z-index: 998;
     max-width: calc(100% - 16px);
   }
@@ -1672,6 +1676,23 @@ const LAYER_PREF_KEY = "phs.layers.v1";
 const LAYER_CHK_IDS = ["chkArrows", "chkRings", "chkStations",
                        "chkProv", "chkProvLabel", "chkAmp", "chkAmpLabel", "chkTam"];
 
+// ระยะห่างระหว่างการ์ด "พื้นที่เสี่ยงฝน" กับ legend
+// ของเดิมตั้ง bottom ของทั้งสองกล่องเป็นตัวเลขตายตัว (65 / 135 px) ซึ่งคำนวณไว้
+// ตอน legend ยังสูงคงที่ พอ legend ย่อ/ขยายได้ ตัวเลขนั้นก็ผิดทันที — ตอนย่อ
+// legend สูง 74 px กินถึง 139 px แต่การ์ดเริ่มที่ 135 px คือเกยกัน 4 px
+// จึงเปลี่ยนมาวัดจากตำแหน่งจริงของ legend แล้วเว้นช่องคงที่
+const CARD_GAP_PX = 10;
+
+function syncCardStack() {
+  const lg = document.getElementById("legendBox");
+  const card = document.getElementById("impactCard");
+  if (!lg || !card) return;
+  const r = lg.getBoundingClientRect();
+  if (!r.height) return;                       // ยังไม่ถูก layout เช่นตอนซ่อนอยู่
+  const bottom = Math.round(window.innerHeight - r.top + CARD_GAP_PX);
+  document.documentElement.style.setProperty("--impact-bottom", bottom + "px");
+}
+
 function setLegendOpen(open) {
   const box = document.getElementById("legendBox");
   const head = document.getElementById("legendHead");
@@ -1715,6 +1736,7 @@ function restoreLayerPrefs() {
   }
   // legend ย่อไว้เป็นค่าเริ่มต้น เปิดแล้วจำไว้ตลอด
   if (typeof o.legendOpen === "boolean") setLegendOpen(o.legendOpen);
+  syncCardStack();
 }
 
 // ระยะห่างระหว่างลูกศรลม วัดเป็นพิกเซลบนจอ — renderCellVectors() คำนวณ
@@ -4011,7 +4033,17 @@ document.getElementById("legendHead")?.addEventListener("click", () => {
   setLegendOpen(!legendIsOpen());
   saveLayerPrefs();
   safeLucide();
+  syncCardStack();
 });
+
+// ResizeObserver จับได้ทุกกรณีที่ความสูง legend เปลี่ยน — ย่อ/ขยาย, หมุนจอ,
+// ข้อความในบรรทัดตัดคำใหม่เมื่อความกว้างเปลี่ยน — ครอบคลุมกว่าการดักเป็นเหตุการณ์ ๆ
+if (window.ResizeObserver) {
+  const lgEl = document.getElementById("legendBox");
+  if (lgEl) new ResizeObserver(syncCardStack).observe(lgEl);
+}
+window.addEventListener("resize", syncCardStack);
+window.addEventListener("orientationchange", () => setTimeout(syncCardStack, 250));
 
 document.getElementById("chkRings").addEventListener("change", e => {
   if (e.target.checked) {
