@@ -350,22 +350,37 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 
 /* Custom Live Radar Pulsing Pin */
 .custom-pin-wrap { background: transparent !important; border: none !important; }
+/* หมุดจุดตรวจวัดของผู้ใช้
+   เดิมเป็นวงกลมฟ้า #38BDF8 ซึ่งเป็น "รหัสสีเดียวกันเป๊ะ" กับหมุดสถานีขั้น 5 มม.
+   คือหมุดที่ผู้ใช้ปักเองกับถังวัดฝนเป็นสีเดียวกันจริง ๆ แยกไม่ออก
+   เปลี่ยนเป็นแดง แต่แดงล้วนจะไปชนแถบเรดาร์ฝนหนักมากแทน ซึ่งแย่กว่า เพราะคนมัก
+   ปักหมุดตรงที่ฝนกำลังตกพอดี หมุดนี้จึงต้องชนะด้วย "รูปทรง" ไม่ใช่สี:
+   กากบาทเป้า 4 แฉก + casing ขาวรอบทุกเส้น — ต่อให้พื้นหลังแดงเท่ากัน
+   เส้นขาวก็ยังตัดออกมา และวงกลมกับกากบาทแยกออกทันทีแม้สีเดียวกัน */
 .modern-pin {
-  position: relative; width: 24px; height: 24px;
+  position: relative; width: 34px; height: 34px;
   display: flex; align-items: center; justify-content: center; cursor: grab;
 }
+/* แขนกากบาท — วางใต้ .pin-core ซึ่งทึบและบังตรงกลางไว้ จึงเหลือเห็นเป็น 4 แฉก */
+.pin-cross { position: absolute; width: 34px; height: 34px; z-index: 1; }
+.pin-cross::before, .pin-cross::after {
+  content: ""; position: absolute; background: #DC2626;
+  box-shadow: 0 0 0 1.6px #FFFFFF; border-radius: 1px;
+}
+.pin-cross::before { left: 50%; top: 2px; width: 2.4px; height: 30px; transform: translateX(-50%); }
+.pin-cross::after  { top: 50%; left: 2px; height: 2.4px; width: 30px; transform: translateY(-50%); }
 .pin-core {
-  width: 13px; height: 13px; background: #38BDF8;
-  border: 2px solid #FFFFFF; border-radius: 50%;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8), 0 2px 6px rgba(0,0,0,0.5);
+  width: 13px; height: 13px; background: #DC2626;
+  border: 2.5px solid #FFFFFF; border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(127, 29, 29, 0.9), 0 2px 6px rgba(0,0,0,0.55);
   z-index: 2; transition: transform 0.2s;
 }
 .modern-pin:hover .pin-core { transform: scale(1.15); }
 .pin-pulse {
-  position: absolute; width: 30px; height: 30px;
-  background: rgba(56, 189, 248, 0.4); border-radius: 50%;
+  position: absolute; width: 34px; height: 34px;
+  background: rgba(220, 38, 38, 0.38); border-radius: 50%;
   animation: pin-radar-wave 2s infinite cubic-bezier(0.1, 0.7, 0.3, 1);
-  z-index: 1;
+  z-index: 0;
 }
 @keyframes pin-radar-wave {
   0% { transform: scale(0.4); opacity: 1; }
@@ -1004,9 +1019,10 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   <div class="layer-content" id="layerBody" style="display: none;">
     <div class="layer-row">
       <label class="custom-checkbox">
-        <input type="checkbox" id="chkArrows" checked>
+        <input type="checkbox" id="chkArrows">
         <span style="font-weight: 600; color: var(--accent);">เวกเตอร์เซลล์ฝน (Cell Motion)</span>
       </label>
+      <div class="station-note" id="arrowHint">จะแสดงเองเมื่อเลื่อนไปเฟรมพยากรณ์</div>
     </div>
     <div class="layer-row">
       <label class="custom-checkbox">
@@ -1020,7 +1036,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     <div class="station-block" id="stationBlock">
       <div class="station-head">
         <label class="custom-checkbox">
-          <input type="checkbox" id="chkStations" checked>
+          <input type="checkbox" id="chkStations">
           <span style="font-weight: 600; color: #34D399;">จุดสถานีวัดน้ำฝน</span>
         </label>
         <span class="station-count" id="stationCount">—</span>
@@ -1603,11 +1619,77 @@ map.createPane('arealPane');
 map.getPane('arealPane').style.zIndex = 350;
 map.getPane('arealPane').style.pointerEvents = 'none';
 
-const layerArrows = L.layerGroup().addTo(map);
+// ไม่ .addTo(map) ตั้งแต่แรก — ลูกศรลมบังเรดาร์ และ motion field เป็นของฝั่งพยากรณ์
+// ไม่ใช่ของภาพตรวจวัด syncArrowLayer() เป็นตัวตัดสินว่าจะโผล่เมื่อไหร่
+const layerArrows = L.layerGroup();
 const layerRings = L.layerGroup().addTo(map);
 const layerTrajectory = L.layerGroup().addTo(map);
-const layerStations = L.layerGroup().addTo(map);
+// เช่นเดียวกับลูกศร — 1,328 หมุดเปิดมาพร้อมกันตั้งแต่แรกคือบังเรดาร์
+// buildStations() จะเรียก applyStationVisibility() และเพิ่มเข้า map ต่อเมื่อ chkStations ติ๊ก
+const layerStations = L.layerGroup();
 const layerHighlight = L.layerGroup().addTo(map);
+
+// ลูกศรลมแสดงเมื่อไหร่
+//   checkbox ติ๊ก  = บังคับแสดงทุกเฟรม (ผู้ใช้สั่งเอง)
+//   checkbox ปิด   = โผล่เองเฉพาะตอนดูเฟรมพยากรณ์ แล้วหายไปเมื่อกลับมาเฟรมตรวจวัด
+// ทำแบบนี้เพราะถ้าให้ checkbox คุมล้วน ๆ ผู้ใช้ติ๊กเปิดแล้วลูกศรไม่ขึ้น (เพราะยังอยู่
+// เฟรมตรวจวัด) จะดูเหมือนระบบพัง
+function currentFrameIsForecast() {
+  // ใช้ manifest ตรง ๆ ไม่ใช่ window.manifest — ตัวแปรที่ประกาศด้วย let ที่ top level
+  // ของ classic script ไม่ได้ไปอยู่บน window ถ้าเขียน window.manifest จะได้ undefined เสมอ
+  if (!manifest || !manifest.frames) return false;
+  const f = manifest.frames[currentIndex];
+  return !!f && (f.kind === "nowcast" || f.offset_min > 0);
+}
+
+// จำไว้ว่าผู้ใช้เปิด/ปิดชั้นไหน จะได้ไม่ต้องติ๊กใหม่ทุกครั้งที่เปิดเว็บ
+// ห่อ try/catch ทุกจุด — โหมดไม่ระบุตัวตนหรือเบราว์เซอร์ที่ปิด site data จะ throw
+// และต้องยังใช้งานได้ปกติถ้าอ่านไม่ได้ ค่าเริ่มต้นใน HTML เป็นตัวตัดสินแทน
+const LAYER_PREF_KEY = "phs.layers.v1";
+const LAYER_CHK_IDS = ["chkArrows", "chkRings", "chkStations",
+                       "chkProv", "chkProvLabel", "chkAmp", "chkAmpLabel", "chkTam"];
+
+function saveLayerPrefs() {
+  try {
+    const o = {};
+    LAYER_CHK_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) o[id] = el.checked;
+    });
+    o.stationMode = stationDisplayMode;
+    localStorage.setItem(LAYER_PREF_KEY, JSON.stringify(o));
+  } catch (e) { /* เขียนไม่ได้ก็ไม่เป็นไร ไม่ใช่ข้อมูลที่ขาดไม่ได้ */ }
+}
+
+// คืนค่าเฉพาะ checkbox — ยังไม่แตะ map layer เพราะตอนเรียกนี้ layer อาจยังไม่ถูกสร้าง
+// ตัว init ที่ตามมาจะอ่าน .checked แล้วจัดการ map เอง
+function restoreLayerPrefs() {
+  let o = null;
+  try { o = JSON.parse(localStorage.getItem(LAYER_PREF_KEY) || "null"); } catch (e) { return; }
+  if (!o || typeof o !== "object") return;
+  LAYER_CHK_IDS.forEach(id => {
+    if (typeof o[id] !== "boolean") return;
+    const el = document.getElementById(id);
+    if (el) el.checked = o[id];
+  });
+  if (["smart", "rain", "all"].includes(o.stationMode)) {
+    stationDisplayMode = o.stationMode;
+    document.querySelectorAll("#segStationMode button").forEach(b =>
+      b.classList.toggle("on", b.dataset.mode === stationDisplayMode));
+  }
+}
+
+function syncArrowLayer() {
+  const forced = document.getElementById("chkArrows")?.checked;
+  const want = forced || currentFrameIsForecast();
+  if (want && !map.hasLayer(layerArrows)) map.addLayer(layerArrows);
+  else if (!want && map.hasLayer(layerArrows)) map.removeLayer(layerArrows);
+
+  const hint = document.getElementById("arrowHint");
+  if (hint) hint.textContent = forced
+    ? "แสดงทุกเฟรม"
+    : (want ? "กำลังแสดง — อยู่ในเฟรมพยากรณ์" : "จะแสดงเองเมื่อเลื่อนไปเฟรมพยากรณ์");
+}
 const layerProvince = L.layerGroup();
 const layerProvinceLabels = L.layerGroup();
 const layerAmphoe = L.layerGroup();
@@ -1752,12 +1834,13 @@ const liveGpsIcon = L.divIcon({
   html: `
     <div class="modern-pin">
       <div class="pin-pulse"></div>
+      <div class="pin-cross"></div>
       <div class="pin-core"></div>
     </div>
   `,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-  popupAnchor: [0, -14]
+  iconSize: [34, 34],
+  iconAnchor: [17, 17],
+  popupAnchor: [0, -18]
 });
 
 // SCAN_RES ต้องเท่ากับ manifest.grid[0] เป๊ะ
@@ -2009,23 +2092,55 @@ let stationDisplayMode = "smart";
 // ผลที่ซูมเริ่มต้น (8) จะเห็นเฉพาะสถานีที่ฝนตกจริง ซึ่งปกติหลักสิบ ไม่ใช่พัน
 // เกณฑ์ 10/12 มาจากการนับจริง: ถ้าปล่อยสถานีที่แห้งเข้ามาตั้งแต่ซูม 9 จะมีหมุด
 // กว่าพันจุดในกรอบเดียว ซึ่งยังอ่านไม่รู้เรื่อง
-function stationVisible(item, zoom) {
+function stationRain(item) {
+  return item.rain1h !== null ? item.rain1h
+       : item.rain24h !== null ? item.rain24h : null;
+}
+
+// บันได LOD เรียงตามความแรงของฝน ให้ตรงกับบันไดสีใน legend พอดี 5 ขั้น
+// คนเห็นสีไหนใน legend ก็รู้ทันทีว่าต้องซูมแค่ไหนถึงจะเห็นหมุดสีนั้น
+const STATION_LOD = [
+  { zoom: 0,  test: r => r !== null && r > 35,             label: "ฝนหนัก (>35 มม.)" },
+  { zoom: 9,  test: r => r !== null && r > 10,             label: "ฝนปานกลาง (10–35)" },
+  { zoom: 10, test: r => r !== null && r > 0.1,            label: "ฝนเล็กน้อย (0.1–10)" },
+  { zoom: 11, test: r => r !== null,                       label: "ที่ยืนยันว่าแห้ง" },
+  { zoom: 12, test: () => true,                            label: "ที่ไม่มีข้อมูล" }
+];
+
+// พื้นขั้นต่ำ — ฝน 1 ชม. เกิน 35 มม. ไม่ได้มีทุกวัน ส่วนใหญ่ของเวลาจะไม่มีสถานีไหน
+// เข้าเกณฑ์ขั้นบนสุดเลย ถ้าปล่อยตามบันไดตรง ๆ ผู้ใช้เพิ่งติ๊กเปิดชั้นนี้แล้วเจอแผนที่
+// ว่างเปล่า จะสรุปว่าระบบพังแล้วไม่กลับมาเปิดอีก
+// บันได LOD จึงเป็นตัวบอกว่า "จะเพิ่มอะไร" ไม่ใช่ตัวบอกว่า "จะไม่แสดงอะไรเลย"
+const STATION_FLOOR = 25;
+
+function stationVisible(item, zoom, floorSet) {
   if (stationDisplayMode === "all") return true;
-  const r = item.rain1h !== null ? item.rain1h
-          : item.rain24h !== null ? item.rain24h : null;
-  const hasRain = r !== null && r > 0.1;
-  if (stationDisplayMode === "rain") return hasRain;
-  if (hasRain) return true;
-  if (r !== null) return zoom >= 10;
-  return zoom >= 12;
+  const r = stationRain(item);
+  if (stationDisplayMode === "rain") return r !== null && r > 0.1;
+  if (floorSet && floorSet.has(item)) return true;
+  for (const tier of STATION_LOD) {
+    if (zoom >= tier.zoom && tier.test(r)) return true;
+  }
+  return false;
+}
+
+// สถานีที่ฝนมากที่สุด N แห่ง — คำนวณใหม่ทุกครั้งเพราะค่าฝนเปลี่ยนทุกรอบข้อมูล
+function stationFloorSet() {
+  if (stationDisplayMode !== "smart") return null;
+  const wet = stationMarkerInstances
+    .filter(it => { const r = stationRain(it); return r !== null && r > 0.1; })
+    .sort((a, b) => stationRain(b) - stationRain(a))
+    .slice(0, STATION_FLOOR);
+  return new Set(wet);
 }
 
 function applyStationVisibility() {
   if (!stationMarkerInstances.length) return;
   const zoom = map.getZoom();
+  const floorSet = stationFloorSet();
   let shown = 0;
   stationMarkerInstances.forEach(item => {
-    const vis = stationVisible(item, zoom);
+    const vis = stationVisible(item, zoom, floorSet);
     if (vis) { shown++; if (!layerStations.hasLayer(item.marker)) layerStations.addLayer(item.marker); }
     else if (layerStations.hasLayer(item.marker)) layerStations.removeLayer(item.marker);
   });
@@ -2037,12 +2152,21 @@ function applyStationVisibility() {
 
   const note = document.getElementById("stationModeNote");
   if (note) {
-    note.textContent =
-      stationDisplayMode === "all"  ? `แสดงทุกสถานีในคลัง ${total} จุด`
-    : stationDisplayMode === "rain" ? `เฉพาะสถานีที่รายงานว่ามีฝน · ซ่อน ${total - shown} จุดที่แห้งหรือไม่มีข้อมูล`
-    : zoom >= 12 ? `ซูม ${zoom} — แสดงครบทุกสถานีในกรอบ`
-    : zoom >= 10 ? `ซูม ${zoom} — แสดงสถานีที่มีฝน และที่ยืนยันว่าแห้ง · ซูมเข้าอีกเพื่อเห็นสถานีที่ไม่มีข้อมูล`
-    :              `ซูม ${zoom} — แสดงเฉพาะสถานีที่มีฝน · ซูมเข้าเพื่อเห็นเพิ่ม`;
+    if (stationDisplayMode === "all") {
+      note.textContent = `แสดงทุกสถานีในคลัง ${total} จุด`;
+    } else if (stationDisplayMode === "rain") {
+      note.textContent = `เฉพาะสถานีที่รายงานว่ามีฝน · ซ่อน ${total - shown} จุดที่แห้งหรือไม่มีข้อมูล`;
+    } else {
+      // บอกสองอย่างเสมอ: ขั้นนี้แสดงอะไรอยู่ · ซูมเข้าอีกขั้นจะได้อะไรเพิ่ม
+      const next = STATION_LOD.find(t => t.zoom > zoom);
+      const heavy = stationMarkerInstances.filter(it => {
+        const r = stationRain(it); return r !== null && r > 35;
+      }).length;
+      const add = next ? ` · ซูมเข้าอีกเพื่อเห็น${next.label}` : " · แสดงครบทุกสถานีในกรอบแล้ว";
+      note.textContent = (zoom < 9 && heavy === 0)
+        ? `ซูม ${zoom} — รอบนี้ไม่มีสถานีฝนหนัก แสดง ${shown} จุดที่ฝนมากสุดแทน${add}`
+        : `ซูม ${zoom} — แสดง ${shown} จุด${add}`;
+    }
   }
   return shown;
 }
@@ -2163,7 +2287,11 @@ function initTelemetryStationMarkers() {
 
   const shown = applyStationVisibility();
   console.log(`[gauges] วางหมุดสถานี ${stationMarkerInstances.length} จุด · แสดง ${shown} จุด`);
-  if (!document.getElementById("chkStations").checked) map.removeLayer(layerStations);
+  // layerStations ไม่ได้อยู่บน map ตั้งแต่แรกแล้ว จึงต้อง "เพิ่มเมื่อติ๊ก" ไม่ใช่ "ลบเมื่อไม่ติ๊ก"
+  const stOn = document.getElementById("chkStations").checked;
+  if (stOn && !map.hasLayer(layerStations)) map.addLayer(layerStations);
+  else if (!stOn && map.hasLayer(layerStations)) map.removeLayer(layerStations);
+  document.getElementById("stationBlock").classList.toggle("off", !stOn);
 }
 
 function updateTelemetryStationValues() {
@@ -3530,9 +3658,37 @@ async function loadBoundaries() {
   } catch (err) {
     console.warn("⚠️ โหลดขอบเขตตำบลไม่สำเร็จ:", err);
   }
+  // ขอบเขตเพิ่งสร้างเสร็จ ถึงจะเอา checkbox ที่คืนค่ามาสั่ง map ได้จริง
+  // ถ้าทำก่อนหน้านี้ layerProvince/Amphoe/Tambon ยังว่าง จะติ๊กไว้แต่ไม่มีอะไรขึ้น
+  applyLayerPrefsToMap();
+}
+
+// ซิงก์สถานะ map ให้ตรงกับ checkbox ทั้งชุด
+// จำเป็นเพราะชั้นขอบเขตถูก "เพิ่มตอน change" อย่างเดียว ไม่เคยเพิ่มตอนโหลด
+// พอมีการคืนค่าจาก localStorage จึงต้องมีตัวที่สั่ง map ตามค่าที่คืนมา
+function applyLayerPrefsToMap() {
+  const pairs = [
+    ["chkProv", layerProvince], ["chkProvLabel", layerProvinceLabels],
+    ["chkAmp", layerAmphoe], ["chkAmpLabel", layerAmphoeLabels],
+    ["chkTam", layerTambon], ["chkRings", layerRings]
+  ];
+  pairs.forEach(([id, lyr]) => {
+    const on = !!document.getElementById(id)?.checked;
+    if (on && !map.hasLayer(lyr)) map.addLayer(lyr);
+    else if (!on && map.hasLayer(lyr)) map.removeLayer(lyr);
+  });
+  if (radarMaskPolygon) {
+    const on = !!document.getElementById("chkRings")?.checked;
+    if (on && !map.hasLayer(radarMaskPolygon)) map.addLayer(radarMaskPolygon);
+    else if (!on && map.hasLayer(radarMaskPolygon)) map.removeLayer(radarMaskPolygon);
+  }
+  syncArrowLayer();
 }
 
 async function initRadar() {
+  // คืนค่า checkbox ที่ผู้ใช้เคยตั้งไว้ก่อนอย่างอื่นทั้งหมด — โค้ดที่ตามมาอ่าน .checked
+  // ไปตัดสินว่าจะใส่ layer ไหนเข้า map ถ้าคืนค่าทีหลังจะขัดกันเอง
+  restoreLayerPrefs();
   try {
     const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
     if (!res.ok) throw new Error("ไม่สามารถโหลด manifest ได้");
@@ -3608,6 +3764,7 @@ function showFrame(index) {
 
   document.getElementById("tlSlider").value = currentIndex;
   renderCellVectors(currentIndex);
+  syncArrowLayer();          // เฟรมเปลี่ยน -> ตัดสินใหม่ว่าลูกศรควรแสดงไหม
   updateTelemetryStationValues();
 
   const f = manifest.frames[currentIndex];
@@ -3776,8 +3933,9 @@ document.getElementById("toggleLayerCard").addEventListener("click", () => {
   safeLucide();
 });
 
-document.getElementById("chkArrows").addEventListener("change", e => {
-  if (e.target.checked) map.addLayer(layerArrows); else map.removeLayer(layerArrows);
+document.getElementById("chkArrows").addEventListener("change", () => {
+  syncArrowLayer();
+  saveLayerPrefs();
 });
 document.getElementById("chkRings").addEventListener("change", e => {
   if (e.target.checked) {
@@ -3787,6 +3945,7 @@ document.getElementById("chkRings").addEventListener("change", e => {
     map.removeLayer(layerRings);
     if (radarMaskPolygon && map.hasLayer(radarMaskPolygon)) map.removeLayer(radarMaskPolygon);
   }
+  saveLayerPrefs();
 });
 
 // ระดับซูมเปลี่ยน -> คัดหมุดใหม่ (โหมด smart เท่านั้นที่ขึ้นกับซูม)
@@ -3799,28 +3958,36 @@ document.getElementById("segStationMode").addEventListener("click", e => {
   document.querySelectorAll("#segStationMode button").forEach(b => b.classList.toggle("on", b === btn));
   stationDisplayMode = btn.dataset.mode;
   applyStationVisibility();
+  saveLayerPrefs();
 });
 
 document.getElementById("chkStations").addEventListener("change", e => {
-  if (e.target.checked) map.addLayer(layerStations); else map.removeLayer(layerStations);
+  if (e.target.checked) { map.addLayer(layerStations); applyStationVisibility(); }
+  else map.removeLayer(layerStations);
   // ปิดชั้นสถานีแล้ว ปุ่มเลือกโหมดยังกดได้อยู่ = สับสน หรี่ลงและล็อกไว้จนกว่าจะเปิดใหม่
   document.getElementById("stationBlock").classList.toggle("off", !e.target.checked);
+  saveLayerPrefs();
 });
 
 document.getElementById("chkProv").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerProvince); else map.removeLayer(layerProvince);
+  saveLayerPrefs();
 });
 document.getElementById("chkProvLabel").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerProvinceLabels); else map.removeLayer(layerProvinceLabels);
+  saveLayerPrefs();
 });
 document.getElementById("chkAmp").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerAmphoe); else map.removeLayer(layerAmphoe);
+  saveLayerPrefs();
 });
 document.getElementById("chkAmpLabel").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerAmphoeLabels); else map.removeLayer(layerAmphoeLabels);
+  saveLayerPrefs();
 });
 document.getElementById("chkTam").addEventListener("change", e => {
   if (e.target.checked) map.addLayer(layerTambon); else map.removeLayer(layerTambon);
+  saveLayerPrefs();
 });
 
 document.querySelectorAll(".map-btn").forEach(btn => {
