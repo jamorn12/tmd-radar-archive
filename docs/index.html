@@ -1022,7 +1022,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
         <input type="checkbox" id="chkArrows">
         <span style="font-weight: 600; color: var(--accent);">เวกเตอร์เซลล์ฝน (Cell Motion)</span>
       </label>
-      <div class="station-note" id="arrowHint">จะแสดงเองเมื่อเลื่อนไปเฟรมพยากรณ์</div>
+      <div class="station-note" id="arrowHint">ปิดอยู่ — เปิดเมื่อต้องการดูทิศทางการเคลื่อนตัว</div>
     </div>
     <div class="layer-row">
       <label class="custom-checkbox">
@@ -1629,19 +1629,6 @@ const layerTrajectory = L.layerGroup().addTo(map);
 const layerStations = L.layerGroup();
 const layerHighlight = L.layerGroup().addTo(map);
 
-// ลูกศรลมแสดงเมื่อไหร่
-//   checkbox ติ๊ก  = บังคับแสดงทุกเฟรม (ผู้ใช้สั่งเอง)
-//   checkbox ปิด   = โผล่เองเฉพาะตอนดูเฟรมพยากรณ์ แล้วหายไปเมื่อกลับมาเฟรมตรวจวัด
-// ทำแบบนี้เพราะถ้าให้ checkbox คุมล้วน ๆ ผู้ใช้ติ๊กเปิดแล้วลูกศรไม่ขึ้น (เพราะยังอยู่
-// เฟรมตรวจวัด) จะดูเหมือนระบบพัง
-function currentFrameIsForecast() {
-  // ใช้ manifest ตรง ๆ ไม่ใช่ window.manifest — ตัวแปรที่ประกาศด้วย let ที่ top level
-  // ของ classic script ไม่ได้ไปอยู่บน window ถ้าเขียน window.manifest จะได้ undefined เสมอ
-  if (!manifest || !manifest.frames) return false;
-  const f = manifest.frames[currentIndex];
-  return !!f && (f.kind === "nowcast" || f.offset_min > 0);
-}
-
 // จำไว้ว่าผู้ใช้เปิด/ปิดชั้นไหน จะได้ไม่ต้องติ๊กใหม่ทุกครั้งที่เปิดเว็บ
 // ห่อ try/catch ทุกจุด — โหมดไม่ระบุตัวตนหรือเบราว์เซอร์ที่ปิด site data จะ throw
 // และต้องยังใช้งานได้ปกติถ้าอ่านไม่ได้ ค่าเริ่มต้นใน HTML เป็นตัวตัดสินแทน
@@ -1662,7 +1649,7 @@ function saveLayerPrefs() {
 }
 
 // คืนค่าเฉพาะ checkbox — ยังไม่แตะ map layer เพราะตอนเรียกนี้ layer อาจยังไม่ถูกสร้าง
-// ตัว init ที่ตามมาจะอ่าน .checked แล้วจัดการ map เอง
+// applyLayerPrefsToMap() ที่เรียกทีหลังจะอ่าน .checked แล้วจัดการ map เอง
 function restoreLayerPrefs() {
   let o = null;
   try { o = JSON.parse(localStorage.getItem(LAYER_PREF_KEY) || "null"); } catch (e) { return; }
@@ -1679,16 +1666,21 @@ function restoreLayerPrefs() {
   }
 }
 
+// ลูกศรลมคุมด้วย checkbox ล้วน ๆ ปิดไว้เสมอจนกว่าผู้ใช้จะเปิดเอง
+//
+// เคยลองให้โผล่เองตอนเข้าเฟรมพยากรณ์ แต่พอเห็นของจริงแล้วใช้ไม่ได้ — เฟรมพยากรณ์
+// คือเฟรมที่ลูกศรหนาแน่นที่สุดพอดี (เซลล์ฝนเยอะ = เวกเตอร์เยอะ) ลูกศรจึงไปทับ
+// กลุ่มฝนจนอ่านค่าการสะท้อนข้างใต้ไม่ได้ ซึ่งเป็นข้อมูลหลักของหน้านี้
+// "โผล่เอง" จึงไปบังของสำคัญในจังหวะที่สำคัญที่สุดพอดี
 function syncArrowLayer() {
-  const forced = document.getElementById("chkArrows")?.checked;
-  const want = forced || currentFrameIsForecast();
-  if (want && !map.hasLayer(layerArrows)) map.addLayer(layerArrows);
-  else if (!want && map.hasLayer(layerArrows)) map.removeLayer(layerArrows);
+  const on = !!document.getElementById("chkArrows")?.checked;
+  if (on && !map.hasLayer(layerArrows)) map.addLayer(layerArrows);
+  else if (!on && map.hasLayer(layerArrows)) map.removeLayer(layerArrows);
 
   const hint = document.getElementById("arrowHint");
-  if (hint) hint.textContent = forced
-    ? "แสดงทุกเฟรม"
-    : (want ? "กำลังแสดง — อยู่ในเฟรมพยากรณ์" : "จะแสดงเองเมื่อเลื่อนไปเฟรมพยากรณ์");
+  if (hint) hint.textContent = on
+    ? "กำลังแสดง — ลูกศรจะทับกลุ่มฝนบางส่วน"
+    : "ปิดอยู่ — เปิดเมื่อต้องการดูทิศทางการเคลื่อนตัว";
 }
 const layerProvince = L.layerGroup();
 const layerProvinceLabels = L.layerGroup();
