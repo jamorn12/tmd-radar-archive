@@ -689,19 +689,27 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 /* ย่อไว้ตั้งแต่เริ่ม — บนมือถือ legend เต็มชุดกินจอไปหนึ่งในสี่ ทั้งที่ผู้ใช้
    ส่วนใหญ่เปิดมาเพื่อดูว่า "ตอนนี้ฝนตกตรงไหน" ไม่ใช่เพื่ออ่านคำอธิบายสี
    เปิดแล้วระบบจำไว้ ครั้งต่อไปไม่ต้องกดซ้ำ */
-.legend.collapsed { width: auto; padding: 5px 10px; }
 .legend.collapsed .lg-body { display: none; }
+/* ใช้สไตล์เดียวกับ .lg-title เป๊ะ ๆ เพื่อให้หัวข้อแถวนี้ดูเหมือนหัวข้ออีกสองบล็อก
+   ปุ่มย่อ/ขยายจึงไม่กินบรรทัดเพิ่ม แค่เติมลูกศรไว้ท้ายหัวข้อที่มีอยู่แล้ว */
 .lg-head {
   display: flex; align-items: center; gap: 6px; width: 100%;
-  background: none; border: 0; padding: 0; margin: 0 0 6px;
-  color: var(--text-dim); font-family: inherit; font-size: 10.5px;
+  background: none; border: 0; padding: 0; margin: 0 0 2px;
+  color: var(--text-dim); font-family: inherit;
+  font-size: 9.5px; letter-spacing: .2px;
   cursor: pointer; pointer-events: auto;
 }
-.legend.collapsed .lg-head { margin-bottom: 0; }
 .lg-head:hover { color: var(--text); }
 .lg-head-txt { flex: 1; text-align: left; letter-spacing: .2px; }
-.lg-chev { transition: transform .18s ease; }
-.legend.collapsed .lg-chev { transform: rotate(180deg); }
+/* ลูกศรวาดด้วย CSS ล้วน ไม่พึ่ง lucide — ถ้า CDN ไอคอนโหลดไม่ขึ้น ปุ่มนี้จะไม่มี
+   อะไรบอกว่ากดได้เลย ซึ่งแย่กว่าไอคอนหน้าตาไม่เป๊ะ */
+.lg-chev {
+  flex: 0 0 auto; width: 7px; height: 7px; margin-right: 1px;
+  border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
+  transform: rotate(45deg) translate(-1px, -1px);
+  transition: transform .18s ease;
+}
+.legend:not(.collapsed) .lg-chev { transform: rotate(225deg) translate(-1px, -1px); }
 .lg-bar { height: 7px; border-radius: 4px; margin: 3px 0; background: linear-gradient(90deg, #00ECEC 0%, #00A000 25%, #FFFF00 50%, #FF9000 75%, #FF0000 100%); }
 .lg-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
 .lg-title { font-size: 9.5px; color: var(--text-dim); letter-spacing: .2px; margin-bottom: 2px; }
@@ -887,8 +895,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
        ให้เฉพาะปุ่มหัวรับ tap ส่วนเนื้อยังปล่อยให้ tap ทะลุไปที่แผนที่เหมือนเดิม */
     pointer-events: none;
   }
-  .legend .lg-head { pointer-events: auto; }
-  .legend.collapsed { width: auto; }
+  .legend .lg-head { pointer-events: auto; padding: 3px 0; }
   .legend .lg-bar { height: 4px; margin: 2px 0; }
   .legend .lg-labels { font-size: 8px; }
 
@@ -1283,16 +1290,17 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 <!-- Legend -->
 <!-- สเกลสีเรดาร์ (ปรับตามเกณฑ์กรมอุตุนิยมวิทยา) -->
 <div class="legend glass collapsed" id="legendBox">
+  <!-- แถบเรดาร์อยู่นอก .lg-body จึงเห็นเสมอ — หน้าจอหลักของระบบคือค่าการสะท้อน
+       คำอธิบายของสิ่งที่กำลังเต็มจออยู่ไม่ควรต้องกดเปิดก่อนถึงจะอ่านได้
+       อีกสองชั้น (สถานี · พื้นที่) เป็นชั้นเสริมที่ผู้ใช้เปิดเองอยู่แล้ว จึงพับไว้ -->
   <button type="button" class="lg-head" id="legendHead" aria-expanded="false" aria-controls="legendBody">
-    <i data-lucide="list" class="icon-xs"></i>
-    <span class="lg-head-txt">สัญลักษณ์</span>
-    <i data-lucide="chevron-up" class="icon-xs lg-chev"></i>
+    <span class="lg-head-txt">เรดาร์ — ความเข้มการสะท้อน</span>
+    <span class="lg-chev" aria-hidden="true"></span>
   </button>
-  <div class="lg-body" id="legendBody">
-  <div class="lg-title">เรดาร์ — ความเข้มการสะท้อน</div>
   <div class="lg-labels"><span>15</span><span>28</span><span>38</span><span>45</span><span>50+ dBZ</span></div>
   <div class="lg-bar"></div>
   <div class="lg-labels"><span>เบา</span><span>ปานกลาง</span><span>หนัก</span><span>หนักมาก</span></div>
+  <div class="lg-body" id="legendBody">
 
   <!-- สองแถบแยกกันชัดเจน เพราะเป็นคนละปริมาณ คนละหน่วย คนละแหล่งข้อมูล
        เรดาร์ = dBZ จากภาพ TMD · สถานี = มม. สะสมจากเครื่องวัดจริงบนพื้น
