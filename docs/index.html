@@ -130,12 +130,17 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .leaflet-tooltip.ring-label::before { display: none !important; }
 
 /* Tooltips */
+/* ชื่อเขตใช้ตัวอักษรสีเดียวกับหมึกขอบเขต (--boundary-ink) พร้อม halo สีตรงข้าม
+   halo ทำให้อ่านออกทั้งบนภูเขาขาว บนเรดาร์สีสด และบนภาพดาวเทียม
+   เดิมชื่ออำเภอเป็นสีเหลือง #FBBF24 ซึ่งเป็นสีเดียวกับแถบเรดาร์ฝนหนัก */
 .leaflet-tooltip.map-label {
   background: transparent; border: none; box-shadow: none;
-  color: #fff; font-weight: 600; text-shadow: 0 1px 3px #000, 0 0 6px #000;
+  color: var(--boundary-ink, #1A1A1A); font-weight: 600;
+  text-shadow: var(--boundary-halo,
+    -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff, 1px 1px 2px #fff);
   padding: 0; font-size: 11.5px;
 }
-.leaflet-tooltip.map-label.amphoe { font-size: 10px; color: #FBBF24; text-shadow: 0 1px 3px #000; }
+.leaflet-tooltip.map-label.amphoe { font-size: 10px; opacity: .82; }
 
 /* Leaflet Custom Modern Popup */
 /* --- Modern Glassmorphic Popup --- */
@@ -1578,22 +1583,22 @@ const THEME_STYLES = {
     arrowColor: "#FFFFFF", arrowCasing: "#0B1220",
     ringColor: "#38BDF8", ringOpacity: 0.45, radarCenter: "#38BDF8", impactLine: "#F59E0B",
     ringLabelBg: "rgba(15, 23, 42, 0.85)", ringLabelBorder: "rgba(56, 189, 248, 0.45)", ringLabelColor: "#38BDF8",
-    maskColor: "#050B14", maskOpacity: 0.75
+    boundaryInk: "#CBD5E1", labelHalo: "#0B1220", maskColor: "#050B14", maskOpacity: 0.75
   },
   hillshade: {
     arrowColor: "#0B1220", arrowCasing: "#FFFFFF", ringColor: "#0369A1", ringOpacity: 0.75, radarCenter: "#0284C7", impactLine: "#D97706",
     ringLabelBg: "rgba(255, 255, 255, 0.88)", ringLabelBorder: "rgba(2, 132, 199, 0.45)", ringLabelColor: "#0369A1",
-    maskColor: "#0F172A", maskOpacity: 0.68
+    boundaryInk: "#1A1A1A", labelHalo: "#FFFFFF", maskColor: "#0F172A", maskOpacity: 0.68
   },
   satellite: {
     arrowColor: "#FFFFFF", arrowCasing: "#0B1220", ringColor: "#FDE047", ringOpacity: 0.85, radarCenter: "#FDE047", impactLine: "#F59E0B",
     ringLabelBg: "rgba(0, 0, 0, 0.85)", ringLabelBorder: "rgba(250, 204, 21, 0.6)", ringLabelColor: "#FDE047",
-    maskColor: "#020617", maskOpacity: 0.80
+    boundaryInk: "#F8FAFC", labelHalo: "#0B1220", maskColor: "#020617", maskOpacity: 0.80
   },
   light: {
     arrowColor: "#0B1220", arrowCasing: "#FFFFFF", ringColor: "#334155", ringOpacity: 0.55, radarCenter: "#0F172A", impactLine: "#DC2626",
     ringLabelBg: "rgba(255, 255, 255, 0.92)", ringLabelBorder: "rgba(51, 65, 85, 0.35)", ringLabelColor: "#1E293B",
-    maskColor: "#1E293B", maskOpacity: 0.55
+    boundaryInk: "#1F2937", labelHalo: "#FFFFFF", maskColor: "#1E293B", maskOpacity: 0.55
   }
 };
 
@@ -2741,17 +2746,47 @@ async function loadAreal(level) {
  * เส้นขอบยังคงสีเดิมของแต่ละระดับไว้ (ฟ้า/เหลือง/ฟ้า) เพื่อให้ยังแยกออกว่า
  * กำลังเปิดชั้นไหนอยู่เมื่อเปิดซ้อนกันหลายระดับ
  */
-const AREAL_BASE_STYLE = {
-  province: { color: "#38BDF8", weight: 1.5, opacity: 0.75, dashArray: null },
-  amphoe:   { color: "#FBBF24", weight: 1.2, opacity: 0.85, dashArray: "3, 3" },
-  tambon:   { color: "#38BDF8", weight: 0.9, opacity: 0.70, dashArray: null }
+// เส้นขอบเขตการปกครอง — หมึกกลางสีเดียวทั้งสามระดับ ลำดับชั้นสื่อด้วย
+// "ความหนาเส้นและลายเส้น" ไม่ใช่สี ซึ่งเป็นธรรมเนียมแผนที่มาตรฐาน
+//
+// ของเดิมใช้ฟ้า #38BDF8 กับเหลือง #FBBF24 ซึ่งมีปัญหาสองชั้น:
+//   1. สีสดแข่งความสนใจกับเรดาร์ ทั้งที่ขอบเขตเป็นข้อมูลอ้างอิง ไม่ใช่ข้อมูลหลัก
+//   2. ฟ้า/เหลืองสื่อว่า "จังหวัดกับอำเภอเป็นคนละชนิดข้อมูล" ทั้งที่เป็นชนิดเดียวกัน
+//      ต่างกันแค่ระดับ — ซึ่งเป็นความสัมพันธ์เชิงลำดับ ควรสื่อด้วยน้ำหนัก
+const BOUNDARY_SHAPE = {
+  province: { weight: 1.8, opacity: 0.85, dashArray: null },
+  amphoe:   { weight: 1.0, opacity: 0.58, dashArray: "5, 3" },
+  tambon:   { weight: 0.6, opacity: 0.38, dashArray: "2, 2" }
 };
+
+// หมึกสว่างบน basemap มืด หมึกเข้มบน basemap สว่าง — ดำล้วนบน basemap มืด
+// คือมองไม่เห็นเลย จึงต้องสลับตามธีม ไม่ใช่ตั้งดำตายตัว
+function boundaryStyle(level, extra) {
+  const shape = BOUNDARY_SHAPE[level] || BOUNDARY_SHAPE.tambon;
+  const ink = (THEME_STYLES[currentTheme] || THEME_STYLES.hillshade).boundaryInk;
+  return Object.assign({ color: ink }, shape, extra || {});
+}
+
+// ทาหมึกใหม่ให้เส้นขอบเขตทั้งสองชุด — ชุดเส้นเปล่า (layerProvince/Amphoe/Tambon)
+// และชุดที่ระบายสีตามฝนเชิงพื้นที่ (arealGeoLayers) ซึ่งใช้ base style เดียวกัน
+function restyleBoundaries() {
+  [["province", layerProvince], ["amphoe", layerAmphoe], ["tambon", layerTambon]]
+    .forEach(([lv, grp]) => {
+      if (!grp) return;
+      grp.eachLayer(l => { if (l.setStyle) l.setStyle(boundaryStyle(lv, { fill: false })); });
+    });
+  // ชั้นเชิงพื้นที่ต้องผ่าน styleArealLayer() เพราะสีพื้นขึ้นกับ coverage ของแต่ละเขต
+  // ถ้าทาทับด้วย base style ตรง ๆ สีที่ระบายไว้จะหายหมด
+  if (typeof styleArealLayer === "function") {
+    ["province", "amphoe", "tambon"].forEach(lv => styleArealLayer(lv));
+  }
+}
 
 async function styleArealLayer(level) {
   const geo = arealGeoLayers[level];
   if (!geo) return;
   const doc = await loadAreal(level);
-  const base = AREAL_BASE_STYLE[level];
+  const base = boundaryStyle(level);
 
   if (doc === "error") {                    // ไม่มีไฟล์ -> กลับไปเป็นเส้นขอบเปล่าแบบเดิม
     geo.setStyle({ ...base, fill: false });
@@ -3632,10 +3667,18 @@ function updateThemeVisuals(themeKey) {
   root.style.setProperty("--ring-label-bg", style.ringLabelBg);
   root.style.setProperty("--ring-label-border", style.ringLabelBorder);
   root.style.setProperty("--ring-label-color", style.ringLabelColor);
+  root.style.setProperty("--boundary-ink", style.boundaryInk);
+  const h = style.labelHalo;
+  root.style.setProperty("--boundary-halo",
+    `-1px -1px 2px ${h}, 1px -1px 2px ${h}, -1px 1px 2px ${h}, 1px 1px 2px ${h}, 0 0 4px ${h}`);
 
   rangeCircleElements.forEach(c => c.setStyle({ color: style.ringColor, opacity: style.ringOpacity }));
   if (stationMarkerElement) stationMarkerElement.setStyle({ color: style.radarCenter });
   if (radarMaskPolygon) radarMaskPolygon.setStyle({ fillColor: style.maskColor, fillOpacity: style.maskOpacity });
+
+  // หมึกขอบเขตสลับตามความสว่างของ basemap จึงต้องทาใหม่ทุกครั้งที่เปลี่ยนธีม
+  // ไม่งั้นสลับไป basemap มืดแล้วเส้นดำจะหายไปทั้งหมดโดยไม่มีอะไรบอก
+  restyleBoundaries();
 
   renderCellVectors(currentIndex);
   updateTelemetryStationValues();
@@ -3673,7 +3716,7 @@ async function loadBoundaries() {
       loadedProvinceFeatures = dataProv.features || [];
       arealGeoLayers.province = L.geoJSON(dataProv, {
         pane: 'arealPane',
-        style: { color: "#38BDF8", weight: 1.5, fill: false, opacity: 0.75 },
+        style: boundaryStyle("province", { fill: false }),
         onEachFeature: (feature, layer) => {
           const name = feature.properties.name || "";
           if (name && typeof layer.getBounds === "function") {
@@ -3706,7 +3749,7 @@ async function loadBoundaries() {
       loadedAmphoeFeatures = dataAmp.features || [];
       arealGeoLayers.amphoe = L.geoJSON(dataAmp, {
         pane: 'arealPane',
-        style: { color: "#FBBF24", weight: 1.2, dashArray: "3, 3", fill: false, opacity: 0.85 },
+        style: boundaryStyle("amphoe", { fill: false }),
         onEachFeature: (feature, layer) => {
           const name = feature.properties.name || "";
           if (name && typeof layer.getBounds === "function") {
@@ -3739,7 +3782,7 @@ async function loadBoundaries() {
       loadedTambonFeatures = dataTam.features || [];
       arealGeoLayers.tambon = L.geoJSON(dataTam, {
         pane: 'arealPane',
-        style: { color: "#38BDF8", weight: 0.9, fill: false, opacity: 0.7 }
+        style: boundaryStyle("tambon", { fill: false })
       }).addTo(layerTambon);
       console.log("✅ โหลดขอบเขตตำบลสำเร็จ");
       // geojson ครบแล้ว -> ระบายสีตามข้อมูลเชิงพื้นที่รอบล่าสุด
