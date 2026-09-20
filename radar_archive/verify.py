@@ -682,6 +682,213 @@ def cmd_eta(a, st) -> int:
     return 0
 
 
+
+# ---------------------------------------------------------------- 4c. FSS
+
+# ขนาดกรอบเพื่อนบ้าน (กม.) ที่จะรายงาน — เริ่มจาก 1 เซลล์ (คือ CSI แบบจุดต่อจุด)
+# แล้วไล่ขึ้นเป็นเท่าตัว จนถึงระดับที่ใหญ่กว่าอำเภอทั่วไป
+NEIGH_KM = (2, 10, 20, 40, 80, 160)
+
+
+def _window_sums(field: np.ndarray, half: int) -> np.ndarray:
+    """ผลรวมในกรอบสี่เหลี่ยม (2*half+1) รอบทุกจุด — ใช้ integral image
+
+    ทำแบบนี้เพราะ FSS ต้องคำนวณหลายขนาดกรอบ ถ้าวนลูปตรง ๆ จะเป็น O(n²·w²)
+    integral image ทำให้เป็น O(n²) ต่อขนาดกรอบ ไม่ขึ้นกับความกว้างกรอบเลย
+
+    ขอบภาพใช้การตัดกรอบให้สั้นลง ไม่ใช่เติมศูนย์ — เพราะการเติมศูนย์จะทำให้
+    จุดริมขอบดูเหมือน "ไม่มีฝน" ทั้งที่จริงแค่ไม่มีข้อมูล
+    """
+    n, m = field.shape
+    ii = np.zeros((n + 1, m + 1), dtype=np.float64)
+    ii[1:, 1:] = np.cumsum(np.cumsum(field.astype(np.float64), axis=0), axis=1)
+    r0 = np.clip(np.arange(n) - half, 0, n)[:, None]
+    r1 = np.clip(np.arange(n) + half + 1, 0, n)[:, None]
+    c0 = np.clip(np.arange(m) - half, 0, m)[None, :]
+    c1 = np.clip(np.arange(m) + half + 1, 0, m)[None, :]
+    return ii[r1, c1] - ii[r0, c1] - ii[r1, c0] + ii[r0, c0]
+
+
+def fractions(binary: np.ndarray, valid: np.ndarray, half: int) -> np.ndarray:
+    """สัดส่วนของจุดที่ "มีฝน" ภายในกรอบเพื่อนบ้าน นับเฉพาะจุดที่ใช้ได้จริง
+
+    ตัวหารเป็นจำนวนจุดที่ใช้ได้ในกรอบ ไม่ใช่ขนาดกรอบเต็ม — สำคัญมากตรงขอบโดม
+    ถ้าหารด้วยขนาดกรอบเต็ม จุดริมโดมจะถูกเจือจางด้วยพื้นที่นอกโดมที่ไม่มีข้อมูล
+    แล้ว FSS จะดูดีเกินจริงเพราะทั้งสองฝั่งถูกเจือจางเหมือนกัน
+    """
+    num = _window_sums(np.where(valid, binary, 0.0), half)
+    den = _window_sums(valid.astype(np.float64), half)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return np.where(den > 0, num / np.maximum(den, 1e-9), np.nan)
+
+
+def cmd_fss(a, st) -> int:
+    """Fractions Skill Score — ให้คะแนนแบบยอมให้คลาดตำแหน่งได้ตามขนาดกรอบ
+
+    ทำไมต้องมีคู่กับ CSI: CSI ลงโทษสองเด้ง (double penalty) ถ้าพยากรณ์ว่าฝนตก
+    ห่างจากจุดจริงไป 1 เซลล์ จะถูกนับเป็นทั้ง false alarm และ miss ทั้งที่
+    ในทางปฏิบัติถือว่าพยากรณ์ได้ดีมาก FSS แก้ข้อนี้ด้วยการเทียบ "สัดส่วนพื้นที่
+    ที่มีฝนในย่านนั้น" แทนการเทียบทีละจุด
+
+    FSS = 1 − Σ(Pf−Po)² / Σ(Pf²+Po²)   เมื่อ P คือสัดส่วนในกรอบ
+      1.0 = ตรงกันสมบูรณ์ · 0.0 = ไม่มีพื้นที่ทับกันเลย
+
+    เกณฑ์ที่ใช้กันคือ FSS ≥ 0.5 + f0/2 เมื่อ f0 คือสัดส่วนฝนทั้งโดม
+    ขนาดกรอบที่เล็กที่สุดที่ผ่านเกณฑ์นี้เรียกว่า skilful scale
+    """
+    root = store_dir(Path(a.data), st.code)
+    if not root.exists():
+        print(f"[!] ไม่มีคลังที่ {root}", file=sys.stderr)
+        return 1
+    origins = sorted(int(d.name) for d in root.iterdir()
+                     if d.is_dir() and d.name.isdigit())
+    have = set(origins)
+    if not origins:
+        return 1
+    print(f"คลังมี {len(origins)} origin")
+
+    leads_want = [L for L in ETA_LEADS if L <= a.max_lead]
+
+    # --complete ใช้ตรรกะเดียวกับ cmd_score ด้วยเหตุผลเดียวกันเป๊ะ
+    # ถ้าไม่คัด แถว lead 15 จะมี n=1,328 แต่ lead 120 เหลือ n=898 เพราะระบบผลิต
+    # แค่ 4 lead จนถึง 9 ก.ย. แล้วค่อยขยายเป็น 8 lead — ตาราง FSS จะปน
+    # "ช่วงเวลาต่างกัน" เข้ากับ "lead ต่างกัน" แยกไม่ออกว่า FSS ที่ลดลงมาจากอะไร
+    def _pair_ok(o, L):
+        v = o + L * 60
+        return ((root / str(o) / f"f+{L:03d}.png").exists()
+                and v in have and (root / str(v) / "obs.png").exists())
+
+    if a.complete:
+        keep = [o for o in origins if all(_pair_ok(o, L) for L in leads_want)]
+        if not keep:
+            print(f"[!] ไม่มี origin ไหนครบทุก lead ถึง {a.max_lead} นาที", file=sys.stderr)
+            return 1
+        dropped = len(origins) - len(keep)
+        origins = keep
+        t0 = datetime.fromtimestamp(origins[0], timezone.utc)
+        t1 = datetime.fromtimestamp(origins[-1], timezone.utc)
+        print(f"โหมด --complete: เหลือ {len(origins)} origin (ตัดออก {dropped}) "
+              f"ที่มีครบทุก lead ถึง {a.max_lead} นาที")
+        print(f"  ช่วงเวลาที่เหลือ {t0:%d %b %H:%MZ} - {t1:%d %b %H:%MZ}")
+
+    # สะสมเศษกับส่วนแยกกันทุกคู่ แล้วค่อยหารตอนท้าย
+    # ห้ามเฉลี่ย FSS ของแต่ละรอบ เพราะรอบที่ฝนน้อยจะมีน้ำหนักเท่ารอบที่ฝนเต็มจอ
+    acc = {}          # (lead, km) -> [Σ(Pf−Po)², Σ(Pf²+Po²), n_pair]
+    base = {}         # lead -> [Σ จุดที่มีฝนจริง, Σ จุดทั้งหมด]
+    cache, n_pair, n_skip = {}, 0, 0
+
+    def obs_of(ep, lv_rgb, lv_dbz):
+        if ep not in cache:
+            p = root / str(ep) / "obs.png"
+            if not p.exists():
+                return None
+            cache[ep] = decode_dbz(p.read_bytes(), lv_rgb, lv_dbz)
+            if len(cache) > 300:
+                cache.pop(next(iter(cache)))
+        return cache[ep]
+
+    inside_cache = {}
+
+    for oi, o in enumerate(origins, 1):
+        d = root / str(o)
+        mp = d / "meta.json"
+        if not mp.exists():
+            continue
+        meta = json.loads(mp.read_text(encoding="utf-8"))
+        lv_rgb, lv_dbz = meta.get("levels_rgb"), meta.get("levels_dbz")
+        if not lv_rgb:
+            continue
+        thr = a.threshold if a.threshold is not None else float(
+            meta.get("wet_threshold_effective_dbz", meta.get("wet_threshold_dbz", 11.98)))
+        kpp = float(meta.get("kmperpixel", 2.0))
+
+        for L in leads_want:
+            fp = d / f"f+{L:03d}.png"
+            valid_t = o + L * 60
+            if not fp.exists() or valid_t not in have:
+                continue
+            ob = obs_of(valid_t, lv_rgb, lv_dbz)
+            if ob is None:
+                continue
+            fc = decode_dbz(fp.read_bytes(), lv_rgb, lv_dbz)
+            if fc.shape != ob.shape:
+                n_skip += 1
+                continue
+
+            n = ob.shape[0]
+            key = (n, kpp)
+            if key not in inside_cache:
+                yy, xx = np.mgrid[0:n, 0:n]
+                cen = (n - 1) / 2.0
+                inside_cache[key] = np.hypot(yy - cen, xx - cen) * kpp <= (st.range_km - 10)
+            inside = inside_cache[key]
+
+            bf = (np.nan_to_num(fc, nan=-99.0) >= thr).astype(np.float64)
+            bo = (np.nan_to_num(ob, nan=-99.0) >= thr).astype(np.float64)
+
+            b = base.setdefault(L, [0.0, 0.0])
+            b[0] += float(bo[inside].sum()); b[1] += float(inside.sum())
+
+            for km in NEIGH_KM:
+                half = max(0, int(round((km / kpp - 1) / 2)))
+                pf = fractions(bf, inside, half)
+                po = fractions(bo, inside, half)
+                sel = inside & np.isfinite(pf) & np.isfinite(po)
+                if not sel.any():
+                    continue
+                dfo = pf[sel] - po[sel]
+                s = acc.setdefault((L, km), [0.0, 0.0, 0])
+                s[0] += float(np.sum(dfo * dfo))
+                s[1] += float(np.sum(pf[sel] ** 2 + po[sel] ** 2))
+                s[2] += 1
+            n_pair += 1
+        if oi % 100 == 0:
+            print(f"  {oi}/{len(origins)} origin · จับคู่ได้ {n_pair}")
+
+    if not acc:
+        print("[!] จับคู่ไม่ได้เลย", file=sys.stderr)
+        return 1
+
+    rows = []
+    for (L, km), (fbs, worst, npair) in sorted(acc.items()):
+        f0 = (base[L][0] / base[L][1]) if base[L][1] else float("nan")
+        rows.append(dict(lead_min=L, neigh_km=km,
+                         n_pair=npair,
+                         fss=(1.0 - fbs / worst) if worst > 0 else None,
+                         fss_useful=0.5 + f0 / 2.0, base_rate=f0))
+
+    tag = f"_complete{a.max_lead}" if a.complete else ""
+    out = Path(a.data) / "nowcast" / f"{st.code}_fss{tag}.csv"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0]))
+        w.writeheader(); w.writerows(rows)
+
+    print(f"\nจับคู่ได้ {n_pair} คู่ · ข้ามเพราะขนาดภาพไม่ตรง {n_skip}")
+    print(f"-> {out}\n")
+
+    leads = sorted({r["lead_min"] for r in rows})
+    print("FSS ตามขนาดกรอบเพื่อนบ้าน (กม.)")
+    print(f"{'lead':>5} {'n':>5} " + " ".join(f"{k:>7}" for k in NEIGH_KM)
+          + f" {'เกณฑ์':>7} {'skilful':>8}")
+    for L in leads:
+        sub = {r["neigh_km"]: r for r in rows if r["lead_min"] == L}
+        if not sub:
+            continue
+        any_r = next(iter(sub.values()))
+        need = any_r["fss_useful"]
+        cells, skilful = [], None
+        for km in NEIGH_KM:
+            v = sub.get(km, {}).get("fss")
+            cells.append(f"{v:.4f}" if v is not None else "   -   ")
+            if skilful is None and v is not None and v >= need:
+                skilful = km
+        print(f"{L:5d} {any_r['n_pair']:5d} " + " ".join(f"{c:>7}" for c in cells)
+              + f" {need:7.4f} " + (f"{skilful:>6} กม." if skilful else "   ไม่ถึง"))
+    print("\nเกณฑ์ = 0.5 + f0/2 (f0 = สัดส่วนพื้นที่ที่มีฝนจริงทั้งโดม)")
+    print("skilful = กรอบเล็กที่สุดที่ FSS ถึงเกณฑ์ — เล็กกว่านี้พยากรณ์ไม่มีฝีมือ")
+    return 0
+
 # ---------------------------------------------------------------- 5. สถานะคลัง
 
 def cmd_status(a, st) -> int:
@@ -713,7 +920,7 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(
         prog="radar_archive.verify",
         description="เก็บผลพยากรณ์ที่ระบบผลิตจริง และให้คะแนนเทียบกับสิ่งที่เกิดขึ้นจริง")
-    p.add_argument("mode", choices=["archive", "recover", "score", "status", "eta"])
+    p.add_argument("mode", choices=["archive", "recover", "score", "status", "eta", "fss"])
     p.add_argument("--config", default=str(CONFIG_PATH))
     p.add_argument("--station", default="PHS")
     p.add_argument("--data", default=str(DATA))
@@ -723,9 +930,9 @@ def main(argv=None) -> int:
     p.add_argument("--stride", type=int, default=6,
                    help="eta: สุ่มจุดทุก ๆ กี่พิกเซล (6 = ทุก 12 กม.)")
     p.add_argument("--threshold", type=float, default=None,
-                   help="score: dBZ (ค่าเริ่มต้นใช้ wet_threshold_dbz ของแต่ละรอบ)")
+                   help="score/fss: dBZ (ค่าเริ่มต้นใช้ wet_threshold_dbz ของแต่ละรอบ)")
     p.add_argument("--complete", action="store_true",
-                   help="score: ใช้เฉพาะ origin ที่มีครบทุก lead -> ทุกแถวมาจากชุดตัวอย่างเดียวกัน "
+                   help="score/fss: ใช้เฉพาะ origin ที่มีครบทุก lead -> ทุกแถวมาจากชุดตัวอย่างเดียวกัน "
                         "(จำเป็นถ้าจะเทียบ CSI ข้าม lead ในเปเปอร์)")
     p.add_argument("--max-lead", type=int, default=120,
                    help="score: ตัด lead ที่ยาวกว่านี้ทิ้ง — คู่กับ --complete เพื่อแลกความยาว "
@@ -734,7 +941,7 @@ def main(argv=None) -> int:
 
     st = get_station(a.station, a.config)
     return {"archive": cmd_archive, "recover": cmd_recover, "score": cmd_score,
-            "status": cmd_status, "eta": cmd_eta}[a.mode](a, st)
+            "status": cmd_status, "eta": cmd_eta, "fss": cmd_fss}[a.mode](a, st)
 
 
 if __name__ == "__main__":
