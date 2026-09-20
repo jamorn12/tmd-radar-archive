@@ -3080,6 +3080,43 @@ function renderModalMeteogram() {
   svg.innerHTML = svgHtml;
 }
 
+
+// ประมาณว่า "อีกนานแค่ไหนฝนจะหยุด" ที่จุดหนึ่ง จากเฟรมพยากรณ์ของรอบนั้น
+//
+// ของเดิมนับเฟรมที่ยังเปียกต่อกันแล้วคูณ 15 ซึ่งผิดในเคสที่สำคัญที่สุด:
+// ถ้าฝนยังตกอยู่จนสุดกรอบพยากรณ์ มันจะรายงาน "อีก 120 นาที" เหมือนว่ารู้ว่า
+// จะหยุดพอดีตอนนั้น ทั้งที่ความจริงคือ "ยังไม่รู้ ยาวเกินกว่าที่เรามองเห็น"
+// การบอกตัวเลขที่ดูแม่นแต่ไม่มีข้อมูลรองรับ เป็นสิ่งที่ระบบเตือนภัยไม่ควรทำ
+//
+// สองอย่างที่แก้เพิ่ม
+//   1. ช่องแห้งชั่วคราวไม่นับว่าหยุด ต้องแห้งแล้วแห้งยาวจนจบกรอบถึงจะนับ
+//      ไม่งั้นฝนที่ขาดช่วงหนึ่งเฟรมจะถูกรายงานว่าหยุดแล้วทั้งที่กำลังจะกลับมา
+//   2. รายงานเป็น "ช่วง" ไม่ใช่ตัวเลขเดียว เพราะเฟรมห่างกัน 15 นาที
+//      เรารู้แค่ว่าหยุดระหว่างเฟรมเปียกสุดท้ายกับเฟรมแห้งแรก
+function rainStopEstimate(list, baseIdx, thr) {
+  const fut = list.filter((it, i) => i >= baseIdx && it.offset >= 0);
+  if (!fut.length || fut[0].dbz < thr) return { state: "dry" };
+
+  // หาเฟรมเปียกสุดท้ายในกรอบ แล้วดูว่ามีเฟรมแห้งตามหลังจนจบหรือไม่
+  let lastWet = -1;
+  fut.forEach(it => { if (it.dbz >= thr) lastWet = it.offset; });
+  const horizon = fut[fut.length - 1].offset;
+
+  if (lastWet >= horizon) {
+    // ยังเปียกอยู่ที่เฟรมสุดท้าย -> ยาวเกินกว่าที่พยากรณ์มองเห็น
+    return { state: "beyond", horizon };
+  }
+  const firstDry = fut.find(it => it.offset > lastWet);
+  return { state: "stops", from: lastWet, to: firstDry ? firstDry.offset : horizon };
+}
+
+function rainStopText(est) {
+  if (!est || est.state === "dry") return null;
+  if (est.state === "beyond") return `ยังตกต่อเนื่องเกิน ${est.horizon} นาที`;
+  if (est.from <= 0) return `น่าจะหยุดภายใน ${est.to} นาที`;
+  return `อีกราว ${est.from} ถึง ${est.to} นาที`;
+}
+
 function analyzeImpactAtPoint(lat, lon) {
   layerTrajectory.clearLayers();
   if (!manifest || !manifest.motion || frameImages.length === 0) return;
@@ -3187,15 +3224,18 @@ function analyzeImpactAtPoint(lat, lon) {
     if (headlineIconEl) headlineIconEl.innerHTML = createWeatherSvg(isHailRisk ? "hail" : "rain");
     if (pillIconEl) pillIconEl.innerHTML = createWeatherSvg(isHailRisk ? "hail" : "rain");
 
-    let durationMin = 0;
-    for (let i = baseIdx; i < sampledDbzList.length; i++) {
-      if (sampledDbzList[i].dbz >= 15) durationMin += 15;
-      else break;
-    }
+    const WET = manifest?.wet_threshold_effective_dbz ?? manifest?.wet_threshold_dbz ?? 15;
+    const stopEst = rainStopEstimate(sampledDbzList, baseIdx, WET);
+    const stopTxt = rainStopText(stopEst);
+
     if (valEta) valEta.textContent = "กำลังตก";
-    if (valDur) valDur.textContent = `~${durationMin || 15} นาที`;
-    if (descEl) descEl.textContent = `กลุ่มฝนครอบคลุมพื้นที่ คาดว่าจะตกแช่อีกประมาณ ${durationMin || 15} นาที ปริมาณฝนสะสมคาดการณ์ ${accumulatedRainMm.toFixed(1)} มม.`;
-    if (pillText) pillText.textContent = `ฝนตกอยู่ (อีก ~${durationMin || 15} น.)`;
+    if (valDur) valDur.textContent =
+      stopEst.state === "beyond" ? `เกิน ${stopEst.horizon} น.` : `${stopEst.from}–${stopEst.to} น.`;
+    if (descEl) descEl.textContent = stopEst.state === "beyond"
+      ? `กลุ่มฝนครอบคลุมพื้นที่ และยังตกต่อเนื่องจนสุดกรอบพยากรณ์ ${stopEst.horizon} นาที จึงยังประมาณเวลาหยุดไม่ได้ ปริมาณฝนสะสมคาดการณ์ ${accumulatedRainMm.toFixed(1)} มม.`
+      : `กลุ่มฝนครอบคลุมพื้นที่ คาดว่าจะหยุด${stopTxt} ปริมาณฝนสะสมคาดการณ์ ${accumulatedRainMm.toFixed(1)} มม.`;
+    if (pillText) pillText.textContent =
+      stopEst.state === "beyond" ? `ฝนตกอยู่ (เกิน ${stopEst.horizon} น.)` : `ฝนตกอยู่ (หยุดใน ${stopEst.to} น.)`;
 
     safeLucide();
     return;
