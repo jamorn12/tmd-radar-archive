@@ -27,14 +27,17 @@ on:
 permissions:
   contents: write
 
+# คุมคิวที่ระดับ workflow (เดิมอยู่ระดับ job) — กดรันซ้อนหรือตัวตั้งเวลาชนกับรันมือ
+# รอบหลังจะรอจนรอบแรกจบ ไม่เริ่มจาก commit เดียวกันแล้วชนกันตอน push อีก (run #2286/#2287)
+concurrency:
+  group: radar-archive
+  cancel-in-progress: false
+
 jobs:
   fetch-and-archive:
     runs-on: ubuntu-latest
     if: vars.PIPELINE_ENABLED != 'false' || github.event.inputs.mode == 'repair'
-    timeout-minutes: 10
-    concurrency:
-      group: radar-archive
-      cancel-in-progress: false
+    timeout-minutes: 12
 
     steps:
       - name: Checkout Repository
@@ -82,6 +85,18 @@ jobs:
             --interval 15 \
             --outputs alpha,solid \
             --background 0,0,0
+
+      # ── ชั้นป้องกันที่ 1: เก็บภาพดิบขึ้น repo ก่อนทำอย่างอื่น ───────────────────────
+      # TMD เขียนทับ *_latest.jpg ทุกรอบ ภาพที่ไม่ได้ push ในรอบนั้นหายถาวร
+      # เดิม commit รวมก้อนเดียวตอนจบ → ขั้นหลังพังหรือ push ไม่ผ่าน ภาพดิบหายไปด้วย
+      # (25 ก.ย. 2569 หาย 3.5 ชม.) · commit นี้มีแต่ไฟล์เล็ก จึงแทบไม่มีทางถูกปฏิเสธ
+      # always(): แม้ขั้น fetch พังหลังเซฟ raw แล้ว (เช่น QC/strip ล้ม) ภาพดิบก็ยังถูกเก็บ
+      - name: Save Raw Frame First
+        if: ${{ always() && github.event.inputs.mode != 'repair' }}
+        run: |
+          bash .github/scripts/commit_push.sh \
+            "raw: PHS frame [skip ci]" \
+            data/raw data/log data/processed
 
       - name: Repair Archive (manual only)
         if: ${{ github.event.inputs.mode == 'repair' }}
@@ -164,32 +179,12 @@ jobs:
 
       - name: Commit and Push Changes
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          # สร้างโฟลเดอร์ก่อน add — ขั้น Areal เป็น continue-on-error ถ้ามันล้ม
-          # โฟลเดอร์จะไม่ถูกสร้าง แล้ว git add จะตายด้วย "pathspec did not match"
-          # ลากให้ทั้ง workflow ล้มทั้งที่งานหลักสำเร็จไปแล้ว
+          # สร้างโฟลเดอร์ก่อน — ขั้น Areal เป็น continue-on-error ถ้ามันล้ม โฟลเดอร์อาจไม่มี
           mkdir -p docs/areal data/areal
-          git add -A data/ docs/nowcast/ docs/gauges/ docs/areal/
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
           MSG="archive: update radar data + nowcast [skip ci]"
           if [ "${{ github.event.inputs.mode }}" = "repair" ]; then
             MSG="repair: fix OCR timestamps, drop duplicate frames, rebuild index [skip ci]"
           fi
-          git commit -m "$MSG"
-          for i in 1 2 3; do
-            # รันซ้อนกันสองรอบ -> ไฟล์ docs/*.json ชนกันตอน rebase
-            # -X theirs = ถ้าชน ให้ใช้ไฟล์ของรอบนี้ (ข้อมูลใหม่กว่า) · rebase ไม่ผ่านต้อง abort ก่อนลองรอบถัดไป
-            if git pull --rebase --autostash -X theirs origin main; then
-              git push origin main && exit 0
-            else
-              git rebase --abort || true
-            fi
-            echo "push รอบที่ $i ไม่สำเร็จ รออีก 10 วินาที"
-            sleep 10
-          done
-          echo "::error::push ไม่สำเร็จหลังจากลอง 3 ครั้ง"
-          exit 1
+          # ตรวจไฟล์ใหญ่ · rebase ชนใช้ -X theirs · rebase ค้างสั่ง abort — ดูรายละเอียดในสคริปต์
+          bash .github/scripts/commit_push.sh "$MSG" \
+            data/ docs/nowcast/ docs/gauges/ docs/areal/
