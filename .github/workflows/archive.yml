@@ -181,7 +181,13 @@ jobs:
           fi
           git commit -m "$MSG"
           for i in 1 2 3; do
-            git pull --rebase --autostash origin main && git push origin main && exit 0
+            # รันซ้อนกันสองรอบ -> ไฟล์ docs/*.json ชนกันตอน rebase
+            # -X theirs = ถ้าชน ให้ใช้ไฟล์ของรอบนี้ (ข้อมูลใหม่กว่า) · rebase ไม่ผ่านต้อง abort ก่อนลองรอบถัดไป
+            if git pull --rebase --autostash -X theirs origin main; then
+              git push origin main && exit 0
+            else
+              git rebase --abort || true
+            fi
             echo "push รอบที่ $i ไม่สำเร็จ รออีก 10 วินาที"
             sleep 10
           done
