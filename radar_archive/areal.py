@@ -322,7 +322,12 @@ def write_csv(data_root: Path, code: str, level: str, rows: list,
     ไม่งั้น base rate จะผิด และตัวเลข skill จะเทียบกันไม่ได้"""
     out = Path(data_root) / "areal"
     out.mkdir(parents=True, exist_ok=True)
-    p = out / f"{code}_{level}_{kind}.csv"
+    # แยกไฟล์รายวัน (วันตาม UTC ของ origin) — GitHub ปฏิเสธการ push ไฟล์ที่ใหญ่เกิน 100 MB
+    # ไฟล์ตำบลแบบรวมไฟล์เดียวโตวันละ ~13 MB และชนเพดานเมื่อ 25 ก.ย. 2569 06:00 น.
+    # ทำให้ทุกรอบหลังจากนั้น push ไม่ผ่าน · ไฟล์เดิม <code>_<level>_<kind>.csv
+    # เก็บไว้ตามเดิมเป็นข้อมูลช่วง 17–25 ก.ย. และไม่ถูกเขียนต่ออีก
+    day = datetime.fromtimestamp(epoch, timezone.utc).strftime("%Y%m%d")
+    p = out / f"{code}_{level}_{kind}_{day}.csv"
     cols = ["origin", "utc", "name", "n_cells", "mean_mm", "max_mm",
             "coverage", "eta_area", "eta_first", "reliable"]
     utc = datetime.fromtimestamp(epoch, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
