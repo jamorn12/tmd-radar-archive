@@ -1,0 +1,47 @@
+name: Watchdog
+
+# ── ชั้นป้องกันที่ 4: เฝ้าระบบ แจ้งเตือน และสั่งรันซ่อมเอง ─────────────────────────
+# ตรวจทุก 30 นาทีว่า ภาพเรดาร์ / ภาพพยากรณ์ / สถานีวัดน้ำฝน ยังสดอยู่ไหม, archive.yml ล้มติดกันไหม,
+# ตัวตั้งเวลายังยิงอยู่ไหม, มีไฟล์ใกล้เพดาน 100 MB ไหม
+#   ผิดปกติ → เปิด GitHub Issue (label: watchdog) + mention เจ้าของ repo → GitHub ส่งอีเมล/แจ้งในแอป
+#   กลับมาปกติ → comment แล้วปิด Issue เอง
+#   ตัวตั้งเวลาเงียบ → สั่งรัน archive.yml เอง
+# รายละเอียดเกณฑ์อยู่ใน .github/scripts/watchdog.py
+#
+# ไม่โหลดภาพทั้ง repo — sparse checkout เฉพาะ 3 ไฟล์สถานะ ขนาดไฟล์อ่านจาก git tree API
+
+on:
+  schedule:
+    - cron: '10,40 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: write     # gh workflow run archive.yml เมื่อตัวตั้งเวลาเงียบ
+
+concurrency:
+  group: watchdog
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            .github/scripts/watchdog.py
+            data/log/PHS_index.csv
+            docs/nowcast/PHS/latest.json
+            docs/gauges/PHS.json
+
+      - name: Check health
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PIPELINE_ENABLED: ${{ vars.PIPELINE_ENABLED }}
+        run: python3 .github/scripts/watchdog.py

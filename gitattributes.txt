@@ -1,0 +1,7 @@
+# ไฟล์ CSV ที่ระบบเขียนต่อท้ายอย่างเดียว (append-only)
+# ถ้าสองรอบเขียนต่อท้ายพร้อมกันแล้ว rebase ชน ให้เก็บบรรทัดของทั้งสองฝั่ง (union)
+# ไม่ใช่เลือกฝั่งเดียวแล้วบรรทัดของอีกรอบหาย · แถวซ้ำ (ถ้ามี) ตัดทีหลังได้ แถวที่หายกู้ไม่ได้
+data/log/*.csv      merge=union
+data/gauges/*.csv   merge=union
+data/areal/*.csv    merge=union
+data/nowcast/*.csv  merge=union
