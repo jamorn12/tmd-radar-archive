@@ -11,8 +11,8 @@ on:
         options: [fetch, repair]
         default: fetch
       repeat:
-        description: 'วนเช็กกี่รอบใน job เดียว (เฉพาะรันมือถือ/manual)'
-        default: '1'
+        description: 'เช็กภาพใหม่สูงสุดกี่ครั้ง (ห่าง 90 วินาที หยุดทันทีที่ได้ภาพ)'
+        default: '6'
       engine:
         description: 'motion engine: auto = ใช้ pysteps ถ้ามี | light = block matching ของเรา'
         type: choice
@@ -37,7 +37,7 @@ jobs:
   fetch-and-archive:
     runs-on: ubuntu-latest
     if: vars.PIPELINE_ENABLED != 'false' || github.event.inputs.mode == 'repair'
-    timeout-minutes: 12
+    timeout-minutes: 16   # รวมเวลารอภาพที่ต้นทางอัปโหลดช้า (สูงสุด ~7.5 นาที)
 
     steps:
       - name: Checkout Repository
@@ -76,13 +76,16 @@ jobs:
               print(f"::warning::pysteps ใช้ไม่ได้ ({type(e).__name__}: {e}) — จะตกไปใช้ engine=light")
           PY
 
-      # โหมดอัตโนมัติจะสั่ง fetch 1 รอบแล้วไปทำ Nowcast ทันที ไม่ต้อง sleep แช่ 9 นาที
+      # กรมอุตุฯ อัปโหลดภาพช้าไม่แน่นอน — ถ้ารอบนี้ยังไม่มีภาพใหม่ ให้รอเช็กซ้ำทุก 90 วินาที
+      # สูงสุด 6 ครั้ง (~7.5 นาที) แล้วหยุดทันทีที่ได้ภาพ
+      # เดิมเช็กครั้งเดียว: 27 ก.ย. ภาพ 04:15Z ขึ้นเว็บกรมอุตุฯ หลัง 04:21Z แล้วถูกภาพ 04:30Z
+      # เขียนทับก่อนรอบ 04:36Z → หายถาวร และทำให้ nowcast หยุด 2 รอบ
       - name: Fetch and Process Radar Frame
         if: ${{ github.event.inputs.mode != 'repair' }}
         run: |
           python -m radar_archive.cli --station PHS fetch \
-            --repeat "${{ github.event.inputs.repeat || 1 }}" \
-            --interval 15 \
+            --repeat "${{ github.event.inputs.repeat || 6 }}" \
+            --interval 90 --until-new \
             --outputs alpha,solid \
             --background 0,0,0
 
