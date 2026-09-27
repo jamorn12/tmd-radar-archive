@@ -999,6 +999,33 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
 .bias-match { background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.25); }
 .bias-over { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 .bias-under { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+
+/* ---- ป้ายสถานีเรดาร์ (แบบ 2: แถบแนวนอน รูปถ่ายซ้าย โทนสว่าง) ---- */
+.stn-popup .leaflet-popup-content-wrapper{background:rgba(255,255,255,.97)!important;color:#1f2430!important;
+  border:1px solid rgba(15,23,42,.08)!important;border-radius:16px!important;box-shadow:0 14px 32px rgba(15,23,42,.28)!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.stn-popup .leaflet-popup-tip{background:rgba(255,255,255,.97)!important;border:none!important}
+.stn-popup a.leaflet-popup-close-button{color:#9ca3af!important;padding:10px 12px 0 0!important}
+.stn-popup a.leaflet-popup-close-button:hover{color:#374151!important}
+.stn-card{display:flex;gap:14px;padding:14px;width:min(470px,82vw);font-family:inherit}
+.stn-ph{position:relative;width:118px;height:156px;flex:none;border-radius:12px;overflow:hidden;background:#dbe7f3;box-shadow:0 0 0 1px rgba(0,0,0,.06)}
+.stn-ph img{width:100%;height:100%;object-fit:cover;object-position:50% 22%;display:block}
+.stn-ph span{position:absolute;left:0;right:0;bottom:0;padding:10px 6px 4px;font-size:9.5px;line-height:1.25;color:#fff;
+  background:linear-gradient(transparent,rgba(0,0,0,.6))}
+.stn-bd{flex:1;min-width:0;padding-right:14px}
+.stn-t{font-size:16.5px;font-weight:700;line-height:1.3;color:#1f2430}.stn-t b{color:#1d4e89}
+.stn-s{font-size:12px;color:#6b7280;margin-top:1px;line-height:1.4}
+.stn-chip{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600}
+.stn-chip.ok{background:#dcfce7;color:#15803d}.stn-chip.bad{background:#fee2e2;color:#b91c1c}
+.stn-chip i{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+.stn-row{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:9px;font-size:12.5px;color:#4b5563}.stn-row b{color:#111827}
+.stn-geo{margin-top:4px;font-size:11.5px;color:#6b7280;font-family:'IBM Plex Mono',monospace}
+.stn-lnk{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px}
+.stn-lnk a,.stn-lnk button{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#1d4e89!important;
+  background:none;border:none;padding:0;cursor:pointer;text-decoration:none;font-family:inherit}
+.stn-lnk a:hover,.stn-lnk button:hover{text-decoration:underline}
+.stn-lnk svg{width:14px;height:14px}
+@media (max-width:480px){.stn-card{gap:10px;padding:12px}.stn-ph{width:84px;height:112px}.stn-t{font-size:15px}.stn-s{display:none}}
 </style>
 </head>
 <body>
@@ -3343,7 +3370,7 @@ function analyzeImpactAtPoint(lat, lon) {
     if (pillText) pillText.textContent = `ฝนเข้าในอีก ${incomingMin} นาที`;
 
     // สั่งยิง Notification และส่งเสียง Chime เตือนล่วงหน้าสูงสุด 120 นาที
-    triggerRainNotification(incomingMin, startStr, durEst, willHail);
+    if (!isStale()) triggerRainNotification(incomingMin, startStr, durEst, willHail);
   } else {
     if (badgeEl) {
       badgeEl.className = "ac-status-badge badge-clear";
@@ -3362,6 +3389,17 @@ function analyzeImpactAtPoint(lat, lon) {
     if (valDur) valDur.textContent = "0 นาที";
     if (descEl) descEl.textContent = `จากการวิเคราะห์แนวพัดลมและโมเดล Nowcast ไม่พบเซลล์ฝนที่กำลังเคลื่อนตัวเข้าหาจุดนี้ใน 2 ชั่วโมงข้างหน้า`;
     if (pillText) pillText.textContent = "ไม่มีฝนใน 2 ชม.";
+  }
+
+  if (isStale()) {
+    const age = fmtAge(dataAgeMin());
+    if (badgeEl) { badgeEl.className = "ac-status-badge"; badgeEl.textContent = "ข้อมูลเก่า"; }
+    if (headlineEl) headlineEl.innerHTML = `ยังไม่มีภาพเรดาร์ใหม่ (ช้า ${age})`;
+    if (valEta) valEta.textContent = "—";
+    if (valDur) valDur.textContent = "—";
+    if (descEl) descEl.textContent = `ยังไม่มีภาพเรดาร์รอบใหม่ ระบบจึงพยากรณ์ต่อไม่ได้ ` +
+      `ผลที่เห็นมาจากภาพเมื่อ ${age}ก่อน ไม่ควรใช้ตัดสินใจ · ระบบจะกลับมาเองภายใน ~30 นาทีหลังภาพกลับมา`;
+    if (pillText) pillText.textContent = "ข้อมูลไม่เป็นปัจจุบัน";
   }
 
   safeLucide();
@@ -3654,6 +3692,66 @@ function renderRadarMask() {
   }).addTo(map);
 }
 
+// ---- ป้ายสถานีเรดาร์ ----
+// ภาพถ่ายต้องเป็นภาพที่เรามีสิทธิ์ใช้ — เปลี่ยน src / credit ที่นี่ที่เดียว
+const STATION_INFO = {
+  name: "สถานีเรดาร์พิษณุโลก", code: "PHS",
+  org: "สถานีหลักตรวจอากาศภาคเหนือตอนล่าง · กรมอุตุนิยมวิทยา",
+  photo: "img/phs_station.jpg",
+  photoCredit: "ภาพ: Google Maps",
+  siteLatLon: [16.775392, 100.2179824],          // ตำแหน่งอาคารสถานี (ใช้นำทาง)
+  tmdUrl: "https://weather.tmd.go.th/phs.php",
+  rangeKm: 240
+};
+
+function stationPopupHtml() {
+  const S = STATION_INFO;
+  const f = manifest && manifest.frames ? (manifest.frames.find(x => x.offset_min === 0) || manifest.frames[0]) : null;
+  let chip = `<span class="stn-chip bad"><i></i>ยังโหลดข้อมูลไม่ได้</span>`;
+  if (f) {
+    const t = new Date(f.t * 1000);
+    const hhmm = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")} น.`;
+    const age = Math.max(0, Math.round((Date.now() / 1000 - f.t) / 60));
+    const stale = typeof isStale === "function" ? isStale() : age > (manifest.stale_after_min || 40);
+    const ageTxt = typeof fmtAge === "function" ? fmtAge(age) : `${age} นาที`;
+    chip = stale
+      ? `<span class="stn-chip bad"><i></i>ภาพล่าสุด ${hhmm} · ช้า ${ageTxt}</span>`
+      : `<span class="stn-chip ok"><i></i>ภาพล่าสุด ${hhmm} · ${age} นาทีที่แล้ว</span>`;
+  }
+  const wet = f && f.wet_pct != null ? `${Number(f.wet_pct).toFixed(2)}%` : "—";
+  const mx = f && f.max_dbz != null ? `${Number(f.max_dbz).toFixed(1)} dBZ` : "—";
+  const [la, lo] = S.siteLatLon;
+  const nav = `https://www.google.com/maps/search/?api=1&query=${la},${lo}`;
+  const svg = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  return `
+  <div class="stn-card">
+    <div class="stn-ph"><img src="${S.photo}" alt="อาคาร${S.name}" loading="lazy"
+      onerror="this.parentNode.style.display='none'"><span>${S.photoCredit}</span></div>
+    <div class="stn-bd">
+      <div class="stn-t">${S.name} <b>${S.code}</b></div>
+      <div class="stn-s">${S.org}</div>
+      ${chip}
+      <div class="stn-row"><span>ฝนในรัศมี <b>${wet}</b></span><span>สูงสุด <b>${mx}</b></span><span>รัศมี <b>${S.rangeKm} กม.</b></span></div>
+      <div class="stn-geo">${la.toFixed(4)}°N · ${lo.toFixed(4)}°E</div>
+      <div class="stn-lnk">
+        <a href="${S.tmdUrl}" target="_blank" rel="noopener">${svg('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>')}ภาพต้นทาง</a>
+        <button type="button" onclick="openStationGraph()">${svg('<path d="M22 12h-2.5a2 2 0 0 0-1.9 1.5l-2.4 8.4a.25.25 0 0 1-.5 0L9.2 2.1a.25.25 0 0 0-.5 0l-2.4 8.4A2 2 0 0 1 4.5 12H2"/>')}ดูกราฟ</button>
+        <a href="${nav}" target="_blank" rel="noopener">${svg('<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>')}นำทาง</a>
+      </div>
+    </div>
+  </div>`;
+}
+
+// "ดูกราฟ" ที่ป้ายสถานี = ปักหมุดตรวจที่ตัวสถานี แล้วเปิดกราฟฝนเหมือนปุ่มในการ์ดตรวจจุด
+async function openStationGraph() {
+  try {
+    if (stationMarkerElement) stationMarkerElement.closePopup();
+    await setInspectionPoint(radarStationLatLon[0], radarStationLatLon[1], "สถานีเรดาร์ PHS");
+    const b = document.getElementById("btnOpenModal");
+    if (b) b.click();
+  } catch (e) { console.warn("openStationGraph:", e); }
+}
+
 function renderRangeRings() {
   layerRings.clearLayers();
   rangeCircleElements = [];
@@ -3683,18 +3781,9 @@ function renderRangeRings() {
 
   stationMarkerElement = L.circleMarker([lat0, lon0], {
     radius: 5, color: style.radarCenter, fillColor: "#FFF", fillOpacity: 1, weight: 2
-  }).addTo(layerRings).bindPopup(`
-    <div class="pop-capsule" style="min-width: 180px;">
-      <div class="pop-title">
-        <span class="pop-dot"></span>
-        สถานีเรดาร์พิษณุโลก (PHS)
-      </div>
-      <div class="pop-subtext">สถานีหลักตรวจวัดอากาศภาคเหนือตอนล่าง</div>
-      <div class="pop-meta-list" style="margin-top: 4px;">
-        <span>Lat: 16.770 · Lon: 100.220</span>
-      </div>
-    </div>
-  `, { offset: [0, -6] });
+  }).addTo(layerRings).bindPopup(stationPopupHtml, {
+    className: "stn-popup", maxWidth: 520, minWidth: 260, offset: [0, -6], autoPanPadding: [16, 16]
+  });
 
   renderRadarMask();
 }
@@ -3965,6 +4054,23 @@ function showFrame(index) {
 
   safeLucide();
 }
+
+// ---- ข้อมูลเก่า (ต้นทาง TMD หยุดส่งภาพ / pipeline ไม่ได้พยากรณ์รอบใหม่) ----
+// ถ้าไม่เตือน หน้าเว็บจะบอก "ไม่มีฝนใน 2 ชม." จากภาพเก่าหลายชั่วโมง ซึ่งอันตรายกว่าไม่แสดงอะไร
+function dataAgeMin() {
+  if (!manifest || !Array.isArray(manifest.frames) || !manifest.frames.length) return null;
+  const f = manifest.frames.find(x => x.offset_min === 0) || manifest.frames[0];
+  return (Date.now() / 1000 - f.t) / 60;
+}
+function isStale() {
+  const age = dataAgeMin();
+  return age !== null && age > (manifest.stale_after_min || 40);
+}
+function fmtAge(min) {
+  const t = Math.round(min), h = Math.floor(t / 60), m = t % 60;
+  return h > 0 ? `${h} ชม. ${m} นาที` : `${m} นาที`;
+}
+// แถบเตือนด้านบนจอถูกเอาออกตามที่ผู้ใช้ขอ — สถานะข้อมูลเก่ายังแสดงที่ป้ายสถานีและช่องสรุปฝน
 
 function updateFooterStatus() {
   const nowFrame = manifest.frames.find(f => f.offset_min === 0) || manifest.frames[0];
