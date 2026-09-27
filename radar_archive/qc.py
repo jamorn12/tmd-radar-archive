@@ -86,6 +86,13 @@ DEFAULTS = dict(
     grow_deg=1.0,          # ขยายไปยัง azimuth ข้างเคียงเพื่อเก็บขอบเส้นที่ยังเหลือ
     grow_support=0.60,     # ขยายได้เฉพาะ pixel ที่ยังมีเพื่อนบ้านหนุนน้อยกว่านี้
     min_blob_px=6,         # ทำความสะอาดเศษที่เหลือหลังตัด spike
+    # ---- sector RFI ที่รู้ตำแหน่งแล้ว (ตั้งใน stations.yml ต่อสถานี) ----
+    # RFI ที่ PHS อยู่มุม 178–181° ตลอด (26% ของรอบ) และมักขาดเป็นท่อน ๆ สั้นกว่า min_spike_km
+    # จึงรอดกฎหลัก ตรวจ 192 รอบ (26–27 ก.ย. 2569) เหลือเส้นประในที่ไม่มีฝน 28% ของรอบ
+    # ในเซกเตอร์ที่ระบุ ใช้เกณฑ์ความยาวสั้นลง — ยังต้อง "ไม่มีเพื่อนบ้านหนุน" เหมือนเดิม
+    # ฝนจริงกว้างหลายองศาในแนวมุมกวาดจึงไม่ถูกแตะ
+    rfi_sectors=(),        # [[มุมเริ่ม, มุมจบ], ...] องศาจากทิศเหนือตามเข็ม · ว่าง = ปิด
+    sector_min_km=4.0,     # ความยาวขั้นต่ำในแนวรัศมีภายในเซกเตอร์
 )
 
 
@@ -223,6 +230,16 @@ def detect_radial_spikes(mask: np.ndarray, st: Station, **kw) -> tuple[np.ndarra
     unsupported[:r_min] = False
 
     spike_polar = _long_radial_runs(unsupported, min_len, int(p["bridge_gap_px"]))
+
+    # เซกเตอร์ RFI ที่รู้แล้ว: เก็บท่อนสั้นที่ไม่มีเพื่อนบ้านหนุน (ดู DEFAULTS)
+    sectors = p.get("rfi_sectors") or ()
+    if sectors:
+        az_deg = (np.arange(n_az) + 0.5) * deg_per_bin
+        in_sec = np.zeros(n_az, bool)
+        for a0, a1 in sectors:
+            in_sec |= (az_deg >= a0) & (az_deg <= a1) if a0 <= a1 else (az_deg >= a0) | (az_deg <= a1)
+        sec_min = max(1, int(p["sector_min_km"] / st.km_per_px))
+        spike_polar |= _long_radial_runs(unsupported & in_sec[None, :], sec_min, int(p["bridge_gap_px"]))
 
     # ขอบของเส้นมีเพื่อนบ้าน (ก็คือตัวเส้นเอง) หนุนอยู่ จึงรอดจากการทดสอบข้างบน
     # -> ขยายออกด้านข้างเล็กน้อย แต่เข้าไปได้เฉพาะที่ยังหนุนน้อย จึงไม่กินก้อนฝนจริง

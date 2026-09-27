@@ -35,8 +35,11 @@ def cmd_fetch(args) -> int:
     outputs = tuple(args.outputs.split(","))
     bg = tuple(int(x) for x in args.background.split(","))
     got = 0
+    waiting = {st.code for st in _stations(args) if st.is_calibrated}
     for attempt in range(args.repeat):
         for st in _stations(args):
+            if args.until_new and st.code not in waiting:
+                continue                        # สถานีนี้ได้เฟรมใหม่แล้ว ไม่ต้องเช็กซ้ำ
             if not st.is_calibrated:
                 print(f"[skip] {st.code}: ยังไม่ได้ calibrate (center_px/km_per_px เป็น null)")
                 continue
@@ -50,9 +53,15 @@ def cmd_fetch(args) -> int:
                 print(f"[dup]  {st.code}: เฟรมเดิม ข้าม")
             else:
                 got += 1
+                waiting.discard(st.code)
                 print(f"[ok]   {st.code} {s['timestamp_th']} TH  "
                       f"coverage={s['coverage_pct']}%  max={s['max_dbz']} dBZ  ({s['timestamp_source']})")
+        if args.until_new and not waiting:
+            break                               # ได้เฟรมใหม่ครบทุกสถานีแล้ว ไปทำ nowcast ต่อเลย
         if attempt < args.repeat - 1:
+            if args.until_new:
+                print(f"[wait] ต้นทางยังไม่มีภาพใหม่ ({', '.join(sorted(waiting))}) "
+                      f"— รอ {args.interval} วินาทีแล้วเช็กอีกครั้ง ({attempt + 1}/{args.repeat})")
             time.sleep(args.interval)
     print(f"เฟรมใหม่ทั้งหมด: {got}")
     return 0
@@ -378,6 +387,8 @@ def main(argv=None) -> int:
     f = sub.add_parser("fetch", help="ดึงภาพล่าสุด + ประมวลผล")
     f.add_argument("--repeat", type=int, default=1, help="เช็กกี่รอบใน 1 job")
     f.add_argument("--interval", type=int, default=240, help="เว้นกี่วินาทีระหว่างรอบ")
+    f.add_argument("--until-new", action="store_true",
+                   help="หยุดเช็กทันทีที่ได้เฟรมใหม่ — ใช้กับ --repeat เพื่อรอภาพที่กรมอุตุฯ อัปโหลดช้า")
     f.add_argument("--outputs", default="alpha,solid", help="alpha,solid,dbz")
     f.add_argument("--background", default="0,0,0", help="สีพื้นของ solid PNG เช่น 0,0,0 หรือ 255,255,255")
     f.add_argument("--force", action="store_true", help="ประมวลผลใหม่แม้เป็นเฟรมซ้ำ")

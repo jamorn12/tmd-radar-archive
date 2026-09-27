@@ -56,6 +56,10 @@ def load_stations(path: Path | str = CONFIG_PATH) -> dict[str, Station]:
     out: dict[str, Station] = {}
     for code, cfg in raw["stations"].items():
         merged = {**defaults, **cfg}
+        # พารามิเตอร์ย่อยรวมแบบลึก — สถานีใส่เฉพาะค่าที่ต่างจาก defaults ได้ (เช่น rfi_sectors)
+        for k in ("refine_params", "qc_params"):
+            if isinstance(cfg.get(k), dict):
+                merged[k] = {**(defaults.get(k) or {}), **cfg[k]}
         out[code] = Station(
             code=code,
             name_th=merged["name_th"],

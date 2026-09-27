@@ -53,6 +53,7 @@ DATA = Path(__file__).resolve().parent.parent / "data"
 
 LEADS_MIN = (15, 30, 45, 60, 75, 90, 105, 120)    # ไม่เกิน 60 — extrapolation ไม่สร้างและไม่สลายก้อนฝน
 N_INPUT = 4                      # เฟรมย้อนหลังที่ใช้หา motion (3 คู่)
+MAX_GAP_MIN = 30                 # ยอมใช้ 2 เฟรมที่ห่างกันได้ถึงเท่านี้เมื่อภาพขาด 1 ช่อง
 SEARCH_PX = 14                   # ระยะค้น block matching (14 px @ 2 กม. = 112 กม./ชม.)
 
 
@@ -69,6 +70,15 @@ def load_recent(root: Path, st, n: int = N_INPUT, agg: str = "mean"):
     last = build_stack.split_runs(frames)[-1]
     min_frames = 2  # กำหนดขั้นต่ำอย่างน้อย 2 เฟรมให้ลองพยากรณ์
     if len(last) < min_frames:
+        # ภาพขาด 1 ช่อง (ต้นทางข้ามเฟรม) — เดิมหยุด nowcast จนกว่าจะได้ 2 เฟรมติดกันอีกครั้ง
+        # (ใน 24 วันแรกเกิด 35 ครั้ง เว็บค้าง 30–45 นาทีทุกครั้ง) ตอนนี้ใช้ 2 เฟรมที่ห่างกันไม่เกิน
+        # MAX_GAP_MIN แทน แล้วให้ main() หารสนามการเคลื่อนที่ตามเวลาจริง (ดู gap_scale)
+        if len(frames) >= 2:
+            gap = (frames[-1][0] - frames[-2][0]).total_seconds() / 60.0
+            if gap <= MAX_GAP_MIN + build_stack.GAP_TOL_MIN:
+                print(f"[gap] {st.code}: ภาพขาดก่อนเฟรมล่าสุด — ใช้ 2 เฟรมที่ห่างกัน {gap:.0f} นาที")
+                stack, times, meta, _ = build_stack.build_run(frames[-2:], st, root, agg=agg, verbose=False)
+                return stack, times, meta
         print(f"Warning: {st.code} มีแค่ {len(last)} เฟรม (ต้องการอย่างน้อย {min_frames}) ข้าม Nowcast")
         import sys
         sys.exit(0)
@@ -569,9 +579,16 @@ def main(argv=None) -> int:
     print(f"เฟรมที่ใช้: {len(times)} เฟรม  "
           f"{times[0]:%Y-%m-%d %H:%M} -> {times[-1]:%H:%M}Z")
     ok, gaps = grid.check_regular(times, meta["timestep"])
+    gap_scale = 1.0
     if not ok:
-        print(f"[!] เฟรมห่างไม่เท่ากัน {gaps} นาที — หยุด", file=sys.stderr)
-        return 1
+        # ยอมเฉพาะกรณี 2 เฟรมที่ห่างกัน 1 ช่องพอดี (load_recent คัดมาแล้ว) — อย่างอื่นหยุดเหมือนเดิม
+        if len(times) == 2 and abs(gaps[0] - MAX_GAP_MIN) <= 2.0:
+            gap_scale = meta["timestep"] / gaps[0]
+            print(f"[gap] ใช้ 2 เฟรมห่าง {gaps[0]:.0f} นาที — สนามการเคลื่อนที่จะถูกคูณ {gap_scale:.2f} "
+                  f"ให้เป็นต่อ {meta['timestep']:.0f} นาที")
+        else:
+            print(f"[!] เฟรมห่างไม่เท่ากัน {gaps} นาที — หยุด", file=sys.stderr)
+            return 1
 
     obs, n_spk = despeckle_stack(obs)
     if n_spk:
@@ -582,8 +599,17 @@ def main(argv=None) -> int:
         print(json.dumps(compare_engines(obs, meta, leads), ensure_ascii=False, indent=1))
         return 0
 
-    V, info = estimate_motion(obs, a.engine, meta["kmperpixel"], meta["timestep"])
+    V, info = estimate_motion(obs, a.engine, meta["kmperpixel"], meta["timestep"] / gap_scale)
+    if gap_scale != 1.0:
+        # motion ที่ได้เป็นระยะเลื่อนต่อ "ช่วงห่างจริง" (30 นาที) -> แปลงเป็นต่อ timestep 15 นาที
+        V = (V * gap_scale).astype(np.float32)
+        if "pairs" in info:
+            info["pairs"] = [[round(float(y) * gap_scale, 3), round(float(x) * gap_scale, 3)] for y, x in info["pairs"]]
+        info["gap_min"] = round(meta["timestep"] / gap_scale)
     stab = motion_stability(V, info, meta["kmperpixel"], meta["timestep"])
+    if gap_scale != 1.0 and stab.get("confidence") == "high":
+        stab["confidence"] = "medium"      # มีแค่คู่เดียวที่ห่าง 30 นาที — ไม่ให้ขึ้นว่าเชื่อได้สูง
+        stab["reason"] = "ภาพขาด 1 ช่อง ใช้ 2 เฟรมห่าง 30 นาที"
     print(f"motion [{info['engine']}] {stab.get('kmh')} กม./ชม. ทิศ {stab.get('bearing')}° · "
           f"dir consistency {stab.get('dir_consistency')} · "
           f"speed spread {stab.get('speed_spread_rel')} -> ความเชื่อมั่น {stab['confidence']}")
