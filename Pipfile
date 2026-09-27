@@ -1,0 +1,12 @@
+# ใช้เฉพาะ Streamlit Community Cloud (หน้า Admin: admin_hub.py)
+# Community Cloud เลือก Pipfile ก่อน requirements.txt จึงติดตั้งแค่ 3 แพ็กเกจนี้
+# ส่วน GitHub Actions ยังใช้ `pip install -r requirements.txt` ตามเดิม ไม่กระทบ pipeline
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+streamlit = "*"
+requests = "*"
+pandas = "*"
