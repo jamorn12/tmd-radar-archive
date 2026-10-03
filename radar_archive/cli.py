@@ -31,6 +31,15 @@ def _stations(args):
     return enabled_stations(args.config)
 
 
+def _frame_age_min(s: dict) -> float | None:
+    """อายุของเฟรม (นาที) จาก timestamp_utc ที่ OCR อ่านได้ — อ่านไม่ได้คืน None"""
+    try:
+        t = datetime.strptime(str(s["timestamp_utc"])[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    except (KeyError, ValueError):
+        return None
+    return (datetime.now(timezone.utc) - t).total_seconds() / 60
+
+
 def cmd_fetch(args) -> int:
     outputs = tuple(args.outputs.split(","))
     bg = tuple(int(x) for x in args.background.split(","))
@@ -53,7 +62,12 @@ def cmd_fetch(args) -> int:
                 print(f"[dup]  {st.code}: เฟรมเดิม ข้าม")
             else:
                 got += 1
-                waiting.discard(st.code)
+                age = _frame_age_min(s)
+                if args.fresh_min and age is not None and age > args.fresh_min:
+                    # ได้ภาพรอบก่อนที่ยังไม่เคยเก็บ (เช่นรอบก่อนพลาด) — เก็บไว้แล้ว แต่ยังรอภาพรอบปัจจุบันต่อ
+                    print(f"[old]  {st.code} {s['timestamp_th']} TH (อายุ {age:.0f} นาที) — เก็บแล้ว รอภาพรอบนี้ต่อ")
+                else:
+                    waiting.discard(st.code)
                 print(f"[ok]   {st.code} {s['timestamp_th']} TH  "
                       f"coverage={s['coverage_pct']}%  max={s['max_dbz']} dBZ  ({s['timestamp_source']})")
         if args.until_new and not waiting:
@@ -387,6 +401,8 @@ def main(argv=None) -> int:
     f = sub.add_parser("fetch", help="ดึงภาพล่าสุด + ประมวลผล")
     f.add_argument("--repeat", type=int, default=1, help="เช็กกี่รอบใน 1 job")
     f.add_argument("--interval", type=int, default=240, help="เว้นกี่วินาทีระหว่างรอบ")
+    f.add_argument("--fresh-min", type=float, default=0,
+                   help="ใช้กับ --until-new: เฟรมที่เก่ากว่านี้ (นาที) ไม่นับเป็นภาพรอบนี้ ให้รอต่อ (0 = ปิด)")
     f.add_argument("--until-new", action="store_true",
                    help="หยุดเช็กทันทีที่ได้เฟรมใหม่ — ใช้กับ --repeat เพื่อรอภาพที่กรมอุตุฯ อัปโหลดช้า")
     f.add_argument("--outputs", default="alpha,solid", help="alpha,solid,dbz")
