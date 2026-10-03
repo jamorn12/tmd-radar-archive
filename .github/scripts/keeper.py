@@ -7,7 +7,7 @@
 
 วิธีทำงาน
     job เดียวที่รันยาว ~5 ชม. 35 นาที ใช้ GITHUB_TOKEN ของ repo (ไม่มีวันหมดอายุ)
-    · ทุกรอบ :05 :20 :35 :50 — รอ 3 นาที ถ้ายังไม่มี run ของ archive.yml เริ่มในรอบนั้น → สั่งรันแทน
+    · ทุกรอบ :02 :17 :32 :47 — รอ 4 นาที ถ้ายังไม่มี run ของ archive.yml เริ่มในรอบนั้น → สั่งรันแทน
       (ตัวตั้งเวลาภายนอกยังเป็นตัวหลัก keeper สั่งเฉพาะรอบที่ตัวหลักพลาด ไม่รันซ้อน)
     · ทุก :12 :42 — ดึงไฟล์สถานะล่าสุดแล้วรัน watchdog.py (watchdog ไม่ต้องพึ่ง cron อีกต่อไป)
     · ใกล้ครบเวลา — สั่ง keeper.yml ตัวใหม่ (ตัวใหม่ยกเลิกตัวเก่าผ่าน concurrency) เป็นสายต่อกันไม่ขาด
@@ -24,8 +24,8 @@ import subprocess
 import time
 from datetime import datetime, timedelta, timezone
 
-SLOTS = (5, 20, 35, 50)          # นาทีที่ตัวตั้งเวลาภายนอกยิง
-GRACE_MIN = 3                    # รอตัวหลักกี่นาทีก่อนสั่งแทน
+SLOTS = (2, 17, 32, 47)          # นาทีที่ตัวตั้งเวลาภายนอกยิง (ก่อนภาพออก ~2 นาที — ดู archive.yml)
+GRACE_MIN = 4                    # รอตัวหลักกี่นาทีก่อนสั่งแทน (4 = ไม่ชนกับตัวตั้งเวลาที่ยังยิง :05 แบบเดิม)
 WATCHDOG_AT = (12, 42)
 LIFETIME_MIN = 335               # 5 ชม. 35 นาที (job จำกัด 6 ชม.)
 STATUS_FILES = ["data/log/PHS_index.csv", "docs/nowcast/PHS/latest.json", "docs/gauges/PHS.json"]
@@ -45,7 +45,7 @@ def sh(cmd: list[str], check: bool = False) -> str:
 
 
 def last_slot(t: datetime) -> datetime:
-    """รอบ :05 :20 :35 :50 ล่าสุดที่ ≤ t"""
+    """รอบ :02 :17 :32 :47 ล่าสุดที่ ≤ t"""
     base = t.replace(second=0, microsecond=0)
     for back in range(0, 61):
         c = base - timedelta(minutes=back)
