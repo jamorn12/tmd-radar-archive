@@ -4469,8 +4469,12 @@ async function reloadRadarData(newManifest) {
   updateTelemetryStationValues();
 }
 
-// ระบบ Auto-polling ตรวจสอบข้อมูลใหม่ทุกๆ 3 นาที (180,000 ms)
-setInterval(async () => {
+// ระบบ Auto-polling ตรวจสอบข้อมูลใหม่ทุก 30 วินาที (เดิม 3 นาที) + เช็กทันทีเมื่อกลับมาที่แท็บนี้
+// latest.json เล็กมาก เช็กถี่ได้ · ภาพใหม่ขึ้นเว็บช้าสุด ~30 วินาทีหลัง GitHub Pages อัปเดต
+let pollBusy = false;
+async function pollManifest() {
+  if (pollBusy) return;            // รอบก่อนยังโหลดภาพชุดใหม่ไม่เสร็จ
+  pollBusy = true;
   try {
     const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
     if (!res.ok) return;
@@ -4496,8 +4500,14 @@ setInterval(async () => {
     }
   } catch (e) {
     console.warn("Auto-refresh skipped due to network/fetch error:", e);
+  } finally {
+    pollBusy = false;
   }
-}, 180000);
+}
+setInterval(pollManifest, 30000);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) pollManifest();   // เบราว์เซอร์หน่วง timer ของแท็บที่ไม่ได้เปิดดู
+});
 
 loadBoundaries();
 initRadar();
