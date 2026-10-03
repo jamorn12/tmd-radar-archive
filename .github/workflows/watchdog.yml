@@ -5,7 +5,9 @@ name: Watchdog
 # ตัวตั้งเวลายังยิงอยู่ไหม, มีไฟล์ใกล้เพดาน 100 MB ไหม
 #   ผิดปกติ → เปิด GitHub Issue (label: watchdog) + mention เจ้าของ repo → GitHub ส่งอีเมล/แจ้งในแอป
 #   กลับมาปกติ → comment แล้วปิด Issue เอง
-#   ตัวตั้งเวลาเงียบ → สั่งรัน archive.yml เอง
+#   ตัวตั้งเวลาเงียบ → สั่งรัน archive.yml เอง · keeper.yml หลุด → สั่งเริ่มใหม่
+#   ตัวตั้งเวลาภายนอกไม่สั่งเกิน 60 นาที / token ใกล้หมดอายุ (repo variable TOKEN_EXPIRES) → แจ้ง Issue
+# keeper.yml เรียก watchdog.py ทุก :12 :42 อยู่แล้ว — cron ของไฟล์นี้เป็นตัวสำรองที่คอยดู keeper
 # รายละเอียดเกณฑ์อยู่ใน .github/scripts/watchdog.py
 #
 # ไม่โหลดภาพทั้ง repo — sparse checkout เฉพาะ 3 ไฟล์สถานะ ขนาดไฟล์อ่านจาก git tree API
@@ -36,6 +38,7 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             .github/scripts/watchdog.py
+            .github/scripts/keeper.py
             data/log/PHS_index.csv
             docs/nowcast/PHS/latest.json
             docs/gauges/PHS.json
@@ -44,4 +47,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PIPELINE_ENABLED: ${{ vars.PIPELINE_ENABLED }}
+          TOKEN_EXPIRES: ${{ vars.TOKEN_EXPIRES }}
         run: python3 .github/scripts/watchdog.py
