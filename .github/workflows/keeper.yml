@@ -1,0 +1,48 @@
+name: Keeper
+
+# ── ตัวตั้งเวลาสำรองที่ไม่ต้องใช้ token ส่วนตัว ─────────────────────────────────────────
+# เหตุ 3 ต.ค. 2569: token ของตัวตั้งเวลาภายนอกหมดอายุ ระบบรันได้แค่จาก GitHub cron (ทุก 2–3 ชม.)
+# keeper รันยาวครั้งละ ~5 ชม. 35 นาที ด้วย GITHUB_TOKEN ของ repo (ไม่มีวันหมดอายุ)
+#   · รอบ :05 :20 :35 :50 ที่ตัวหลักไม่ได้สั่งภายใน 3 นาที → สั่ง archive.yml แทน (ไม่รันซ้อน)
+#   · :12 :42 → รัน watchdog.py ด้วยสถานะล่าสุด (ไม่ต้องพึ่ง cron)
+#   · ครบเวลา → สั่ง keeper ตัวใหม่ต่อสาย (concurrency ยกเลิกตัวเก่าให้)
+# watchdog.yml (cron) คอยเริ่ม keeper ใหม่ถ้าสายขาด · cron ด้านล่างเป็นตัวกันพลาดอีกชั้น
+# repo สาธารณะ → นาที Actions ฟรี
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '27 */6 * * *'
+
+permissions:
+  contents: read
+  actions: write     # gh workflow run archive.yml / keeper.yml
+  issues: write      # watchdog เปิด/ปิด Issue
+
+concurrency:
+  group: keeper
+  cancel-in-progress: true
+
+jobs:
+  keep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            .github/scripts/keeper.py
+            .github/scripts/watchdog.py
+            data/log/PHS_index.csv
+            docs/nowcast/PHS/latest.json
+            docs/gauges/PHS.json
+
+      - name: Keep the schedule
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PIPELINE_ENABLED: ${{ vars.PIPELINE_ENABLED }}
+          TOKEN_EXPIRES: ${{ vars.TOKEN_EXPIRES }}
+        run: python3 .github/scripts/keeper.py
