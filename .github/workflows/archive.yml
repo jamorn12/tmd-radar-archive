@@ -11,8 +11,8 @@ on:
         options: [fetch, repair]
         default: fetch
       repeat:
-        description: 'เช็กภาพใหม่สูงสุดกี่ครั้ง (ห่าง 90 วินาที หยุดทันทีที่ได้ภาพ)'
-        default: '6'
+        description: 'เช็กภาพใหม่สูงสุดกี่ครั้ง (ห่าง 20 วินาที หยุดทันทีที่ได้ภาพ · ขั้นต่ำ 24 = 8 นาที)'
+        default: '24'
       engine:
         description: 'motion engine: auto = ใช้ pysteps ถ้ามี | light = block matching ของเรา'
         type: choice
@@ -83,9 +83,15 @@ jobs:
       - name: Fetch and Process Radar Frame
         if: ${{ github.event.inputs.mode != 'repair' }}
         run: |
+          # เร่งความเร็ว (3 ต.ค. 2569): ตัวตั้งเวลายิงก่อนภาพออก (:02 :17 :32 :47) แล้วเช็กถี่ทุก 20 วินาที
+          # กรมอุตุฯ ปล่อยภาพราว +4.2–4.5 นาทีหลังเวลาสแกน → ได้ภาพภายใน ~20 วินาทีหลังภาพออก
+          # (เดิมยิง :05 แล้วเช็กทุก 90 วินาที → เก็บภาพได้ที่ +6.6 นาที)
+          # repeat ขั้นต่ำ 24 รอบ (8 นาที) กันกรณีตัวตั้งเวลาส่งค่าเก่า '6' มา
+          R="${{ github.event.inputs.repeat || 24 }}"
+          if [ "$R" -lt 24 ]; then R=24; fi
           python -m radar_archive.cli --station PHS fetch \
-            --repeat "${{ github.event.inputs.repeat || 6 }}" \
-            --interval 90 --until-new \
+            --repeat "$R" \
+            --interval 20 --until-new --fresh-min 12 \
             --outputs alpha,solid \
             --background 0,0,0
 
