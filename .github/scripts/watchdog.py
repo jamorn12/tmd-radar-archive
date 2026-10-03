@@ -9,6 +9,9 @@
     4. run ของ archive.yml ล้มติดกัน                         ≥ FAIL_STREAK รอบ      → ปัญหา
     5. ไม่มี run ของ archive.yml เริ่มเลยใน SILENT_MAX_MIN   → ตัวตั้งเวลาเงียบ → สั่งรันเอง
     6. ไฟล์ใน repo ใหญ่ใกล้เพดาน 100 MB                     ≥ 80 MB เตือน · ≥ 95 MB ปัญหา
+    7. ตัวตั้งเวลาภายนอก (token ส่วนตัว) ไม่ได้สั่งรันเลยใน EXT_SILENT_MIN → ปัญหา (token อาจหมดอายุ)
+    8. token ใกล้หมดอายุ — อ่านวันที่จาก repo variable TOKEN_EXPIRES (YYYY-MM-DD) · เหลือ ≤ 7 วัน → ปัญหา
+    9. keeper.yml (ตัวตั้งเวลาสำรองที่ใช้ GITHUB_TOKEN) ไม่ได้รันอยู่ → สั่งเริ่มใหม่
 
 การแจ้งเตือน (label: watchdog)
     มีปัญหา + ยังไม่มี Issue เปิดอยู่  → เปิด Issue ใหม่ + mention เจ้าของ repo (GitHub ส่งอีเมล/แอปแจ้ง)
@@ -40,6 +43,9 @@ NOWCAST_MAX_MIN = 60
 GAUGE_MAX_MIN = 150         # สสน. รายชั่วโมง + เผื่อความล่าช้าของแหล่งข้อมูล
 FAIL_STREAK = 2
 SILENT_MAX_MIN = 35         # ตัวตั้งเวลายิงทุก 15 นาที + cron สำรอง เงียบเกิน 35 นาที = ผิดปกติ
+EXT_SILENT_MIN = 60         # ไม่มี run ที่คนสั่ง (token ส่วนตัว) เลยใน 60 นาที = ตัวตั้งเวลาภายนอกหยุด
+TOKEN_WARN_DAYS = 7
+BOT = "github-actions[bot]"
 WARN_MB, HARD_MB = 80, 95
 LABEL = "watchdog"
 # ไฟล์ที่ปิดแล้ว (ไม่ถูกเขียนต่อ) แม้ใหญ่ใกล้เพดานก็ไม่เป็นปัญหา — ไม่ต้องแจ้ง
@@ -109,6 +115,32 @@ def archive_runs(dry: bool) -> list[dict]:
     return runs
 
 
+def archive_runs_api(dry: bool) -> list[dict]:
+    """run ล่าสุดพร้อมผู้สั่ง (triggering_actor) — แยกได้ว่าตัวตั้งเวลาภายนอกหรือ keeper เป็นคนสั่ง"""
+    if dry:
+        return []
+    repo = os.environ["GITHUB_REPOSITORY"]
+    out = sh(["gh", "api", f"repos/{repo}/actions/workflows/archive.yml/runs?per_page=12"], check=False)
+    try:
+        runs = json.loads(out or "{}").get("workflow_runs", [])
+    except json.JSONDecodeError:
+        return []
+    for r in runs:
+        r["created"] = datetime.fromisoformat(r["created_at"].replace("Z", "+00:00"))
+        r["actor"] = (r.get("triggering_actor") or {}).get("login", "")
+    return runs
+
+
+def keeper_running(dry: bool) -> bool | None:
+    if dry:
+        return None
+    out = sh(["gh", "run", "list", "--workflow", "keeper.yml", "-L", "5", "--json", "status"], check=False)
+    try:
+        return any(r["status"] in ("in_progress", "queued", "waiting", "pending") for r in json.loads(out or "[]"))
+    except json.JSONDecodeError:
+        return None
+
+
 def big_files(dry: bool) -> list[tuple[str, float]]:
     """ไฟล์ที่ใหญ่ ≥ WARN_MB ใน main — อ่านจาก git tree API ไม่ต้องโหลดไฟล์ทั้ง repo"""
     if dry:
@@ -124,9 +156,10 @@ def big_files(dry: bool) -> list[tuple[str, float]]:
 
 
 # ─────────────────────────────────────────────────────────── ประเมิน
-def assess(dry: bool) -> dict:
+def assess(dry: bool, from_keeper: bool = False) -> dict:
     fr, nc, gg = last_frame(), nowcast_time(), gauge_time()
     runs = archive_runs(dry)
+    apiruns = archive_runs_api(dry)
     big = big_files(dry)
     problems, warnings, actions = [], [], []
 
@@ -170,6 +203,34 @@ def assess(dry: bool) -> dict:
             problems.append(("SCHEDULER_SILENT", f"ไม่มี run ของ archive.yml เริ่มเลยใน {silent:.0f} นาที — ตัวตั้งเวลาภายนอกอาจหยุด"))
             actions.append("dispatch")
 
+    # 7 · ตัวตั้งเวลาภายนอก (token ส่วนตัว) — keeper สั่งแทนได้ แต่ต้องแจ้งให้ไปเปลี่ยน token
+    if apiruns:
+        human = [r for r in apiruns if r["event"] == "workflow_dispatch" and r["actor"] and r["actor"] != BOT]
+        last_h = human[0]["created"] if human else None
+        e = age_min(last_h)
+        if e is None or e > EXT_SILENT_MIN:
+            by_keeper = sum(1 for r in apiruns if r["actor"] == BOT)
+            problems.append(("EXT_SCHEDULER", f"ตัวตั้งเวลาภายนอกไม่ได้สั่งรันตั้งแต่ {th(last_h)} — token ส่วนตัวอาจหมดอายุ "
+                                              f"(github.com/settings/tokens) · ระหว่างนี้ keeper สั่งรันแทน {by_keeper} รอบล่าสุด"))
+
+    # 8 · token ใกล้หมดอายุ (ตั้ง repo variable TOKEN_EXPIRES = วันหมดอายุ ตอนสร้าง token)
+    exp = os.environ.get("TOKEN_EXPIRES", "").strip()
+    if exp:
+        try:
+            d = datetime.strptime(exp, "%Y-%m-%d").replace(tzinfo=TH)
+            left = (d - NOW).total_seconds() / 86400
+            if left <= 0:
+                problems.append(("TOKEN_EXPIRED", f"token ของตัวตั้งเวลาหมดอายุแล้ว ({exp}) — สร้างใหม่แล้วแก้ TOKEN_EXPIRES"))
+            elif left <= TOKEN_WARN_DAYS:
+                problems.append(("TOKEN_EXPIRING", f"token ของตัวตั้งเวลาจะหมดอายุใน {left:.0f} วัน ({exp}) — สร้างใหม่ล่วงหน้า"))
+        except ValueError:
+            warnings.append(("TOKEN_EXPIRES", f"รูปแบบวันที่ไม่ถูก `{exp}` (ต้องเป็น YYYY-MM-DD)"))
+
+    # 9 · keeper ต้องรันอยู่ตลอด
+    if not from_keeper and keeper_running(dry) is False:
+        problems.append(("KEEPER_DOWN", "keeper.yml ไม่ได้รันอยู่ — สั่งเริ่มใหม่แล้ว"))
+        actions.append("keeper")
+
     # 6 · ไฟล์ใหญ่
     for p, mb in big:
         (problems if mb >= HARD_MB else warnings).append(
@@ -197,7 +258,8 @@ def report(s: dict) -> str:
     if s["warnings"]:
         L += ["", "### เตือน"] + [f"- {k} · {m}" for k, m in s["warnings"]]
     if s["actions"]:
-        L += ["", "### ระบบทำเองแล้ว"] + [f"- สั่งรัน archive.yml ใหม่ ({a})" for a in s["actions"]]
+        names = {"dispatch": "สั่งรัน archive.yml ใหม่", "keeper": "สั่งเริ่ม keeper.yml ใหม่"}
+        L += ["", "### ระบบทำเองแล้ว"] + [f"- {names.get(a, a)}" for a in s["actions"]]
     return "\n".join(L)
 
 
@@ -239,9 +301,10 @@ def notify(s: dict, body: str) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--from-keeper", action="store_true", help="เรียกจาก keeper.py (ไม่ต้องเช็ก keeper ตัวเอง)")
     a = ap.parse_args()
 
-    s = assess(a.dry_run)
+    s = assess(a.dry_run, a.from_keeper)
     body = report(s)
     print(body)
     summ = os.environ.get("GITHUB_STEP_SUMMARY")
@@ -257,6 +320,9 @@ def main() -> int:
     if "dispatch" in s["actions"]:
         sh(["gh", "workflow", "run", "archive.yml"], check=False)
         print("สั่งรัน archive.yml แล้ว")
+    if "keeper" in s["actions"]:
+        sh(["gh", "workflow", "run", "keeper.yml"], check=False)
+        print("สั่งเริ่ม keeper.yml แล้ว")
     notify(s, body)
     return 0
 
