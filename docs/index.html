@@ -431,6 +431,17 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
   transition: all 0.2s; white-space: nowrap;
 }
 .btn-open-telemetry:hover { background: rgba(16, 185, 129, 0.3); }
+/* ปุ่มไปหน้าคลังภาพรายวัน (archive.html) — มือถือเหลือแค่ไอคอน วางต่อจากชื่อแบรนด์ */
+.btn-open-archive {
+  background: rgba(56, 189, 248, 0.14); border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #7DD3FC; font-weight: 600; padding: 6px 12px; border-radius: 999px; text-decoration: none;
+  display: flex; align-items: center; gap: 5px; font-size: 11.5px; transition: all 0.2s; white-space: nowrap;
+}
+.btn-open-archive:hover { background: rgba(56, 189, 248, 0.26); }
+@media (max-width: 768px) {
+  .btn-open-archive { width: 32px; height: 32px; padding: 0; justify-content: center; flex-shrink: 0; }
+  .btn-open-archive span { display: none; }
+}
 
 /* Layer Control Card */
 .layer-card {
@@ -1061,6 +1072,11 @@ html, body { height: 100%; margin: 0; padding: 0; background: #070B12; color: va
     <i data-lucide="table-properties" class="icon-xs"></i>
     <span>ตารางน้ำฝน</span>
   </button>
+
+  <a class="btn-open-archive glass" href="archive.html" title="คลังภาพย้อนหลัง: เลือกวัน เล่นภาพทั้งวัน และดาวน์โหลด">
+    <i data-lucide="history" class="icon-xs"></i>
+    <span>คลังภาพย้อนหลัง</span>
+  </a>
 
   <div class="map-switch glass">
     <button class="map-btn" data-layer="dark">มืด</button>
