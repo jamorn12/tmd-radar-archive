@@ -1,0 +1,46 @@
+{
+  "station": "PHS",
+  "note": "Events reported in the news within the PHS radar coverage. date and jump are Thai local time (UTC+7). jump = the time to open in the replay.",
+  "events": [
+    {
+      "date": "2026-09-14",
+      "jump": "15:30",
+      "title": "ฝนตกหนัก อ.วังทอง",
+      "detail": "ข่าวรายงานฝนตกหนักราว 16:50 น.",
+      "source": "เชียงใหม่นิวส์",
+      "url": "https://www.chiangmainews.co.th/news/4111657/"
+    },
+    {
+      "date": "2026-09-19",
+      "jump": "03:00",
+      "title": "น้ำท่วม อ.หล่มสัก / ปากช่อง",
+      "detail": "คืน 18–19 ก.ย. ได้รับผลกระทบราว 300 ครัวเรือน",
+      "source": "TNews",
+      "url": "https://www.tnews.co.th/social/social-news/659657"
+    },
+    {
+      "date": "2026-09-20",
+      "jump": "11:30",
+      "title": "น้ำท่วมทาง อ.นครไทย",
+      "detail": "ราว 12:00 น. ทางหลวงหมายเลข 2013",
+      "source": "มติชน",
+      "url": "https://www.matichon.co.th/region/news_5897545"
+    },
+    {
+      "date": "2026-09-20",
+      "jump": "22:45",
+      "title": "ฝนหนัก อ.เมืองพิษณุโลก",
+      "detail": "คืน 20–21 ก.ย. สถานี TMD 48378 วัดได้ 136.8 มม. ใน 24 ชม. ถึง 07:00 น.",
+      "source": "Nation Thailand",
+      "url": "https://www.nationthailand.com/news/general/40071303"
+    },
+    {
+      "date": "2026-09-21",
+      "jump": "00:00",
+      "title": "ฝนหนัก อ.เมืองพิษณุโลก (ต่อ)",
+      "detail": "ฝนต่อเนื่องถึงราว 05:15 น.",
+      "source": "Nation Thailand",
+      "url": "https://www.nationthailand.com/news/general/40071303"
+    }
+  ]
+}
