@@ -40,6 +40,10 @@ a{color:inherit}
 /* calendar */
 #cal{padding:14px 16px}
 .mon{margin-bottom:14px}.mon h4{font-size:14px;margin-bottom:6px}
+.calnav{display:none;align-items:center;gap:6px;margin-bottom:10px}
+.calnav b{flex:1;text-align:center;font-size:15px}
+.calnav button{width:38px;height:34px;border-radius:9px;border:1px solid var(--line);color:#E2E8F0;font-size:16px}
+.calnav button:disabled{opacity:.3;cursor:default}
 .g7{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .g7 .dw{font-size:11px;color:var(--dim);text-align:center}
 .day{height:40px;border-radius:7px;position:relative;font-size:12px;padding:3px 5px;cursor:pointer;color:#E2E8F0;text-align:left}
@@ -110,7 +114,7 @@ a{color:inherit}
 #dprog .pb{height:6px;border-radius:3px;background:#1E293B;overflow:hidden;margin-top:5px}
 #dprog .pb i{display:block;height:100%;width:0;background:var(--accent)}
 #msg{position:fixed;z-index:60;left:50%;bottom:20px;transform:translateX(-50%);background:#0F172A;border:1px solid var(--line);padding:8px 14px;border-radius:10px;display:none}
-@media (max-width:1150px){#wrap{grid-template-columns:1fr}#cal{order:2}#side{order:3}#mid{order:1}#film{grid-template-columns:repeat(6,1fr)}}
+@media (max-width:1150px){.calnav{display:flex}.mon{display:none}.mon.cur{display:block}.mon h4{display:none}#cal{touch-action:pan-y}#wrap{grid-template-columns:1fr}#cal{order:2}#side{order:3}#mid{order:1}#film{grid-template-columns:repeat(6,1fr)}}
 </style>
 </head>
 <body>
@@ -265,6 +269,25 @@ async function buildMap() {
 }
 
 /* ───────── calendar */
+let CALM = [], calIdx = 0;                      // เดือนที่มีในคลัง / เดือนที่แสดงอยู่ (มือถือแสดงทีละเดือน)
+function showMonth(i) {
+  if (!CALM.length) return;
+  calIdx = Math.max(0, Math.min(CALM.length - 1, i));
+  document.querySelectorAll("#cal .mon").forEach((m, j) => m.classList.toggle("cur", j === calIdx));
+  const [y, m] = CALM[calIdx];
+  document.getElementById("cml").textContent = `${THMF[m - 1]} ${y + 543}`;
+  const ix = (yy, mm) => CALM.findIndex(([a, b]) => a === yy && b === mm);
+  document.getElementById("cpv").disabled = calIdx === 0;
+  document.getElementById("cnx").disabled = calIdx === CALM.length - 1;
+  document.getElementById("cpy").disabled = !CALM.some(([a, b]) => a * 12 + b <= (y - 1) * 12 + m);
+  document.getElementById("cny").disabled = !CALM.some(([a, b]) => a * 12 + b >= (y + 1) * 12 + m);
+}
+function jumpYear(d) {                              // ไปเดือนเดียวกันของปีก่อน/ถัดไป หรือเดือนที่ใกล้ที่สุดที่มีข้อมูล
+  const [y, m] = CALM[calIdx], want = (y + d) * 12 + m;
+  let best = calIdx, bd = 1e9;
+  CALM.forEach(([a, b], j) => { const dd = Math.abs(a * 12 + b - want); if (Math.sign(a * 12 + b - (y * 12 + m)) === d && dd < bd) { bd = dd; best = j; } });
+  showMonth(best);
+}
 function renderCal() {
   const box = document.getElementById("cal");
   const days = Object.fromEntries(CAL.days.map(d => [d.date, d]));
@@ -272,8 +295,11 @@ function renderCal() {
   const maxKm = Math.max(1, ...CAL.days.map(d => d.max_km2));
   const first = CAL.days[0].date, last = CAL.days[CAL.days.length - 1].date;
   let [y, m] = first.split("-").map(Number); const [ly, lm] = last.split("-").map(Number);
-  let html = "";
+  let html = `<div class="calnav"><button id="cpy" aria-label="ปีก่อน">«</button><button id="cpv" aria-label="เดือนก่อน">‹</button>
+    <b id="cml"></b><button id="cnx" aria-label="เดือนถัดไป">›</button><button id="cny" aria-label="ปีถัดไป">»</button></div>`;
+  CALM = [];
   while (y < ly || (y === ly && m <= lm)) {
+    CALM.push([y, m]);
     html += `<div class="mon"><h4>${THMF[m - 1]} ${y + 543}</h4><div class="g7">` + ["จ","อ","พ","พฤ","ศ","ส","อา"].map(d => `<div class="dw">${d}</div>`).join("");
     const off = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7, n = new Date(Date.UTC(y, m, 0)).getUTCDate();
     for (let i = 0; i < off; i++) html += `<div class="day blank"></div>`;
@@ -292,6 +318,17 @@ function renderCal() {
     <span style="color:var(--warn)">●</span> มีเหตุการณ์ที่ข่าวรายงาน · เส้นประ = ไม่มีข้อมูล</div>`;
   box.innerHTML = html;
   box.querySelectorAll("button.day").forEach(b => b.onclick = () => loadDay(b.dataset.d));
+  document.getElementById("cpv").onclick = () => showMonth(calIdx - 1);
+  document.getElementById("cnx").onclick = () => showMonth(calIdx + 1);
+  document.getElementById("cpy").onclick = () => jumpYear(-1);
+  document.getElementById("cny").onclick = () => jumpYear(1);
+  let x0 = null;                                     // ปัดซ้าย/ขวาบนปฏิทินเพื่อเปลี่ยนเดือน
+  box.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
+  box.addEventListener("touchend", e => {
+    if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if (Math.abs(dx) > 60) showMonth(calIdx + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+  showMonth(CALM.length - 1);
 }
 
 /* ───────── day */
@@ -299,6 +336,7 @@ async function loadDay(date, hhmm) {
   stop();
   DAY = await getJSON(`${IDX}${date}.json`); imgCache.clear();
   document.querySelectorAll("#cal .day").forEach(b => b.classList.toggle("sel", b.dataset.d === date));
+  { const [yy, mm] = date.split("-").map(Number), i = CALM.findIndex(([a, b]) => a === yy && b === mm); if (i >= 0) showMonth(i); }
   const cyc = DAY.cycles;
   const hasObs = cyc.some(c => c.obs), firstAny = Math.max(0, cyc.findIndex(c => c.obs || c.raw));
   if (!hasObs) { layer = "raw"; swipe = false; }          // days with TMD source images only
