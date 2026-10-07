@@ -126,6 +126,7 @@ a{color:inherit}
       <div class="seg" id="lay"><button data-l="raw">ภาพต้นทาง TMD</button><button data-l="qc">หลัง QC</button><button data-l="fc">พยากรณ์ที่ออก 30 นาทีก่อน</button></div>
       <div style="flex:1"></div>
       <button class="chip" id="swb">⇆ เทียบแบบเลื่อน</button>
+      <button class="chip" id="rsb" title="กลับไปมุมมองเริ่มต้น (วันและเวลาเดิม)">↺ รีเซ็ต</button>
       <button class="chip" id="dlb" title="ดาวน์โหลดภาพ GIF หรือไฟล์ทั้งวัน">⬇ ดาวน์โหลด</button>
     </div>
     <div id="mapw">
@@ -420,6 +421,13 @@ document.getElementById("pb").onclick = () => timer ? stop() : play();
 document.getElementById("rg").oninput = e => { k = +e.target.value; draw(); };
 document.querySelectorAll("#lay button").forEach(b => b.onclick = () => { layer = b.dataset.l; swipe = false; draw(); });
 document.getElementById("swb").onclick = () => { swipe = !swipe; draw(); };
+document.getElementById("rsb").onclick = () => {           // กลับมุมมองเริ่มต้น: เทียบแบบเลื่อนที่กึ่งกลาง ความเร็ว 2× (คงวันและเวลาไว้)
+  if (!DAY) return; stop();
+  const hasObs = DAY.cycles.some(c => c.obs);
+  layer = hasObs ? "qc" : "raw"; swipe = hasObs; split = 0.5; speed = 400;
+  document.querySelectorAll("#spd button").forEach(x => x.classList.toggle("on", x.dataset.s === "400"));
+  draw(); toast("กลับมุมมองเริ่มต้นแล้ว");
+};
 document.querySelectorAll("#spd button").forEach(b => b.onclick = () => {
   speed = +b.dataset.s; document.querySelectorAll("#spd button").forEach(x => x.classList.toggle("on", x === b)); if (timer) play();
 });
