@@ -367,10 +367,16 @@ function renderCur(c) {
 }
 
 /* ───────── draw one frame */
+function svgSquare() {                           // แผนที่จริงเป็นจัตุรัสกลางกล่อง (กล่องอาจกว้างกว่าสูง)
+  const r = M.svg.getBoundingClientRect(), side = Math.min(r.width, r.height);
+  return { left: r.left + (r.width - side) / 2, top: r.top + (r.height - side) / 2, side };
+}
 function placeSplit() {
   const hd = document.getElementById("hd"), x = -252 + 504 * split;
   M.rL.setAttribute("width", x + 260); M.rR.setAttribute("x", x);
-  hd.style.left = (split * 100) + "%";
+  const sq = svgSquare(), b = document.getElementById("mapw").getBoundingClientRect();   // เส้นต้องอยู่ตรงรอยตัดจริง
+  hd.style.left = `${sq.left - b.left + split * sq.side}px`;
+  hd.style.top = `${sq.top - b.top}px`; hd.style.bottom = "auto"; hd.style.height = `${sq.side}px`;
   for (const id of ["hd", "lL", "lR"]) document.getElementById(id).style.display = swipe ? "" : "none";
 }
 function draw() {
@@ -425,8 +431,9 @@ document.addEventListener("keydown", e => {
 });
 (() => {
   const w = document.getElementById("mapw"); let drag = false;
-  const move = e => { if (!drag || !swipe) return; const r = w.getBoundingClientRect(); split = Math.min(.97, Math.max(.03, (e.clientX - r.left) / r.width)); placeSplit(); };
-  document.getElementById("hd").addEventListener("pointerdown", e => { drag = true; e.target.setPointerCapture?.(e.pointerId); });
+  const at = e => { const sq = svgSquare(); split = Math.min(.97, Math.max(.03, (e.clientX - sq.left) / sq.side)); placeSplit(); };
+  const move = e => { if (drag && swipe) at(e); };
+  w.addEventListener("pointerdown", e => { if (!swipe) return; drag = true; w.setPointerCapture?.(e.pointerId); at(e); });   // คลิกหรือลากตรงไหนของแผนที่ก็ได้
   w.addEventListener("pointermove", move); window.addEventListener("pointerup", () => drag = false);
   window.addEventListener("resize", () => { if (DAY) { renderTimeline(); draw(); } });
 })();
