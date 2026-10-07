@@ -94,7 +94,22 @@ a{color:inherit}
 .ev2{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);border-radius:10px;padding:9px 11px;font-size:12.5px;line-height:1.5;margin-bottom:6px;cursor:pointer;width:100%;text-align:left}
 .ev2 a{color:#FCD34D}
 #share{width:100%;margin-top:10px;border:1px solid var(--line);border-radius:9px;padding:8px;color:#CBD5E1}
-#msg{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#0F172A;border:1px solid var(--line);padding:8px 14px;border-radius:10px;display:none}
+/* download panel */
+#dlw{position:fixed;inset:0;background:rgba(2,6,23,.62);display:none;place-items:center;z-index:50;padding:16px}
+#dl{width:min(470px,100%);max-height:92vh;overflow:auto;padding:16px 18px}
+#dl h3{font-size:16px;display:flex;justify-content:space-between;align-items:center}
+#dl h4{font-size:13.5px;margin:14px 0 6px;color:#CBD5E1}
+#dl .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+#dl .dbtn{border:1px solid var(--line);border-radius:9px;padding:7px 11px;font-size:13px;color:#E2E8F0;background:rgba(255,255,255,.04)}
+#dl .dbtn.main{background:var(--accent);border-color:var(--accent);color:#06263A;font-weight:700}
+#dl .dbtn:disabled{opacity:.45;cursor:default}
+#dl select{font:inherit;font-size:13px;background:#0F172A;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:5px 7px}
+#dl label{font-size:13px;color:#CBD5E1;display:inline-flex;align-items:center;gap:6px}
+#dl .note{font-size:12px;color:var(--dim);line-height:1.55;margin-top:6px}
+#dprog{margin-top:12px;display:none}
+#dprog .pb{height:6px;border-radius:3px;background:#1E293B;overflow:hidden;margin-top:5px}
+#dprog .pb i{display:block;height:100%;width:0;background:var(--accent)}
+#msg{position:fixed;z-index:60;left:50%;bottom:20px;transform:translateX(-50%);background:#0F172A;border:1px solid var(--line);padding:8px 14px;border-radius:10px;display:none}
 @media (max-width:1150px){#wrap{grid-template-columns:1fr}#cal{order:2}#side{order:3}#mid{order:1}#film{grid-template-columns:repeat(6,1fr)}}
 </style>
 </head>
@@ -111,6 +126,7 @@ a{color:inherit}
       <div class="seg" id="lay"><button data-l="raw">ภาพต้นทาง TMD</button><button data-l="qc">หลัง QC</button><button data-l="fc">พยากรณ์ที่ออก 30 นาทีก่อน</button></div>
       <div style="flex:1"></div>
       <button class="chip" id="swb">⇆ เทียบแบบเลื่อน</button>
+      <button class="chip" id="dlb" title="ดาวน์โหลดภาพ GIF หรือไฟล์ทั้งวัน">⬇ ดาวน์โหลด</button>
     </div>
     <div id="mapw">
       <span class="lbl badge b-raw" id="lL">ภาพต้นทาง TMD</span>
@@ -129,7 +145,30 @@ a{color:inherit}
   </div>
   <div id="side" class="card"></div>
 </div>
+<div id="dlw"><div id="dl" class="card" role="dialog" aria-label="ดาวน์โหลด">
+  <h3><span>ดาวน์โหลด · <span id="dlday"></span></span><button id="dlx" class="dbtn" aria-label="ปิด">✕</button></h3>
+  <h4>รอบที่กำลังดู <span id="dlcur" class="mono"></span></h4>
+  <div class="row"><button class="dbtn main" id="dpng">ภาพตามที่เห็น (PNG)</button></div>
+  <div class="row" id="dorig"></div>
+  <h4>ภาพเคลื่อนไหว (GIF)</h4>
+  <div class="row"><label>ตั้งแต่ <select id="ds"></select></label><label>ถึง <select id="de"></select></label>
+    <button class="dbtn" id="dall">ทั้งวัน</button></div>
+  <div class="row"><label>ภาพ <select id="dmode"><option value="split">เทียบ ต้นทาง | QC</option><option value="qc">หลัง QC</option>
+    <option value="fc">พยากรณ์ +30 นาที</option><option value="raw">ภาพต้นทาง TMD</option></select></label>
+    <label>ขนาด <select id="dsize"><option value="600">600 px</option><option value="900">900 px</option></select></label>
+    <label>ความเร็ว <select id="dspd"><option value="800">ช้า</option><option value="400" selected>ปกติ</option><option value="200">เร็ว</option></select></label></div>
+  <div class="row"><button class="dbtn main" id="dgif">สร้าง GIF</button><span class="k" id="dcnt"></span></div>
+  <h4>ข้อมูลทั้งวัน</h4>
+  <div class="row"><button class="dbtn main" id="dzip">ZIP ไฟล์ต้นฉบับ</button><button class="dbtn" id="dcsv">ตารางรอบ (CSV)</button></div>
+  <div class="row"><label><input type="checkbox" id="dfc"> รวมภาพพยากรณ์ f+015 ถึง f+120 (ไฟล์มากขึ้นราว 8 เท่า)</label></div>
+  <div class="note">ZIP มีภาพหลัง QC ทุกรอบ ภาพต้นทาง TMD ตารางรอบ (CSV) ดัชนีของวัน และ README อธิบายกริดกับ palette
+    · ชื่อไฟล์ภาพ QC/พยากรณ์ใช้เวลาไทย ส่วนภาพต้นทางคงชื่อเดิมในคลัง (เวลา UTC)</div>
+  <div id="dprog"><span class="k" id="dptx"></span><div class="pb"><i id="dpbar"></i></div></div>
+</div></div>
 <div id="msg"></div>
+<script>/* gifenc 1.0.3 · MIT License · Copyright (c) 2017 Matt DesLauriers · https://github.com/mattdesl/gifenc */
+(()=>{var X={signature:"GIF",version:"89a",trailer:59,extensionIntroducer:33,applicationExtensionLabel:255,graphicControlExtensionLabel:249,imageSeparator:44,signatureSize:3,versionSize:3,globalColorTableFlagMask:128,colorResolutionMask:112,sortFlagMask:8,globalColorTableSizeMask:7,applicationIdentifierSize:8,applicationAuthCodeSize:3,disposalMethodMask:28,userInputFlagMask:2,transparentColorFlagMask:1,localColorTableFlagMask:128,interlaceFlagMask:64,idSortFlagMask:32,localColorTableSizeMask:7};function F(t=256){let e=0,s=new Uint8Array(t);return{get buffer(){return s.buffer},reset(){e=0},bytesView(){return s.subarray(0,e)},bytes(){return s.slice(0,e)},writeByte(r){n(e+1),s[e]=r,e++},writeBytes(r,o=0,i=r.length){n(e+i);for(let c=0;c<i;c++)s[e++]=r[c+o]},writeBytesView(r,o=0,i=r.byteLength){n(e+i),s.set(r.subarray(o,o+i),e),e+=i}};function n(r){var o=s.length;if(o>=r)return;var i=1024*1024;r=Math.max(r,o*(o<i?2:1.125)>>>0),o!=0&&(r=Math.max(r,256));let c=s;s=new Uint8Array(r),e>0&&s.set(c.subarray(0,e),0)}}var O=12,J=5003,lt=[0,1,3,7,15,31,63,127,255,511,1023,2047,4095,8191,16383,32767,65535];function at(t,e,s,n,r=F(512),o=new Uint8Array(256),i=new Int32Array(J),c=new Int32Array(J)){let x=i.length,a=Math.max(2,n);o.fill(0),c.fill(0),i.fill(-1);let l=0,f=0,g=a+1,h=g,b=!1,w=h,_=(1<<w)-1,u=1<<g-1,k=u+1,B=u+2,p=0,A=s[0],z=0;for(let y=x;y<65536;y*=2)++z;z=8-z,r.writeByte(a),I(u);let d=s.length;for(let y=1;y<d;y++){t:{let m=s[y],v=(m<<O)+A,M=m<<z^A;if(i[M]===v){A=c[M];break t}let V=M===0?1:x-M;for(;i[M]>=0;)if(M-=V,M<0&&(M+=x),i[M]===v){A=c[M];break t}I(A),A=m,B<1<<O?(c[M]=B++,i[M]=v):(i.fill(-1),B=u+2,b=!0,I(u))}}return I(A),I(k),r.writeByte(0),r.bytesView();function I(y){for(l&=lt[f],f>0?l|=y<<f:l=y,f+=w;f>=8;)o[p++]=l&255,p>=254&&(r.writeByte(p),r.writeBytesView(o,0,p),p=0),l>>=8,f-=8;if((B>_||b)&&(b?(w=h,_=(1<<w)-1,b=!1):(++w,_=w===O?1<<w:(1<<w)-1)),y==k){for(;f>0;)o[p++]=l&255,p>=254&&(r.writeByte(p),r.writeBytesView(o,0,p),p=0),l>>=8,f-=8;p>0&&(r.writeByte(p),r.writeBytesView(o,0,p),p=0)}}}var $=at;function D(t,e,s){return t<<8&63488|e<<2&992|s>>3}function G(t,e,s,n){return t>>4|e&240|(s&240)<<4|(n&240)<<8}function j(t,e,s){return t>>4<<8|e&240|s>>4}function R(t,e,s){return t<e?e:t>s?s:t}function T(t){return t*t}function tt(t,e,s){var n=0,r=1e100;let o=t[e],i=o.cnt,c=o.ac,x=o.rc,a=o.gc,l=o.bc;for(var f=o.fw;f!=0;f=t[f].fw){let h=t[f],b=h.cnt,w=i*b/(i+b);if(!(w>=r)){var g=0;s&&(g+=w*T(h.ac-c),g>=r)||(g+=w*T(h.rc-x),!(g>=r)&&(g+=w*T(h.gc-a),!(g>=r)&&(g+=w*T(h.bc-l),!(g>=r)&&(r=g,n=f))))}}o.err=r,o.nn=n}function Q(){return{ac:0,rc:0,gc:0,bc:0,cnt:0,nn:0,fw:0,bk:0,tm:0,mtm:0,err:0}}function ut(t,e){let s=e==="rgb444"?4096:65536,n=new Array(s),r=t.length;if(e==="rgba4444")for(let o=0;o<r;++o){let i=t[o],c=i>>24&255,x=i>>16&255,a=i>>8&255,l=i&255,f=G(l,a,x,c),g=f in n?n[f]:n[f]=Q();g.rc+=l,g.gc+=a,g.bc+=x,g.ac+=c,g.cnt++}else if(e==="rgb444")for(let o=0;o<r;++o){let i=t[o],c=i>>16&255,x=i>>8&255,a=i&255,l=j(a,x,c),f=l in n?n[l]:n[l]=Q();f.rc+=a,f.gc+=x,f.bc+=c,f.cnt++}else for(let o=0;o<r;++o){let i=t[o],c=i>>16&255,x=i>>8&255,a=i&255,l=D(a,x,c),f=l in n?n[l]:n[l]=Q();f.rc+=a,f.gc+=x,f.bc+=c,f.cnt++}return n}function H(t,e,s={}){let{format:n="rgb565",clearAlpha:r=!0,clearAlphaColor:o=0,clearAlphaThreshold:i=0,oneBitAlpha:c=!1}=s;if(!t||!t.buffer)throw new Error("quantize() expected RGBA Uint8Array data");if(!(t instanceof Uint8Array)&&!(t instanceof Uint8ClampedArray))throw new Error("quantize() expected RGBA Uint8Array data");let x=new Uint32Array(t.buffer),a=s.useSqrt!==!1,l=n==="rgba4444",f=ut(x,n),g=f.length,h=g-1,b=new Uint32Array(g+1);for(var w=0,u=0;u<g;++u){let C=f[u];if(C!=null){var _=1/C.cnt;l&&(C.ac*=_),C.rc*=_,C.gc*=_,C.bc*=_,f[w++]=C}}T(e)/w<.022&&(a=!1);for(var u=0;u<w-1;++u)f[u].fw=u+1,f[u+1].bk=u,a&&(f[u].cnt=Math.sqrt(f[u].cnt));a&&(f[u].cnt=Math.sqrt(f[u].cnt));var k,B,p;for(u=0;u<w;++u){tt(f,u,!1);var A=f[u].err;for(B=++b[0];B>1&&(p=B>>1,!(f[k=b[p]].err<=A));B=p)b[B]=k;b[B]=u}var z=w-e;for(u=0;u<z;){for(var d;;){var I=b[1];if(d=f[I],d.tm>=d.mtm&&f[d.nn].mtm<=d.tm)break;d.mtm==h?I=b[1]=b[b[0]--]:(tt(f,I,!1),d.tm=u);var A=f[I].err;for(B=1;(p=B+B)<=b[0]&&(p<b[0]&&f[b[p]].err>f[b[p+1]].err&&p++,!(A<=f[k=b[p]].err));B=p)b[B]=k;b[B]=I}var y=f[d.nn],m=d.cnt,v=y.cnt,_=1/(m+v);l&&(d.ac=_*(m*d.ac+v*y.ac)),d.rc=_*(m*d.rc+v*y.rc),d.gc=_*(m*d.gc+v*y.gc),d.bc=_*(m*d.bc+v*y.bc),d.cnt+=y.cnt,d.mtm=++u,f[y.bk].fw=y.fw,f[y.fw].bk=y.bk,y.mtm=h}let M=[];var V=0;for(u=0;;++V){let L=R(Math.round(f[u].rc),0,255),C=R(Math.round(f[u].gc),0,255),Y=R(Math.round(f[u].bc),0,255),E=255;if(l){if(E=R(Math.round(f[u].ac),0,255),c){let st=typeof c=="number"?c:127;E=E<=st?0:255}r&&E<=i&&(L=C=Y=o,E=0)}let K=l?[L,C,Y,E]:[L,C,Y];if(xt(M,K)||M.push(K),(u=f[u].fw)==0)break}return M}function xt(t,e){for(let s=0;s<t.length;s++){let n=t[s],r=n[0]===e[0]&&n[1]===e[1]&&n[2]===e[2],o=n.length>=4&&e.length>=4?n[3]===e[3]:!0;if(r&&o)return!0}return!1}function U(t,e){var s=0,n;for(n=0;n<t.length;n++){let r=t[n]-e[n];s+=r*r}return s}function P(t,e){return e>1?Math.round(t/e)*e:t}function et(t,{roundRGB:e=5,roundAlpha:s=10,oneBitAlpha:n=null}={}){let r=new Uint32Array(t.buffer);for(let o=0;o<r.length;o++){let i=r[o],c=i>>24&255,x=i>>16&255,a=i>>8&255,l=i&255;if(c=P(c,s),n){let f=typeof n=="number"?n:127;c=c<=f?0:255}l=P(l,e),a=P(a,e),x=P(x,e),r[o]=c<<24|x<<16|a<<8|l<<0}}function nt(t,e,s="rgb565"){if(!t||!t.buffer)throw new Error("quantize() expected RGBA Uint8Array data");if(!(t instanceof Uint8Array)&&!(t instanceof Uint8ClampedArray))throw new Error("quantize() expected RGBA Uint8Array data");if(e.length>256)throw new Error("applyPalette() only works with 256 colors or less");let n=new Uint32Array(t.buffer),r=n.length,o=s==="rgb444"?4096:65536,i=new Uint8Array(r),c=new Array(o),x=s==="rgba4444";if(s==="rgba4444")for(let a=0;a<r;a++){let l=n[a],f=l>>24&255,g=l>>16&255,h=l>>8&255,b=l&255,w=G(b,h,g,f),_=w in c?c[w]:c[w]=gt(b,h,g,f,e);i[a]=_}else{let a=s==="rgb444"?j:D;for(let l=0;l<r;l++){let f=n[l],g=f>>16&255,h=f>>8&255,b=f&255,w=a(b,h,g),_=w in c?c[w]:c[w]=bt(b,h,g,e);i[l]=_}}return i}function gt(t,e,s,n,r){let o=0,i=1e100;for(let c=0;c<r.length;c++){let x=r[c],a=x[3],l=q(a-n);if(l>i)continue;let f=x[0];if(l+=q(f-t),l>i)continue;let g=x[1];if(l+=q(g-e),l>i)continue;let h=x[2];l+=q(h-s),!(l>i)&&(i=l,o=c)}return o}function bt(t,e,s,n){let r=0,o=1e100;for(let i=0;i<n.length;i++){let c=n[i],x=c[0],a=q(x-t);if(a>o)continue;let l=c[1];if(a+=q(l-e),a>o)continue;let f=c[2];a+=q(f-s),!(a>o)&&(o=a,r=i)}return r}function rt(t,e,s=5){if(!t.length||!e.length)return;let n=t.map(i=>i.slice(0,3)),r=s*s,o=t[0].length;for(let i=0;i<e.length;i++){let c=e[i];c.length<o?c=[c[0],c[1],c[2],255]:c.length>o?c=c.slice(0,3):c=c.slice();let x=N(n,c.slice(0,3),U),a=x[0],l=x[1];l>0&&l<=r&&(t[a]=c)}}function q(t){return t*t}function W(t,e,s=U){let n=Infinity,r=-1;for(let o=0;o<t.length;o++){let i=t[o],c=s(e,i);c<n&&(n=c,r=o)}return r}function N(t,e,s=U){let n=Infinity,r=-1;for(let o=0;o<t.length;o++){let i=t[o],c=s(e,i);c<n&&(n=c,r=o)}return[r,n]}function ot(t,e,s=U){return t[W(t,e,s)]}function ct(t={}){let{initialCapacity:e=4096,auto:s=!0}=t,n=F(e),r=5003,o=new Uint8Array(256),i=new Int32Array(r),c=new Int32Array(r),x=!1;return{reset(){n.reset(),x=!1},finish(){n.writeByte(X.trailer)},bytes(){return n.bytes()},bytesView(){return n.bytesView()},get buffer(){return n.buffer},get stream(){return n},writeHeader:a,writeFrame(l,f,g,h={}){let{transparent:b=!1,transparentIndex:w=0,delay:_=0,palette:u=null,repeat:k=0,colorDepth:B=8,dispose:p=-1}=h,A=!1;if(s?x||(A=!0,a(),x=!0):A=Boolean(h.first),f=Math.max(0,Math.floor(f)),g=Math.max(0,Math.floor(g)),A){if(!u)throw new Error("First frame must include a { palette } option");pt(n,f,g,u,B),it(n,u),k>=0&&dt(n,k)}let z=Math.round(_/10);wt(n,p,z,b,w);let d=Boolean(u)&&!A;ht(n,f,g,d?u:null),d&&it(n,u),yt(n,l,f,g,B,o,i,c)}};function a(){ft(n,"GIF89a")}}function wt(t,e,s,n,r){t.writeByte(33),t.writeByte(249),t.writeByte(4),r<0&&(r=0,n=!1);var o,i;n?(o=1,i=2):(o=0,i=0),e>=0&&(i=e&7),i<<=2;let c=0;t.writeByte(0|i|c|o),S(t,s),t.writeByte(r||0),t.writeByte(0)}function pt(t,e,s,n,r=8){let o=1,i=0,c=Z(n.length)-1,x=o<<7|r-1<<4|i<<3|c,a=0,l=0;S(t,e),S(t,s),t.writeBytes([x,a,l])}function dt(t,e){t.writeByte(33),t.writeByte(255),t.writeByte(11),ft(t,"NETSCAPE2.0"),t.writeByte(3),t.writeByte(1),S(t,e),t.writeByte(0)}function it(t,e){let s=1<<Z(e.length);for(let n=0;n<s;n++){let r=[0,0,0];n<e.length&&(r=e[n]),t.writeByte(r[0]),t.writeByte(r[1]),t.writeByte(r[2])}}function ht(t,e,s,n){if(t.writeByte(44),S(t,0),S(t,0),S(t,e),S(t,s),n){let r=0,o=0,i=Z(n.length)-1;t.writeByte(128|r|o|0|i)}else t.writeByte(0)}function yt(t,e,s,n,r=8,o,i,c){$(s,n,e,r,t,o,i,c)}function S(t,e){t.writeByte(e&255),t.writeByte(e>>8&255)}function ft(t,e){for(var s=0;s<e.length;s++)t.writeByte(e.charCodeAt(s))}function Z(t){return Math.max(Math.ceil(Math.log2(t)),1)}var Bt=ct;
+window.GIFENC={GIFEncoder:ct,quantize:H,applyPalette:nt};})();</script>
 <script>
 "use strict";
 const CODE = "PHS";
@@ -188,6 +227,7 @@ async function buildMap() {
   const [xw, xe, ys, yn] = ST.raw_extent_km;
   const raw = el("image", { x: xw, y: -yn, width: xe - xw, height: yn - ys, preserveAspectRatio: "none" }, g);
   const pv = el("g", { class: "prov" }, g), lab = el("g", { class: "plab" }, svg);
+  const PROV = [], LABS = [];                     // เก็บไว้วาดซ้ำบน canvas ตอนดาวน์โหลด
   try {
     const gj = await getJSON("provinces_240km.geojson");
     for (const f of gj.features) {
@@ -196,10 +236,11 @@ async function buildMap() {
       for (const poly of polys) for (const ring of poly) {
         const pts = ring.filter((_, i) => i % 2 === 0).map(([lon, lat]) => project(lat, lon, ST.lat, ST.lon));
         el("polyline", { points: pts.map(([x, y]) => `${x.toFixed(1)},${(-y).toFixed(1)}`).join(" ") }, pv);
+        PROV.push(pts);
         if (pts.length > big.length) big = pts;
       }
       const cx = big.reduce((s, p) => s + p[0], 0) / big.length, cy = big.reduce((s, p) => s + p[1], 0) / big.length;
-      if (Math.hypot(cx, cy) < ST.range_km - 15) { const t = el("text", { x: cx, y: -cy }, lab); t.textContent = PROV_TH[f.properties.name] || f.properties.name; }
+      if (Math.hypot(cx, cy) < ST.range_km - 15) { const nm = PROV_TH[f.properties.name] || f.properties.name; el("text", { x: cx, y: -cy }, lab).textContent = nm; LABS.push([cx, cy, nm]); }
     }
   } catch (e) { console.warn("ไม่มีเส้นขอบเขตจังหวัด", e); }
   const n = ST.grid[0], half = (n - 1) / 2 * ST.kmperpixel + ST.kmperpixel / 2;
@@ -219,7 +260,7 @@ async function buildMap() {
   }
   for (const node of [raw, img]) node.addEventListener("error", () => { node.style.display = "none"; check(); });
   function check() { const vis = [raw, img].some(n => n.style.display !== "none" && n.getAttribute("href")); nod.style.display = vis ? "none" : "grid"; }
-  M = { svg, raw, img, rL, rR, setImg, check };
+  M = { svg, raw, img, rL, rR, setImg, check, PROV, LABS };
 }
 
 /* ───────── calendar */
@@ -255,7 +296,7 @@ function renderCal() {
 /* ───────── day */
 async function loadDay(date, hhmm) {
   stop();
-  DAY = await getJSON(`${IDX}${date}.json`);
+  DAY = await getJSON(`${IDX}${date}.json`); imgCache.clear();
   document.querySelectorAll("#cal .day").forEach(b => b.classList.toggle("sel", b.dataset.d === date));
   const cyc = DAY.cycles;
   const hasObs = cyc.some(c => c.obs), firstAny = Math.max(0, cyc.findIndex(c => c.obs || c.raw));
@@ -377,6 +418,7 @@ document.querySelectorAll("#spd button").forEach(b => b.onclick = () => {
   speed = +b.dataset.s; document.querySelectorAll("#spd button").forEach(x => x.classList.toggle("on", x === b)); if (timer) play();
 });
 document.addEventListener("keydown", e => {
+  if (dlOpen()) { if (e.key === "Escape") closeDL(); return; }
   if (!DAY || e.target.tagName === "INPUT") return;
   if (e.key === "ArrowRight") { stop(); step(1); } else if (e.key === "ArrowLeft") { stop(); step(-1); }
   else if (e.key === " ") { e.preventDefault(); timer ? stop() : play(); }
@@ -388,6 +430,257 @@ document.addEventListener("keydown", e => {
   w.addEventListener("pointermove", move); window.addEventListener("pointerup", () => drag = false);
   window.addEventListener("resize", () => { if (DAY) { renderTimeline(); draw(); } });
 })();
+
+
+/* ───────── ดาวน์โหลด (phase 2) — ทำในเบราว์เซอร์ทั้งหมด ภาพอ่านจาก raw.githubusercontent (CORS *) */
+const imgCache = new Map();
+const FONT = '"IBM Plex Sans Thai","Noto Sans Thai","Leelawadee UI",Tahoma,sans-serif';
+const MODE_TH = { qc: "ภาพสังเกตหลัง QC", fc: "พยากรณ์ +30 นาที", raw: "ภาพต้นทางจาก TMD", split: "ซ้าย: ภาพต้นทาง TMD · ขวา: หลัง QC" };
+const ymd = () => DAY.date.replace(/-/g, "");
+const hhmm4 = c => c.hhmm.replace(":", "");
+function loadImg(url) {
+  if (!url) return Promise.resolve(null);
+  if (!imgCache.has(url)) imgCache.set(url, new Promise(res => {
+    const im = new Image(); im.crossOrigin = "anonymous";
+    im.onload = () => res(im); im.onerror = () => res(null); im.src = url;
+  }));
+  return imgCache.get(url);
+}
+function frameURLs(c, mode) {
+  const raw = c.raw ? rawURL(c.raw) : null, obs = c.obs ? obsURL(c.t) : null;
+  if (mode === "qc") return { img: obs };
+  if (mode === "fc") return { img: fcURL(c.t - 1800, 30) };
+  if (mode === "raw") return { raw };
+  return { raw, img: obs };
+}
+function hasLayer(i, mode) {                       // ใช้ดัชนีตัดรอบที่ไม่มีภาพออกก่อนโหลด
+  const c = DAY.cycles[i];
+  if (mode === "qc") return !!c.obs;
+  if (mode === "raw") return !!c.raw;
+  if (mode === "split") return !!(c.obs || c.raw);
+  const o = DAY.cycles[i - 2];                     // รอบที่ออกพยากรณ์ 30 นาทีก่อน (สองรอบแรกของวันอยู่เมื่อวาน ลองโหลดดู)
+  return o ? !!(o.obs && (o.fc || []).includes(30)) : true;
+}
+async function renderFrame(c, mode, S, sp) {
+  const f = S / 720, head = Math.round(64 * f), foot = Math.round(48 * f), W = S, H = S + head + foot;
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const x = cv.getContext("2d"), u = frameURLs(c, mode);
+  const [rawIm, img] = await Promise.all([loadImg(u.raw), loadImg(u.img)]);
+  cv.empty = !rawIm && !img;
+  x.fillStyle = "#0B1220"; x.fillRect(0, 0, W, H);
+  // หัวภาพ
+  x.textBaseline = "alphabetic"; x.textAlign = "left";
+  x.fillStyle = "#38BDF8"; x.font = `700 ${20 * f}px ${FONT}`; x.fillText("ทันฝน", 16 * f, 28 * f);
+  const w0 = x.measureText("ทันฝน ").width;
+  x.fillStyle = "#CBD5E1"; x.font = `500 ${15 * f}px ${FONT}`; x.fillText(`เรดาร์${ST.name_th} (${CODE})`, 16 * f + w0, 28 * f);
+  x.fillStyle = "#94A3B8"; x.font = `400 ${13 * f}px ${FONT}`;
+  x.fillText(mode === "fc" ? `${MODE_TH.fc} · ออกพยากรณ์ ${hm(c.t - 1800)} น.` : MODE_TH[mode], 16 * f, 51 * f);
+  x.textAlign = "right"; x.fillText(thDate(DAY.date), W - 16 * f, 24 * f);
+  x.fillStyle = "#F8FAFC"; x.font = `700 ${24 * f}px ${FONT}`; x.fillText(`${c.hhmm} น.`, W - 16 * f, 53 * f);
+  // แผนที่ หน่วย km เหมือน SVG (viewBox -252..252)
+  const s = S / 504, R = ST.range_km + 1;
+  x.save(); x.translate(W / 2, head + S / 2); x.scale(s, s);
+  x.save(); x.beginPath(); x.arc(0, 0, R, 0, 2 * Math.PI); x.clip();
+  x.fillStyle = "#E9E5DC"; x.fillRect(-R, -R, 2 * R, 2 * R);
+  const [xw, xe, ys, yn] = ST.raw_extent_km, n = ST.grid[0], half = (n - 1) / 2 * ST.kmperpixel + ST.kmperpixel / 2;
+  const drawRaw = () => { if (rawIm) { x.imageSmoothingEnabled = true; x.drawImage(rawIm, xw, -yn, xe - xw, yn - ys); } };
+  const drawImg = () => { if (img) { x.imageSmoothingEnabled = false; x.drawImage(img, -half, -half, 2 * half, 2 * half); } };
+  const drawProv = () => {
+    x.strokeStyle = "#8E8A80"; x.lineWidth = .7; x.lineJoin = "round";
+    for (const pl of M.PROV) { x.beginPath(); pl.forEach(([a, b], i) => i ? x.lineTo(a, -b) : x.moveTo(a, -b)); x.stroke(); }
+  };
+  const xs = -252 + 504 * sp;
+  if (mode === "split") {
+    x.save(); x.beginPath(); x.rect(-260, -260, xs + 260, 520); x.clip(); drawRaw(); x.restore();
+    drawProv();
+    x.save(); x.beginPath(); x.rect(xs, -260, 260 - xs, 520); x.clip(); drawImg(); x.restore();
+  } else { drawRaw(); drawProv(); drawImg(); }
+  x.restore();
+  x.textAlign = "center"; x.textBaseline = "middle"; x.lineJoin = "round";
+  x.font = `500 8.5px ${FONT}`;
+  for (const [a, b, nm] of M.LABS) { x.lineWidth = 2.2; x.strokeStyle = "#E9E5DC"; x.strokeText(nm, a, -b); x.fillStyle = "#4B4F57"; x.fillText(nm, a, -b); }
+  x.setLineDash([3, 3]); x.strokeStyle = "#2F6F8F"; x.lineWidth = .8;
+  for (const r of [60, 120, ST.range_km]) { x.beginPath(); x.arc(0, 0, r, 0, 2 * Math.PI); x.stroke(); }
+  x.setLineDash([]); x.font = `7.5px Consolas,"IBM Plex Mono",monospace`;
+  for (const r of [60, 120, ST.range_km]) {
+    x.beginPath(); x.roundRect ? x.roundRect(-17, -r - 7, 34, 14, 7) : x.rect(-17, -r - 7, 34, 14);
+    x.fillStyle = "rgba(15,23,42,.85)"; x.fill(); x.lineWidth = .6; x.strokeStyle = "rgba(56,189,248,.5)"; x.stroke();
+    x.fillStyle = "#38BDF8"; x.fillText(`${r} km`, 0, -r + .5);
+  }
+  x.beginPath(); x.arc(0, 0, 4.5, 0, 2 * Math.PI); x.fillStyle = "#EF4444"; x.fill(); x.lineWidth = 1.5; x.strokeStyle = "#fff"; x.stroke();
+  if (mode === "split" && Math.abs(xs) < R) {
+    const yy = Math.sqrt(R * R - xs * xs); x.beginPath(); x.moveTo(xs, -yy); x.lineTo(xs, yy); x.lineWidth = 1.6; x.strokeStyle = "#F8FAFC"; x.stroke();
+  }
+  if (cv.empty) { x.font = `600 13px ${FONT}`; x.fillStyle = "#B91C1C"; x.fillText("ไม่มีภาพในคลังรอบนี้", 0, 0); }
+  x.restore();
+  // ท้ายภาพ: แถบสี + ที่มา
+  const cl = ST.levels_rgb, lv = ST.levels_dbz, bx = 16 * f, bw = W * .42, by = head + S + 10 * f, bh = 9 * f;
+  cl.forEach((c3, i) => { x.fillStyle = `rgb(${c3})`; x.fillRect(bx + i * bw / cl.length, by, bw / cl.length + .5, bh); });
+  x.textBaseline = "alphabetic"; x.fillStyle = "#94A3B8"; x.font = `400 ${11 * f}px ${FONT}`;
+  x.textAlign = "left"; x.fillText(`${lv[0]}`, bx, by + bh + 15 * f);
+  x.textAlign = "center"; x.fillText("dBZ", bx + bw / 2, by + bh + 15 * f);
+  x.textAlign = "right"; x.fillText(`${lv[lv.length - 1]}`, bx + bw, by + bh + 15 * f);
+  x.fillText("ข้อมูลเรดาร์: กรมอุตุนิยมวิทยา", W - 16 * f, by + 8 * f);
+  x.fillText(`QC และพยากรณ์: ทันฝน · ${location.host}${location.pathname.replace(/archive\.html$/, "")}`, W - 16 * f, by + 24 * f);
+  return cv;
+}
+function saveBlob(blob, name) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+}
+const canvasBlob = cv => new Promise(r => cv.toBlob(r, "image/png"));
+async function fetchBlob(url) { const r = await fetch(url); if (!r.ok) throw new Error(`${r.status}`); return r.blob(); }
+
+/* zip แบบไม่บีบอัด (PNG/JPEG บีบอัดมาแล้ว) — ไม่ต้องพึ่งไลบรารี */
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let j = 0; j < 8; j++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function makeZip(files) {
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  const d = new Date(), dt = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate(), tm = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  for (const fl of files) {
+    const nm = enc.encode(fl.name), crc = crc32(fl.data), sz = fl.data.length;
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true);
+    h.setUint16(10, tm, true); h.setUint16(12, dt, true); h.setUint32(14, crc, true); h.setUint32(18, sz, true); h.setUint32(22, sz, true); h.setUint16(26, nm.length, true);
+    parts.push(h, nm, fl.data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true);
+    c.setUint16(12, tm, true); c.setUint16(14, dt, true); c.setUint32(16, crc, true); c.setUint32(20, sz, true); c.setUint32(24, sz, true);
+    c.setUint16(28, nm.length, true); c.setUint32(42, off, true);
+    cen.push(c, nm); off += 30 + nm.length + sz;
+  }
+  const cs = cen.reduce((a, p) => a + p.byteLength, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cs, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...cen, e], { type: "application/zip" });
+}
+async function fetchAll(jobs, prog) {
+  const out = []; let i = 0, done = 0, miss = 0;
+  const worker = async () => {
+    while (i < jobs.length) {
+      const j = jobs[i++];
+      try { const r = await fetch(j.url); if (!r.ok) throw 0; out.push({ name: j.name, data: new Uint8Array(await r.arrayBuffer()) }); }
+      catch { miss++; }
+      prog(`ดึงไฟล์ ${++done} / ${jobs.length}`, done / jobs.length);
+    }
+  };
+  await Promise.all(Array.from({ length: 6 }, worker));
+  out.sort((a, b) => a.name < b.name ? -1 : 1);
+  return { files: out, miss };
+}
+function cyclesCSV() {
+  const q = v => v == null ? "" : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v;
+  const head = ["time_th", "time_utc", "epoch_utc", "forecast_cycle", "forecast_leads_min", "raw_file", "scan_time_source", "rfi_px", "qc_removed_pct",
+    `wet_km2_ge_${ST.wet_threshold_dbz}dbz`, "max_dbz", "motion_kmh", "motion_toward_deg", "motion_confidence", "motion_engine", "csi_30min", "csi_30min_persistence"];
+  const rows = DAY.cycles.map(c => [`${DAY.date} ${c.hhmm}`, new Date(c.t * 1000).toISOString().slice(0, 16).replace("T", " "), c.t, c.obs ? 1 : 0,
+    (c.fc || []).join(" "), c.raw || "", c.ocr || "", c.rfi_px, c.qc_removed_pct, c.wet_km2, c.max_dbz,
+    c.motion?.kmh, c.motion?.bearing, c.motion?.confidence, c.motion?.engine, c.score30?.csi, c.score30?.csip].map(q).join(","));
+  return "﻿" + [head.join(","), ...rows].join("\r\n") + "\r\n";
+}
+function readme(withFc) {
+  const s = DAY.summary;
+  return [`คลังภาพเรดาร์ทันฝน · สถานี ${CODE} (${ST.name_th}) · ${thDate(DAY.date)} (${DAY.date}, เวลาไทย UTC+7)`, "",
+    "ไฟล์ในชุดนี้",
+    "  obs/             ภาพสังเกตหลัง QC ทุกรอบ 15 นาที ชื่อไฟล์เป็นเวลาไทย",
+    "  raw/             ภาพต้นทางจากกรมอุตุนิยมวิทยา ชื่อไฟล์เดิมในคลัง (เวลา UTC)",
+    withFc ? "  forecast/HHMM/   ภาพพยากรณ์ f+015 ถึง f+120 แยกตามเวลาออกพยากรณ์ (เวลาไทย)" : null,
+    "  cycles.csv       ตารางรอบทั้ง 96 ช่วง: เวลาไทย/UTC พื้นที่ฝน ค่าสูงสุด การเคลื่อนที่ CSI +30 นาที", 
+    "  day_index.json   ดัชนีของวันที่หน้าเว็บใช้", "",
+    "ภาพ PNG (obs และ forecast)",
+    `  กริด ${ST.grid[0]}×${ST.grid[1]} จุด ห่างกัน ${ST.kmperpixel} km ศูนย์กลางที่เรดาร์ (${ST.lat}, ${ST.lon}) ระยะ ${ST.range_km} km`,
+    "  ระบบพิกัด azimuthal equidistant ศูนย์กลางที่ตำแหน่งเรดาร์ ทิศเหนืออยู่ด้านบน",
+    `  สีเป็น palette ${ST.levels_dbz.length} ระดับ ค่าการสะท้อน (dBZ) กับสี RGB:`,
+    ...ST.levels_dbz.map((v, i) => `    ${String(v).padStart(5)} dBZ  rgb(${ST.levels_rgb[i].join(",")})`),
+    `  พื้นที่ฝนใน cycles.csv = จำนวนจุดที่ ≥ ${ST.wet_threshold_dbz} dBZ × ${ST.kmperpixel * ST.kmperpixel} km²`, "",
+    "สรุปของวัน",
+    `  รอบที่เก็บได้ ${s.n_cycles}/96 · ภาพต้นทาง ${s.n_raw} ภาพ · ภาพที่ตัด RFI ${s.rfi_images} ภาพ`,
+    `  พยากรณ์ +30 นาทีชนะ persistence ${s.wins30}/${s.n_scored30} รอบ`, "",
+    `ที่มา: ภาพเรดาร์จากกรมอุตุนิยมวิทยา · QC และพยากรณ์โดยระบบทันฝน (${location.host}${location.pathname.replace(/archive\.html$/, "")})`,
+    `สร้างไฟล์: ${new Date().toISOString().slice(0, 19)}Z`].filter(v => v != null).join("\r\n") + "\r\n";
+}
+
+const $ = id => document.getElementById(id);
+const dlOpen = () => $("dlw").style.display === "grid";
+let busy = false;
+function prog(t, fr) { $("dprog").style.display = "block"; $("dptx").textContent = t; $("dpbar").style.width = `${Math.round((fr || 0) * 100)}%`; }
+function setBusy(b) { busy = b; document.querySelectorAll("#dl .dbtn:not(#dlx)").forEach(x => x.disabled = b); }
+async function run(fn) {
+  if (busy) return; setBusy(true);
+  try { await fn(); } catch (e) { prog(`ไม่สำเร็จ: ${e.message || e}`, 0); console.error(e); }
+  finally { setBusy(false); }
+}
+function gifRange() { const a = +$("ds").value, b = +$("de").value; return a <= b ? [a, b] : [b, a]; }
+function updCount() {
+  const [a, b] = gifRange(), m = $("dmode").value; let n = 0;
+  for (let i = a; i <= b; i++) if (hasLayer(i, m)) n++;
+  $("dcnt").textContent = n ? `${n} ภาพ` : "ช่วงนี้ไม่มีภาพของชั้นที่เลือก";
+  $("dgif").disabled = busy || !n;
+}
+function openDL() {
+  if (!DAY) return; stop();
+  const c = DAY.cycles[k];
+  $("dlday").textContent = thDate(DAY.date); $("dlcur").textContent = `${c.hhmm} น.`;
+  const o = [];
+  if (c.obs) o.push(["ภาพหลัง QC", obsURL(c.t), `${CODE}_${ymd()}_${hhmm4(c)}TH_qc.png`]);
+  if (k >= 2 && hasLayer(k, "fc")) o.push(["พยากรณ์ +30", fcURL(c.t - 1800, 30), `${CODE}_${ymd()}_${hhmm4(c)}TH_fc30_issued${hm(c.t - 1800).replace(":", "")}TH.png`]);
+  if (c.raw) o.push(["ภาพต้นทาง TMD", rawURL(c.raw), c.raw.split("/").pop()]);
+  $("dorig").innerHTML = o.length ? `<span class="k">ไฟล์ต้นฉบับ:</span>` + o.map((v, i) => `<button class="dbtn" data-i="${i}">${v[0]}</button>`).join("") : "";
+  $("dorig").querySelectorAll("button").forEach(b => b.onclick = () => run(async () => { const v = o[+b.dataset.i]; prog("กำลังดึงไฟล์…", .5); saveBlob(await fetchBlob(v[1]), v[2]); prog(`บันทึก ${v[2]} แล้ว`, 1); }));
+  const opts = DAY.cycles.map((x, i) => `<option value="${i}">${x.hhmm}</option>`).join("");
+  $("ds").innerHTML = opts; $("de").innerHTML = opts;
+  $("ds").value = Math.max(0, k - 8); $("de").value = Math.min(95, k + 8);
+  $("dmode").value = swipe ? "split" : layer; $("dspd").value = String(speed);
+  $("dprog").style.display = "none"; $("dlw").style.display = "grid"; updCount();
+}
+function closeDL() { if (!busy) $("dlw").style.display = "none"; }
+$("dlb").onclick = openDL; $("dlx").onclick = closeDL;
+$("dlw").addEventListener("click", e => { if (e.target.id === "dlw") closeDL(); });
+for (const id of ["ds", "de", "dmode"]) $(id).onchange = updCount;
+$("dall").onclick = () => { $("ds").value = 0; $("de").value = 95; updCount(); };
+$("dpng").onclick = () => run(async () => {
+  const c = DAY.cycles[k], m = swipe ? "split" : layer;
+  prog("กำลังวาดภาพ…", .3); await document.fonts.ready;
+  const cv = await renderFrame(c, m, 900, split), name = `${CODE}_${ymd()}_${hhmm4(c)}TH_${m}.png`;
+  saveBlob(await canvasBlob(cv), name); prog(`บันทึก ${name} แล้ว`, 1);
+});
+$("dgif").onclick = () => run(async () => {
+  const G = window.GIFENC; if (!G) throw new Error("โหลดตัวสร้าง GIF ไม่ได้");
+  const [a, b] = gifRange(), m = $("dmode").value, S = +$("dsize").value, delay = +$("dspd").value;
+  const idx = []; for (let i = a; i <= b; i++) if (hasLayer(i, m)) idx.push(i);
+  await document.fonts.ready;
+  const gif = G.GIFEncoder(); let n = 0;
+  for (const [j, i] of idx.entries()) {
+    prog(`กำลังวาดภาพ ${j + 1} / ${idx.length}`, j / idx.length);
+    const cv = await renderFrame(DAY.cycles[i], m, S, split);
+    if (cv.empty) continue;
+    const { data, width, height } = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height);
+    const pal = G.quantize(data, 256), ix = G.applyPalette(data, pal);
+    gif.writeFrame(ix, width, height, { palette: pal, delay: j === idx.length - 1 ? delay * 4 : delay });
+    n++; await new Promise(r => setTimeout(r, 0));
+  }
+  if (!n) throw new Error("ภาพในช่วงนี้โหลดไม่ได้เลย");
+  gif.finish();
+  const name = `${CODE}_${ymd()}_${DAY.cycles[a].hhmm.replace(":", "")}-${DAY.cycles[b].hhmm.replace(":", "")}TH_${m}.gif`, blob = new Blob([gif.bytes()], { type: "image/gif" });
+  saveBlob(blob, name); prog(`บันทึก ${name} แล้ว · ${n} ภาพ · ${(blob.size / 1048576).toFixed(1)} MB`, 1);
+});
+$("dcsv").onclick = () => run(async () => {
+  const name = `${CODE}_${ymd()}_cycles.csv`; saveBlob(new Blob([cyclesCSV()], { type: "text/csv" }), name); prog(`บันทึก ${name} แล้ว`, 1);
+});
+$("dzip").onclick = () => run(async () => {
+  const withFc = $("dfc").checked, root = `${CODE}_${DAY.date}/`, jobs = [];
+  for (const c of DAY.cycles) {
+    if (c.obs) jobs.push({ name: `${root}obs/${CODE}_${ymd()}_${hhmm4(c)}TH.png`, url: obsURL(c.t) });
+    if (c.raw) jobs.push({ name: `${root}raw/${c.raw.split("/").pop()}`, url: rawURL(c.raw) });
+    if (withFc && c.obs) for (const L of c.fc || []) jobs.push({ name: `${root}forecast/${hhmm4(c)}/f+${String(L).padStart(3, "0")}.png`, url: fcURL(c.t, L) });
+  }
+  const { files, miss } = await fetchAll(jobs, prog), enc = new TextEncoder();
+  files.unshift({ name: `${root}README.txt`, data: enc.encode(readme(withFc)) },
+                { name: `${root}cycles.csv`, data: enc.encode(cyclesCSV()) },
+                { name: `${root}day_index.json`, data: enc.encode(JSON.stringify(DAY, null, 1)) });
+  prog("กำลังรวมไฟล์ ZIP…", 1);
+  const blob = makeZip(files), name = `${CODE}_${DAY.date}${withFc ? "_with_forecast" : ""}.zip`;
+  saveBlob(blob, name);
+  prog(`บันทึก ${name} แล้ว · ${files.length} ไฟล์ · ${(blob.size / 1048576).toFixed(1)} MB${miss ? ` · ${miss} ไฟล์ไม่มีในคลังแล้ว` : ""}`, 1);
+});
 
 /* ───────── start */
 (async () => {
