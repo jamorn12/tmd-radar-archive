@@ -257,7 +257,7 @@ async function buildMap() {
   const nod = document.getElementById("nodata");
   function setImg(node, url) {
     if (!url) { node.removeAttribute("href"); node.style.display = "none"; return; }
-    node.style.display = ""; node.setAttribute("href", url);
+    node.style.display = ""; node.setAttribute("href", blobOf.get(url) || url);   // ใช้ไฟล์ที่โหลดล่วงหน้าไว้ ถ้ามี
   }
   for (const node of [raw, img]) node.addEventListener("error", () => { node.style.display = "none"; check(); });
   function check() { const vis = [raw, img].some(n => n.style.display !== "none" && n.getAttribute("href")); nod.style.display = vis ? "none" : "grid"; }
@@ -402,19 +402,50 @@ function draw() {
   }
   M.check(); placeSplit(); renderCur(c);
   history.replaceState(null, "", `?d=${DAY.date}&t=${c.hhmm}${Q.get("base") ? "&base=" + encodeURIComponent(Q.get("base")) : ""}`);
-  for (let j = 1; j <= 4; j++) {               // โหลดล่วงหน้า 4 รอบถัดไป ภาพจะไม่กระพริบตอนเล่น
-    const n = DAY.cycles[k + j]; if (!n) break;
-    if (n.obs) new Image().src = obsURL(n.t);
-    if (n.raw && (swipe || layer === "raw")) new Image().src = rawURL(n.raw);
-  }
+  for (let j = 1; j <= 4; j++) shownURLs(k + j).forEach(preload);   // โหลดล่วงหน้า 4 รอบถัดไปของชั้นที่กำลังดู
 }
 function step(d) {
   let i = k;
   for (let n = 0; n < 96; n++) { i = (i + d + 96) % 96; const c = DAY.cycles[i]; if (c.obs || c.raw) break; }
   k = i; draw();
 }
-function stop() { if (timer) { clearInterval(timer); timer = null; } document.getElementById("pb").textContent = "▶"; }
-function play() { stop(); document.getElementById("pb").textContent = "❚❚"; timer = setInterval(() => step(1), speed); }
+/* เล่นภาพ: เลื่อนไปภาพถัดไปเมื่อภาพนั้นโหลดเสร็จแล้วเท่านั้น (เดิมใช้ setInterval ตายตัว
+   ที่ 4× = 200 ms ภาพพยากรณ์โหลดไม่ทันก็ถูกเปลี่ยน href ทิ้งทุกครั้ง หน้าจอจึงค้างภาพเดิม) */
+const preCache = new Map(), blobOf = new Map();    // url -> Promise / url -> blob: URL ที่โหลดเสร็จแล้ว
+function preload(url) {
+  if (!url) return Promise.resolve();
+  if (!preCache.has(url)) {
+    if (preCache.size > 300) for (const u of [...preCache.keys()].slice(0, 60)) {    // ทิ้งของเก่าสุด
+      preCache.delete(u); const b = blobOf.get(u); if (b) { URL.revokeObjectURL(b); blobOf.delete(u); }
+    }
+    const get = fetch(url).then(r => r.ok ? r.blob() : null).then(b => { if (b) blobOf.set(url, URL.createObjectURL(b)); }).catch(() => {});
+    preCache.set(url, Promise.race([get, new Promise(r => setTimeout(r, 5000))]));   // ไม่มีภาพ/ช้าเกิน 5 วินาที ข้ามไป
+  }
+  return preCache.get(url);
+}
+function shownURLs(i) {                            // ภาพที่จอต้องแสดงสำหรับรอบ i ตามโหมดตอนนี้
+  const c = DAY && DAY.cycles[i]; if (!c) return [];
+  const raw = c.raw ? rawURL(c.raw) : null, obs = c.obs ? obsURL(c.t) : null;
+  const u = swipe ? [raw, obs] : layer === "raw" ? [raw] : layer === "qc" ? [obs] : [fcURL(c.t - 1800, 30)];
+  return u.filter(Boolean);
+}
+function nextIdx(d) {
+  let i = k;
+  for (let n = 0; n < 96; n++) { i = (i + d + 96) % 96; const c = DAY.cycles[i]; if (c.obs || c.raw) break; }
+  return i;
+}
+function stop() { if (timer) { clearTimeout(timer); timer = null; } document.getElementById("pb").textContent = "▶"; }
+function play() {
+  stop(); document.getElementById("pb").textContent = "❚❚";
+  const tick = async () => {
+    const t0 = performance.now(), i = nextIdx(1);
+    await Promise.all(shownURLs(i).map(preload));
+    if (!timer) return;                              // ถูกหยุดระหว่างรอ
+    k = i; draw();
+    timer = setTimeout(tick, Math.max(0, speed - (performance.now() - t0)));
+  };
+  timer = setTimeout(tick, speed);
+}
 
 /* ───────── controls */
 document.getElementById("pb").onclick = () => timer ? stop() : play();
