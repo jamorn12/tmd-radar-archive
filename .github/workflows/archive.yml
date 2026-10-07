@@ -175,6 +175,22 @@ jobs:
             echo "::warning::คำนวณฝนเชิงพื้นที่ไม่สำเร็จรอบนี้ — ดูรายละเอียดท้ายหน้า summary ของ run นี้"
           fi
 
+      # ดัชนีคลังภาพรายวัน สำหรับหน้า docs/archive.html (คลังภาพรายวัน)
+      # อ่านเฉพาะ data/ ที่มีอยู่แล้ว ไม่ดึงอะไรจากภายนอก · ภาพจริงยังอยู่ที่ data/ หน้าเว็บอ่านผ่าน raw.githubusercontent
+      # ปกติสร้างใหม่แค่วันนี้ + เมื่อวาน (~1-2 วินาที) เพราะคะแนน +30 ของรอบท้ายวันต้องรอภาพวันถัดไป
+      # สร้างทุกวันเมื่อ: ยังไม่มี calendar.json (รอบแรกหลังติดตั้ง) หรือรันโหมด repair (เวลาในคลังอาจถูกแก้)
+      - name: Daily Archive Index (archive.html)
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          if [ ! -f docs/archive/PHS/calendar.json ] || [ "${{ github.event.inputs.mode }}" = "repair" ]; then
+            python -m radar_archive.dayindex --station PHS --all --quiet \
+              || echo "::warning::สร้างดัชนีคลังภาพ (ทุกวัน) ไม่สำเร็จ — หน้า archive.html ใช้ไฟล์เดิม"
+          else
+            python -m radar_archive.dayindex --station PHS --quiet \
+              || echo "::warning::สร้างดัชนีคลังภาพรายวันไม่สำเร็จรอบนี้ — หน้า archive.html ใช้ไฟล์เดิม"
+          fi
+
       # gauge เป็นแหล่งภายนอก (สสน.) และ **ไม่ใช่ input ของ nowcast**
       # ถ้าดึงไม่ได้ ต้องไม่กระทบ pipeline หลัก -> continue-on-error + || echo
       # วางไว้ท้ายสุดก่อน commit โดยตั้งใจ: งานที่ขาดได้ ต้องไม่กินเวลาของงานที่ขาดไม่ได้
@@ -189,11 +205,11 @@ jobs:
       - name: Commit and Push Changes
         run: |
           # สร้างโฟลเดอร์ก่อน — ขั้น Areal เป็น continue-on-error ถ้ามันล้ม โฟลเดอร์อาจไม่มี
-          mkdir -p docs/areal data/areal
+          mkdir -p docs/areal data/areal docs/archive
           MSG="archive: update radar data + nowcast [skip ci]"
           if [ "${{ github.event.inputs.mode }}" = "repair" ]; then
             MSG="repair: fix OCR timestamps, drop duplicate frames, rebuild index [skip ci]"
           fi
           # ตรวจไฟล์ใหญ่ · rebase ชนใช้ -X theirs · rebase ค้างสั่ง abort — ดูรายละเอียดในสคริปต์
           bash .github/scripts/commit_push.sh "$MSG" \
-            data/ docs/nowcast/ docs/gauges/ docs/areal/
+            data/ docs/nowcast/ docs/gauges/ docs/areal/ docs/archive/
