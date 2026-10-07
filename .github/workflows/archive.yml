@@ -26,6 +26,7 @@ on:
 
 permissions:
   contents: write
+  actions: write    # อ่าน/ลบ artifact pending-raw-* (ภาพที่รอบก่อน push ไม่ผ่าน)
 
 # คุมคิวที่ระดับ workflow (เดิมอยู่ระดับ job) — กดรันซ้อนหรือตัวตั้งเวลาชนกับรันมือ
 # รอบหลังจะรอจนรอบแรกจบ ไม่เริ่มจาก commit เดียวกันแล้วชนกันตอน push อีก (run #2286/#2287)
@@ -37,7 +38,7 @@ jobs:
   fetch-and-archive:
     runs-on: ubuntu-latest
     if: vars.PIPELINE_ENABLED != 'false' || github.event.inputs.mode == 'repair'
-    timeout-minutes: 16   # รวมเวลารอภาพที่ต้นทางอัปโหลดช้า (สูงสุด ~7.5 นาที)
+    timeout-minutes: 25   # รอภาพช้า (≤ 8 นาที) + push ลองซ้ำได้นานขึ้นเมื่อ GitHub ขัดข้อง (≤ ~5.5 นาที ต่อครั้ง)
 
     steps:
       - name: Checkout Repository
@@ -76,6 +77,18 @@ jobs:
               print(f"::warning::pysteps ใช้ไม่ได้ ({type(e).__name__}: {e}) — จะตกไปใช้ engine=light")
           PY
 
+      # ── ชั้นป้องกันที่ 0: ภาพที่รอบก่อน push ไม่ผ่าน ─────────────────────────────────────
+      # commit_push.sh เก็บภาพดิบ + แถว log ไว้เป็น artifact pending-raw-* (ดูขั้น Keep Raw Frame)
+      # ดึงกลับมาก่อน แล้วให้ขั้น Save Raw Frame First commit ไปพร้อมภาพรอบนี้ · ล้มก็ไม่กระทบรอบนี้
+      - name: Restore Frames Kept From Failed Pushes
+        if: ${{ github.event.inputs.mode != 'repair' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESTORED_IDS: restored_ids.txt   # อยู่นอก data/ docs/ จึงไม่ถูก commit
+        run: bash .github/scripts/restore_pending.sh
+
       # กรมอุตุฯ อัปโหลดภาพช้าไม่แน่นอน — ถ้ารอบนี้ยังไม่มีภาพใหม่ ให้รอเช็กซ้ำทุก 90 วินาที
       # สูงสุด 6 ครั้ง (~7.5 นาที) แล้วหยุดทันทีที่ได้ภาพ
       # เดิมเช็กครั้งเดียว: 27 ก.ย. ภาพ 04:15Z ขึ้นเว็บกรมอุตุฯ หลัง 04:21Z แล้วถูกภาพ 04:30Z
@@ -101,11 +114,38 @@ jobs:
       # (25 ก.ย. 2569 หาย 3.5 ชม.) · commit นี้มีแต่ไฟล์เล็ก จึงแทบไม่มีทางถูกปฏิเสธ
       # always(): แม้ขั้น fetch พังหลังเซฟ raw แล้ว (เช่น QC/strip ล้ม) ภาพดิบก็ยังถูกเก็บ
       - name: Save Raw Frame First
+        id: saveraw
         if: ${{ always() && github.event.inputs.mode != 'repair' }}
+        env:
+          PENDING_DIR: pending_raw   # push ไม่ผ่านจริง ๆ → คัดภาพดิบ + แถว log ไว้ที่นี่
         run: |
           bash .github/scripts/commit_push.sh \
             "raw: PHS frame [skip ci]" \
             data/raw data/log data/processed
+
+      # push ไม่ผ่าน (เช่น GitHub ขัดข้อง 7 ต.ค. 2569) → ภาพดิบยังไม่หาย เก็บเป็น artifact 7 วัน
+      # รอบถัดไปขั้น Restore Frames ดึงกลับเข้าคลังเอง · run นี้ยังขึ้นแดงให้ watchdog เห็นเหมือนเดิม
+      - name: Keep Raw Frame as Artifact (push failed)
+        if: ${{ failure() && steps.saveraw.outcome == 'failure' && hashFiles('pending_raw/**') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pending-raw-${{ github.run_id }}-${{ github.run_attempt }}
+          path: pending_raw/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      # ภาพค้างที่ดึงกลับมารอบนี้ขึ้นคลังพร้อม raw commit แล้ว → ลบ artifact ทิ้ง กันดึงซ้ำ
+      - name: Delete Restored Artifacts
+        if: ${{ steps.saveraw.outcome == 'success' && hashFiles('restored_ids.txt') != '' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [ -s restored_ids.txt ] || exit 0
+          while read -r id; do
+            [ -n "$id" ] && gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id" \
+              && echo "ลบ artifact $id (ขึ้นคลังแล้ว)"
+          done < restored_ids.txt
 
       - name: Repair Archive (manual only)
         if: ${{ github.event.inputs.mode == 'repair' }}
