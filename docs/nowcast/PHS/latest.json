@@ -1,9 +1,9 @@
 {
  "station": "PHS",
- "generated": 1791522032,
+ "generated": 1791522951,
  "base_time_utc": "2026-10-09T04:30:00Z",
  "base_time_local": "2026-10-09T11:30:00+07:00",
- "age_min": 30.5,
+ "age_min": 45.9,
  "stale_after_min": 40,
  "projection": "+proj=aeqd +lat_0=16.7765 +lon_0=100.2161 +units=m +ellps=WGS84",
  "extent_m": [
@@ -2080,5 +2080,5 @@
   }
  ],
  "source": "Thai Meteorological Department (TMD)",
- "stale": false
+ "stale": true
 }
