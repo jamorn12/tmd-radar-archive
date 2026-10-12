@@ -1,9 +1,9 @@
 {
  "station": "PHS",
- "generated": 1791821224,
+ "generated": 1791821368,
  "base_time_utc": "2026-10-12T16:00:00Z",
  "base_time_local": "2026-10-12T23:00:00+07:00",
- "age_min": 7.1,
+ "age_min": 9.5,
  "stale_after_min": 40,
  "projection": "+proj=aeqd +lat_0=16.7765 +lon_0=100.2161 +units=m +ellps=WGS84",
  "extent_m": [
