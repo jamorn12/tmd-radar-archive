@@ -53,6 +53,7 @@ FROZEN = {
     "data/areal/PHS_tambon_forecast.csv",      # 17–25 ก.ย. 2569 · หลังจากนั้นแยกไฟล์รายวัน
     "data/areal/PHS_amphoe_forecast.csv",
     "data/areal/PHS_province_forecast.csv",
+    "data/gauges/PHS_202610.csv",              # 1–21 ต.ค. 2569 · หลังจากนั้นแยกไฟล์รายวัน
 }
 TH = timezone(timedelta(hours=7))
 NOW = datetime.now(timezone.utc)
