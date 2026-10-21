@@ -400,68 +400,84 @@ HIST_COLS = ["station_id", "code", "name", "agency", "province",
              "radar_1h", "radar_1h_max3", "radar_1h_n"]
 
 
+def _keys_of(path: Path) -> set:
+    """คีย์ (station_id, obs_utc) ทั้งหมดในไฟล์ประวัติหนึ่งไฟล์"""
+    if not path.exists():
+        return set()
+    with path.open(encoding="utf-8", newline="") as f:
+        return {(r.get("station_id", ""), r.get("obs_utc", "")) for r in csv.DictReader(f)}
+
+
 def append_history(root: Path, st, stations: list) -> tuple:
-    """เขียนต่อท้าย data/gauges/<CODE>_YYYYMM.csv — หนึ่งแถวต่อหนึ่ง (สถานี, เวลาสังเกต)
+    """เขียนต่อท้าย data/gauges/<CODE>_YYYYMMDD.csv — หนึ่งแถวต่อหนึ่ง (สถานี, เวลาสังเกต)
 
     dedupe ด้วย (station_id, obs_utc) เพราะ pipeline รันทุก 15 นาที แต่สถานี
     รายงานทุกชั่วโมง ถ้าไม่กัน จะได้แถวซ้ำ 4 เท่าและค่าสะสมจะเพี้ยนตอนเอาไปวิเคราะห์
 
-    แยกไฟล์รายเดือนเพื่อไม่ให้ไฟล์เดียวโตจนเปิดไม่ไหว และ git diff อ่านง่าย
+    แยกไฟล์ **รายวัน ตามวันที่ของ obs_utc (UTC)** — เดิมแยกรายเดือน (<CODE>_YYYYMM.csv)
+    21 ต.ค. 2569 ไฟล์ PHS_202610.csv โตถึง 94.9 MiB (~4.7 MB/วัน) commit_push.sh จึงงด commit
+    ไฟล์นี้ทุกรอบ (≥ 95 MiB) ตั้งแต่ราว 16:30 น. run ขึ้นแดงทุก 15 นาที และแถว gauge ไม่ถูกเก็บ
+    ไฟล์รายวัน ~5 MB ห่างเพดาน 100 MB มาก · ใช้วันของ obs_utc ไม่ใช่วันของรอบที่รัน
+    เพื่อให้ (สถานี, เวลาสังเกต) หนึ่งคู่อยู่ได้ไฟล์เดียวเสมอ แม้รายงานข้ามเที่ยงคืน UTC
+
+    ไฟล์รายเดือนเดิมคงไว้เป็นข้อมูลเก่า (ไม่ถูกเขียนต่อ) แต่ยังใช้กันแถวซ้ำ:
+    ถ้ามี <CODE>_YYYYMM.csv ของเดือนเดียวกับ obs_utc จะอ่านคีย์ของไฟล์นั้นด้วย (ครั้งเดียวต่อรอบ)
+    อ่านทั้งหมดผ่าน glob <CODE>_*.csv ได้ทั้งสองแบบ คอลัมน์เหมือนเดิมทุกประการ
     """
     out_dir = Path(root) / "gauges"
     out_dir.mkdir(parents=True, exist_ok=True)
-    month = datetime.now(timezone.utc).strftime("%Y%m")
-    path = out_dir / f"{st.code}_{month}.csv"
-
-    seen, old_rows, need_migrate = set(), [], False
-    if path.exists():
-        with path.open(encoding="utf-8", newline="") as f:
-            rd = csv.DictReader(f)
-            # ไฟล์ที่เขียนไว้ก่อนมีคอลัมน์ radar_* จะมีหัวตารางสั้นกว่า
-            # ถ้า append ทื่อ ๆ ค่าจะเลื่อนคอลัมน์และไฟล์พังทั้งเดือน -> เขียนใหม่ทั้งไฟล์
-            need_migrate = list(rd.fieldnames or []) != HIST_COLS
-            for row in rd:
-                seen.add((row.get("station_id", ""), row.get("obs_utc", "")))
-                if need_migrate:
-                    old_rows.append({k: row.get(k, "") for k in HIST_COLS})
 
     def _v(g, k):
         return "" if g.get(k) is None else g[k]
 
-    rows = []
+    by_day = {}
     for g in stations:
-        key = (str(g["id"]), g["obs_utc"] or "")
-        if not g["obs_utc"] or key in seen:
+        if not g["obs_utc"]:
             continue
-        seen.add(key)
-        rows.append({
-            "station_id": g["id"], "code": g["code"], "name": g["name"],
-            "agency": g["agency"], "province": g["province"],
-            "lat": g["lat"], "lon": g["lon"], "dist_km": g["dist_km"],
-            "obs_utc": g["obs_utc"],
-            "rain_1h": _v(g, "rain_1h"), "rain_24h": _v(g, "rain_24h"),
-            "radar_1h": _v(g, "radar_1h"),
-            "radar_1h_max3": _v(g, "radar_1h_max3"),
-            "radar_1h_n": _v(g, "radar_1h_n"),
-        })
+        day = str(g["obs_utc"])[:10].replace("-", "")       # 'YYYY-MM-DD...' -> YYYYMMDD
+        if len(day) != 8 or not day.isdigit():
+            continue
+        by_day.setdefault(day, []).append(g)
 
-    if need_migrate:
-        with path.open("w", encoding="utf-8", newline="") as f:
+    seen_month = {}                                         # คีย์ของไฟล์รายเดือนเดิม (อ่านครั้งเดียว)
+    last_path, n_total = None, 0
+    for day in sorted(by_day):
+        path = out_dir / f"{st.code}_{day}.csv"
+        month = day[:6]
+        if month not in seen_month:
+            seen_month[month] = _keys_of(out_dir / f"{st.code}_{month}.csv")
+        seen = _keys_of(path) | seen_month[month]
+
+        rows = []
+        for g in by_day[day]:
+            key = (str(g["id"]), g["obs_utc"] or "")
+            if key in seen:
+                continue
+            seen.add(key)
+            rows.append({
+                "station_id": g["id"], "code": g["code"], "name": g["name"],
+                "agency": g["agency"], "province": g["province"],
+                "lat": g["lat"], "lon": g["lon"], "dist_km": g["dist_km"],
+                "obs_utc": g["obs_utc"],
+                "rain_1h": _v(g, "rain_1h"), "rain_24h": _v(g, "rain_24h"),
+                "radar_1h": _v(g, "radar_1h"),
+                "radar_1h_max3": _v(g, "radar_1h_max3"),
+                "radar_1h_n": _v(g, "radar_1h_n"),
+            })
+        if not rows:
+            continue
+        exists = path.exists()
+        with path.open("a", encoding="utf-8", newline="") as f:
             w = csv.DictWriter(f, fieldnames=HIST_COLS)
-            w.writeheader()
-            w.writerows(old_rows)
+            if not exists:
+                w.writeheader()
             w.writerows(rows)
-        print(f"    [i] ปรับหัวตาราง {path.name} ให้มีคอลัมน์ radar_* "
-              f"(แถวเดิม {len(old_rows)} แถวเก็บไว้ครบ ช่องใหม่เว้นว่าง)")
-        return path, len(rows)
+        last_path, n_total = path, n_total + len(rows)
 
-    exists = path.exists()
-    with path.open("a", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=HIST_COLS)
-        if not exists:
-            w.writeheader()
-        w.writerows(rows)
-    return path, len(rows)
+    if last_path is None:
+        today = datetime.now(timezone.utc).strftime("%Y%m%d")
+        last_path = out_dir / f"{st.code}_{today}.csv"
+    return last_path, n_total
 
 
 # ---------------------------------------------------------------- 6. CLI
