@@ -71,7 +71,8 @@ def find_history_files(data_root: Path, code: str, month: str | None) -> list[Pa
     d = Path(data_root) / "gauges"
     if not d.exists():
         return []
-    pat = f"{code}_{month}.csv" if month else f"{code}_*.csv"
+    # รายเดือนเดิม <CODE>_YYYYMM.csv + รายวัน <CODE>_YYYYMMDD.csv (ตั้งแต่ 21 ต.ค. 2569)
+    pat = f"{code}_{month}*.csv" if month else f"{code}_*.csv"
     return sorted(p for p in d.glob(pat) if not p.name.endswith(".bak"))
 
 
