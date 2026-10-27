@@ -1,9 +1,9 @@
 {
  "station": "PHS",
- "generated": 1793125617,
- "base_time_utc": "2026-10-27T18:15:00Z",
- "base_time_local": "2026-10-28T01:15:00+07:00",
- "age_min": 12.0,
+ "generated": 1793126477,
+ "base_time_utc": "2026-10-27T18:30:00Z",
+ "base_time_local": "2026-10-28T01:30:00+07:00",
+ "age_min": 11.3,
  "stale_after_min": 40,
  "projection": "+proj=aeqd +lat_0=16.7765 +lon_0=100.2161 +units=m +ellps=WGS84",
  "extent_m": [
@@ -163,8 +163,8 @@
   "method": "pysteps.dense_lucaskanade",
   "engine": "pysteps",
   "confidence": "high",
-  "kmh": 24.9,
-  "bearing": 282,
+  "kmh": 22.1,
+  "bearing": 310,
   "speed_spread_kmh": 0.0,
   "speed_spread_rel": 0.0,
   "dir_consistency": 1.0,
@@ -178,17 +178,9 @@
  },
  "frames": [
   {
-   "t": 1793122200,
-   "kind": "past",
-   "offset_min": -45,
-   "url": "f/1793122200.png",
-   "max_dbz": 41.5,
-   "wet_pct": 0.113
-  },
-  {
    "t": 1793123100,
    "kind": "past",
-   "offset_min": -30,
+   "offset_min": -45,
    "url": "f/1793123100.png",
    "max_dbz": 37.0,
    "wet_pct": 0.104
@@ -196,89 +188,97 @@
   {
    "t": 1793124000,
    "kind": "past",
-   "offset_min": -15,
+   "offset_min": -30,
    "url": "f/1793124000.png",
    "max_dbz": 35.5,
    "wet_pct": 0.124
   },
   {
    "t": 1793124900,
-   "kind": "present",
-   "offset_min": 0,
+   "kind": "past",
+   "offset_min": -15,
    "url": "f/1793124900.png",
    "max_dbz": 33.9,
    "wet_pct": 0.069
   },
   {
    "t": 1793125800,
-   "kind": "nowcast",
-   "offset_min": 15,
+   "kind": "present",
+   "offset_min": 0,
    "url": "f/1793125800.png",
-   "max_dbz": 28.7,
-   "wet_pct": 0.051,
-   "method": "extrapolation"
+   "max_dbz": 35.4,
+   "wet_pct": 0.071
   },
   {
    "t": 1793126700,
    "kind": "nowcast",
-   "offset_min": 30,
+   "offset_min": 15,
    "url": "f/1793126700.png",
-   "max_dbz": 31.0,
-   "wet_pct": 0.051,
+   "max_dbz": 34.4,
+   "wet_pct": 0.06,
    "method": "extrapolation"
   },
   {
    "t": 1793127600,
    "kind": "nowcast",
-   "offset_min": 45,
+   "offset_min": 30,
    "url": "f/1793127600.png",
-   "max_dbz": 32.0,
-   "wet_pct": 0.054,
+   "max_dbz": 33.4,
+   "wet_pct": 0.056,
    "method": "extrapolation"
   },
   {
    "t": 1793128500,
    "kind": "nowcast",
-   "offset_min": 60,
+   "offset_min": 45,
    "url": "f/1793128500.png",
-   "max_dbz": 28.1,
-   "wet_pct": 0.047,
+   "max_dbz": 32.9,
+   "wet_pct": 0.054,
    "method": "extrapolation"
   },
   {
    "t": 1793129400,
    "kind": "nowcast",
-   "offset_min": 75,
+   "offset_min": 60,
    "url": "f/1793129400.png",
-   "max_dbz": 30.6,
-   "wet_pct": 0.048,
+   "max_dbz": 33.4,
+   "wet_pct": 0.054,
    "method": "extrapolation"
   },
   {
    "t": 1793130300,
    "kind": "nowcast",
-   "offset_min": 90,
+   "offset_min": 75,
    "url": "f/1793130300.png",
-   "max_dbz": 30.3,
-   "wet_pct": 0.051,
+   "max_dbz": 33.5,
+   "wet_pct": 0.064,
    "method": "extrapolation"
   },
   {
    "t": 1793131200,
    "kind": "nowcast",
-   "offset_min": 105,
+   "offset_min": 90,
    "url": "f/1793131200.png",
-   "max_dbz": 27.8,
-   "wet_pct": 0.049,
+   "max_dbz": 32.7,
+   "wet_pct": 0.055,
    "method": "extrapolation"
   },
   {
    "t": 1793132100,
    "kind": "nowcast",
-   "offset_min": 120,
+   "offset_min": 105,
    "url": "f/1793132100.png",
-   "max_dbz": 30.3,
-   "wet_pct": 0.047,
+   "max_dbz": 31.9,
+   "wet_pct": 0.058,
+   "method": "extrapolation"
+  },
+  {
+   "t": 1793133000,
+   "kind": "nowcast",
+   "offset_min": 120,
+   "url": "f/1793133000.png",
+   "max_dbz": 32.1,
+   "wet_pct": 0.056,
    "method": "extrapolation"
   }
  ],
